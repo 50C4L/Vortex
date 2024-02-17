@@ -8,4 +8,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_executable(Vortex 
 	./src/main.cpp
 )
-# target_include_directories(Vortex PUBLIC ./thirdparty/include)
+
+target_include_directories(Vortex PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/include)
+target_link_directories(Vortex PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib)
+target_link_libraries(Vortex PRIVATE
+	SDL2-static.lib
+	SDL2.lib
+	SDL2main.lib
+	vulkan-1.lib
+)
+
+if (WIN32)
+target_link_libraries(Vortex PRIVATE
+	imm32.lib
+	version.lib
+	winmm.lib
+	Setupapi.lib
+)
+endif (WIN32)
