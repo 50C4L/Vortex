@@ -7,8 +7,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_executable(Vortex 
 	./src/main.cpp
+	./src/VortexGame.h
+	./src/VortexGame.cpp
+	./src/core/utility/Pointers.h
 )
 
+target_include_directories(Vortex PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/core)
 target_include_directories(Vortex PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/include)
 target_link_directories(Vortex PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib)
 target_link_libraries(Vortex PRIVATE
