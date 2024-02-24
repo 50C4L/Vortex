@@ -104,6 +104,68 @@ namespace
 			nullptr };
 	}
 
+	///
+	/// Vulkan extention functions to create and destroy a `VkDebugUtilsMessengerEXT`
+	/// TODO: It should be able to use instance.CreateDebugUtilsMessengerEXT( ... ) and instance.DestroyDebugUtilsMessengerEXT( ... )
+	/// so we can get rid of this address retrieving shit.
+	/// 
+	VkResult CreateDebugUtilsMessengerEXT( VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger )
+	{
+		auto func = ( PFN_vkCreateDebugUtilsMessengerEXT )vkGetInstanceProcAddr( instance, "vkCreateDebugUtilsMessengerEXT" );
+		if( func != nullptr ) 
+		{
+			return func( instance, pCreateInfo, pAllocator, pDebugMessenger );
+		}
+		else 
+		{
+			return VK_ERROR_EXTENSION_NOT_PRESENT;
+		}
+	}
+
+	void DestroyDebugUtilsMessengerEXT( VkInstance instance, VkDebugUtilsMessengerEXT callback, const VkAllocationCallbacks* pAllocator )
+	{
+		auto func = ( PFN_vkDestroyDebugUtilsMessengerEXT )vkGetInstanceProcAddr( instance, "vkDestroyDebugUtilsMessengerEXT" );
+		if( func != nullptr ) 
+		{
+			func( instance, callback, pAllocator );
+		}
+	}
+}
+
+namespace graphics
+{
+	// Simple wrapper for the vulkan debug messenger
+	class VulkanDebugMessenger
+	{
+	public:
+		VulkanDebugMessenger( vk::Instance& instance )
+			: mInstance( instance )
+			, mMessenger( nullptr )
+		{
+			auto debug_info = make_debug_info();
+			if( CreateDebugUtilsMessengerEXT( mInstance, reinterpret_cast<const VkDebugUtilsMessengerCreateInfoEXT*>( &debug_info ), nullptr, &mMessenger ) !=	VK_SUCCESS )
+			{
+				throw std::runtime_error( "Failed to set up vulkan debug messenger!" );
+			}
+			LOG( "Vulkan debug messenger is set up." );
+		}
+
+		~VulkanDebugMessenger()
+		{
+			if( mMessenger )
+			{
+				DestroyDebugUtilsMessengerEXT( mInstance, mMessenger, nullptr );
+			}
+		}
+
+	private:
+		vk::Instance& mInstance;
+		VkDebugUtilsMessengerEXT mMessenger;
+	};
+}
+
+namespace
+{
 	vk::UniqueInstance create_vulkan_instance( SDL_Window& window )
 	{
 		if( ENABLE_VALIDATION_LAYERS && !check_validation_layer_support() ) 
@@ -167,6 +229,16 @@ namespace
 		
 		return instance; 
 	}
+
+	std::unique_ptr<VulkanDebugMessenger>
+	setup_debug_messenger( vk::Instance& instance )
+	{
+		if( !ENABLE_VALIDATION_LAYERS )
+		{
+			return nullptr;
+		}
+		return std::make_unique<VulkanDebugMessenger>( instance );
+	}
 }
 
 Renderer::Renderer()
@@ -185,6 +257,12 @@ Renderer::Init( SDL_Window& window )
 	{
 		std::cerr << "Failed to create Vulkan instance" << std::endl;
 		return false;
+	}
+
+	mVulkanDebugMessenger = setup_debug_messenger( *mInstance );
+	if( !mVulkanDebugMessenger )
+	{
+		LOG( "Vulkan debug messenger is not available." );
 	}
 
 	return true;

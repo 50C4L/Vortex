@@ -2,11 +2,14 @@
 #define _EAGE_RENDERER_H
 
 #include <vulkan/vulkan.hpp>
+#include <memory>
 
 struct SDL_Window;
 
 namespace graphics
 {
+	class VulkanDebugMessenger;
+
 	///
 	/// Renderer class
 	///
@@ -41,6 +44,7 @@ namespace graphics
 
 	private:
 		vk::UniqueInstance mInstance;
+		std::unique_ptr<VulkanDebugMessenger> mVulkanDebugMessenger;
 	};
 }
 
