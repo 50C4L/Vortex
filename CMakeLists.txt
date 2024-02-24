@@ -9,7 +9,10 @@ add_executable(Vortex
 	./src/main.cpp
 	./src/VortexGame.h
 	./src/VortexGame.cpp
+	./src/core/graphics/Renderer.h
+	./src/core/graphics/Renderer.cpp
 	./src/core/utility/Pointers.h
+	./src/core/utility/Logger.h
 )
 
 target_include_directories(Vortex PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/core)

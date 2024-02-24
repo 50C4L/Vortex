@@ -5,13 +5,18 @@
 
 struct SDL_Window;
 
+namespace graphics
+{
+	class Renderer;
+}
+
 namespace vortex
 {
 	class VortexGame
 	{
 	public:
 		VortexGame();
-		~VortexGame();
+		virtual ~VortexGame();
 
 		bool Init();
 
@@ -19,6 +24,7 @@ namespace vortex
 
 	private:
 		std::shared_ptr<SDL_Window> mWindow;
+		std::unique_ptr<graphics::Renderer> mRenderer;
 	};
 }
 

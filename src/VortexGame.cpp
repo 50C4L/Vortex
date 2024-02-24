@@ -6,6 +6,8 @@
 #include <vulkan/vulkan.h>
 
 #include <utility/Pointers.h>
+#include <utility/Logger.h>
+#include <graphics/Renderer.h>
 
 using namespace vortex;
 
@@ -32,6 +34,8 @@ VortexGame::Run()
 			{
 				quit = true;
 			}
+
+			mRenderer->Render();
 		}
 	}
 }
@@ -39,6 +43,8 @@ VortexGame::Run()
 bool
 VortexGame::Init()
 {
+	utility::GetLogger().RegisterThread( std::this_thread::get_id(), "Main" );
+
 	// Initialize SDL
 	if( SDL_Init( SDL_INIT_VIDEO ) != 0 )
 	{
@@ -54,6 +60,16 @@ VortexGame::Init()
 		std::cerr << "Failed to create SDL window: " << SDL_GetError() << std::endl;
 		return false;
 	}
+
+	// Initialize Renderer
+	mRenderer = std::make_unique<graphics::Renderer>();
+	if( !mRenderer->Init( *mWindow ) )
+	{
+		std::cerr << "Failed to initialize Renderer" << std::endl;
+		return false;
+	}
+
+	// Initialize SceneController
 
 	return true;
 }
