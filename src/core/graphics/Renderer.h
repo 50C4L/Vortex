@@ -45,6 +45,7 @@ namespace graphics
 	private:
 		vk::UniqueInstance mInstance;
 		std::unique_ptr<VulkanDebugMessenger> mVulkanDebugMessenger;
+		vk::UniqueSurfaceKHR mSurface;
 	};
 }
 

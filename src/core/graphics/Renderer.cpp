@@ -239,6 +239,17 @@ namespace
 		}
 		return std::make_unique<VulkanDebugMessenger>( instance );
 	}
+
+	vk::UniqueSurfaceKHR
+	create_vulkan_surface( vk::Instance& instance, SDL_Window& window )
+	{
+		VkSurfaceKHR surface;
+		if( !SDL_Vulkan_CreateSurface( &window, instance, &surface ) )
+		{
+			throw std::runtime_error( "Failed to create Vulkan surface!" );
+		}
+		return vk::UniqueSurfaceKHR( surface, vk::ObjectDestroy<vk::Instance, vk::DispatchLoaderStatic>( instance ) );
+	}
 }
 
 Renderer::Renderer()
@@ -255,7 +266,7 @@ Renderer::Init( SDL_Window& window )
 	mInstance = create_vulkan_instance( window );
 	if( !mInstance )
 	{
-		std::cerr << "Failed to create Vulkan instance" << std::endl;
+		LOG_ERROR( "Failed to create Vulkan instance" );
 		return false;
 	}
 
@@ -263,6 +274,13 @@ Renderer::Init( SDL_Window& window )
 	if( !mVulkanDebugMessenger )
 	{
 		LOG( "Vulkan debug messenger is not available." );
+	}
+
+	mSurface = create_vulkan_surface( *mInstance, window );
+	if( !mSurface )
+	{
+		LOG_ERROR( "Failed to create Vulkan surface" );
+		return false;
 	}
 
 	return true;
