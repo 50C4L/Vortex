@@ -9,10 +9,12 @@ add_executable(Vortex
 	./src/main.cpp
 	./src/VortexGame.h
 	./src/VortexGame.cpp
+
 	./src/core/graphics/Renderer.h
 	./src/core/graphics/Renderer.cpp
 	./src/core/graphics/VulkanContext.h
 	./src/core/graphics/VulkanContext.cpp
+	
 	./src/core/utility/Pointers.h
 	./src/core/utility/Logger.h
 )
@@ -25,6 +27,7 @@ target_link_libraries(Vortex PRIVATE
 	SDL2.lib
 	SDL2main.lib
 	vulkan-1.lib
+	VulkanMemoryAllocator.lib
 )
 
 if (WIN32)

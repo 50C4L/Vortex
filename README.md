@@ -7,3 +7,4 @@ Thirdparty dependencies (put the headers and libs under ./thirdparty/include & .
  - SDL2 2.30
  - VulkanSDK 1.3
  - glm
+ - VulkanMemoryAllocator 3.0.1
