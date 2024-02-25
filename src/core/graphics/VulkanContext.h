@@ -33,7 +33,10 @@ namespace graphics
 		std::unique_ptr<VulkanDebugMessenger>	debug_messenger;
 		vk::UniqueSurfaceKHR					surface;
 		vk::PhysicalDevice						physical_device;
+		vk::UniqueDevice						logical_device;
 		QueueFamilyIndices						queue_indices;
+		vk::Queue								graphics_queue;
+		vk::Queue								present_queue;
 	};
 } // namespace graphics
 

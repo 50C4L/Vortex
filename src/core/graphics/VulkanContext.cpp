@@ -351,6 +351,55 @@ namespace
 
 		return phy_device;
 	}
+
+	vk::UniqueDevice create_logical_device( vk::PhysicalDevice& physical_device, VulkanContext::QueueFamilyIndices& queue_indices )
+	{
+		std::vector<vk::DeviceQueueCreateInfo> queue_create_infos;
+		std::set<uint32_t> unique_queue_families = { 
+			queue_indices.graphics_family.value(),
+			queue_indices.present_family.value()
+		};
+
+		constexpr uint32_t queue_count = 1;
+		constexpr float queue_priority = 1.0f;
+		for( uint32_t queue_fam : unique_queue_families )
+		{
+			queue_create_infos.push_back( vk::DeviceQueueCreateInfo(
+				vk::DeviceQueueCreateFlags(),
+				queue_indices.graphics_family.value(),
+				queue_count,
+				&queue_priority
+			) );
+		}
+		
+		vk::PhysicalDeviceFeatures device_features{};
+		device_features.samplerAnisotropy = VK_TRUE;
+		vk::DeviceCreateInfo device_create_info(
+			vk::DeviceCreateFlags(),
+			static_cast<uint32_t>( queue_create_infos.size() ),
+			queue_create_infos.data(),
+			// Device enabled layer count and enabled layer names are deprecated in newer version of Vulkan.
+			// They will be ignored.
+			ENABLE_VALIDATION_LAYERS ? static_cast<uint32_t>( VALIDATION_LAYERS.size() ) : 0,
+			ENABLE_VALIDATION_LAYERS ? VALIDATION_LAYERS.data() : nullptr,
+			//
+			static_cast<uint32_t>( DEVICE_EXTENSIONS.size() ), 
+			DEVICE_EXTENSIONS.data(),
+			&device_features
+		);
+
+		vk::UniqueDevice logical_device;
+		try
+		{
+			logical_device = physical_device.createDeviceUnique( device_create_info );
+		}
+		catch ( vk::SystemError /*err*/ )
+		{
+			throw std::runtime_error( "Failed to create logical device!" );
+		}
+
+		return logical_device;
+	}
 }
 
 
@@ -372,7 +421,13 @@ VulkanContext::VulkanContext( SDL_Window& window )
 
 	physical_device = create_physical_device( *instance, *surface, queue_indices );
 
-	// TODO: Create logical device and swap chain
+	logical_device = create_logical_device( physical_device, queue_indices );
+
+	// Retrieve the queue
+	graphics_queue = logical_device->getQueue( queue_indices.graphics_family.value(), 0 );
+	present_queue  = logical_device->getQueue( queue_indices.present_family.value(), 0 );
+
+	// TODO: Create swap chain
 
 }
 
