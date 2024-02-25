@@ -8,6 +8,7 @@ struct SDL_Window;
 namespace graphics
 {
 	class VulkanContext;
+	class VulkanSwapChain;
 
 	///
 	/// Renderer class
@@ -42,7 +43,8 @@ namespace graphics
 		void Render();
 
 	private:
-		std::unique_ptr<VulkanContext> mContext;
+		std::unique_ptr<VulkanContext>		mContext;
+		std::unique_ptr<VulkanSwapChain>	mSwapChain;
 	};
 }
 

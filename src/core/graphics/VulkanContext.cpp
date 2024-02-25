@@ -83,7 +83,7 @@ namespace
 		const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
 		void* user_data )
 	{
-		const std::string msg = "Vulkan Validation | " + std::string{ callback_data->pMessage };
+		const std::string msg = "Vulkan Debug | " + std::string{ callback_data->pMessage };
 		switch( message_severity )
 		{
 		case VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
@@ -426,9 +426,6 @@ VulkanContext::VulkanContext( SDL_Window& window )
 	// Retrieve the queue
 	graphics_queue = logical_device->getQueue( queue_indices.graphics_family.value(), 0 );
 	present_queue  = logical_device->getQueue( queue_indices.present_family.value(), 0 );
-
-	// TODO: Create swap chain
-
 }
 
 VulkanContext::~VulkanContext()
