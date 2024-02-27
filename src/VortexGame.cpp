@@ -9,7 +9,15 @@
 #include <utility/Logger.h>
 #include <graphics/Renderer.h>
 
+#include "SceneController.h"
+#include "MainScene.h"
+
 using namespace vortex;
+
+namespace
+{
+	const int64_t MAIN_SCENE_ID = 0;
+}
 
 VortexGame::VortexGame()
 {
@@ -34,6 +42,8 @@ VortexGame::Run()
 			{
 				quit = true;
 			}
+
+			mSceneController->Update();
 
 			mRenderer->Render();
 		}
@@ -70,6 +80,9 @@ VortexGame::Init()
 	}
 
 	// Initialize SceneController
+	mSceneController = std::make_unique<SceneController>();
+	mSceneController->AddScene( MAIN_SCENE_ID, std::make_unique<MainScene>() );
+	mSceneController->ChangeScene( MAIN_SCENE_ID );
 
 	return true;
 }

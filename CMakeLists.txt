@@ -6,7 +6,12 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_executable(Vortex 
+	./src/AbstractScene.h
 	./src/main.cpp
+	./src/MainScene.h
+	./src/MainScene.cpp
+	./src/SceneController.h
+	./src/SceneController.cpp
 	./src/VortexGame.h
 	./src/VortexGame.cpp
 

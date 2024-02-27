@@ -12,6 +12,8 @@ namespace graphics
 
 namespace vortex
 {
+	class SceneController;
+
 	class VortexGame
 	{
 	public:
@@ -25,6 +27,7 @@ namespace vortex
 	private:
 		std::shared_ptr<SDL_Window> mWindow;
 		std::unique_ptr<graphics::Renderer> mRenderer;
+		std::unique_ptr<SceneController> mSceneController;
 	};
 }
 

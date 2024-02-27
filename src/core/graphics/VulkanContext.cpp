@@ -137,7 +137,7 @@ namespace
 		}
 	}
 
-		///
+	///
 	/// Find the indices of required queue family from the given device
 	///
 	/// @param device
