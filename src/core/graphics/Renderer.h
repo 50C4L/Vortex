@@ -42,6 +42,9 @@ namespace graphics
 		///
 		void Render();
 
+		// TODO
+		// void AddToRenderQueue( const Renderable& renderable );
+
 	private:
 		std::unique_ptr<VulkanContext>		mContext;
 		std::unique_ptr<VulkanSwapChain>	mSwapChain;
