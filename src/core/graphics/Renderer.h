@@ -2,6 +2,7 @@
 #define _EAGE_RENDERER_H
 
 #include <memory>
+#include <vector>
 
 struct SDL_Window;
 
@@ -9,6 +10,8 @@ namespace graphics
 {
 	class VulkanContext;
 	class VulkanSwapChain;
+	class VulkanCommandContext;
+	class Renderable;
 
 	///
 	/// Renderer class
@@ -16,6 +19,12 @@ namespace graphics
 	class Renderer
 	{
 	public:
+		struct Frame
+		{
+			std::vector<std::shared_ptr<Renderable>> renderables;
+			std::unique_ptr<VulkanCommandContext> command_context;
+		};
+
 		///
 		/// Constructor
 		///
@@ -42,12 +51,21 @@ namespace graphics
 		///
 		void Render();
 
-		// TODO
-		// void AddToRenderQueue( const Renderable& renderable );
+		///
+		/// Add a renderable to the render queue
+		///
+		/// @param renderable
+		///  The renderable to add
+		///
+		void AddToRenderQueue( std::shared_ptr<Renderable> renderable );
 
 	private:
+		Frame& GetCurrentFrame();
+
 		std::unique_ptr<VulkanContext>		mContext;
 		std::unique_ptr<VulkanSwapChain>	mSwapChain;
+		std::vector<Frame>					mFrames;
+		int64_t								mFrameNumber;
 	};
 }
 

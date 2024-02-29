@@ -7,6 +7,7 @@
 #include <utility/Logger.h>
 #include <graphics/VulkanContext.h>
 #include <graphics/VulkanSwapChain.h>
+#include <graphics/VulkanCommandContext.h>
 
 using namespace graphics;
 using namespace utility;
@@ -18,7 +19,12 @@ namespace
 
 
 Renderer::Renderer()
+	: mFrameNumber( 0 )
 {
+	for( int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ )
+	{
+		mFrames.push_back( Frame{ {}, std::make_unique<VulkanCommandContext>() } );
+	}
 }
 
 Renderer::~Renderer()
@@ -51,12 +57,17 @@ Renderer::Render()
 
 	vulkan_main_buffer->end();
 	*/
+	mFrameNumber++;
 }
 
-/*TODO
 void
-Renderer::AddToRenderQueue( const Renderable& renderable )
+Renderer::AddToRenderQueue( std::shared_ptr<Renderable> renderable )
 {
-	GetCurrentFrame().mRenderables.push_back( renderable );
+	GetCurrentFrame().renderables.push_back( renderable );
 }
-*/
+
+Renderer::Frame&
+Renderer::GetCurrentFrame()
+{
+	return mFrames[ mFrameNumber % MAX_FRAMES_IN_FLIGHT ];
+}
