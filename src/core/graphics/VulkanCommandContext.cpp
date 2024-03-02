@@ -1,32 +1,80 @@
 #include "VulkanCommandContext.h"
 
+#include "VulkanContext.h"
+
 using namespace graphics;
 
-VulkanCommandContext::VulkanCommandContext()
+VulkanCommandContext::VulkanCommandContext( VulkanContext& context )
+	: mContext( context )
 {
+	vk::CommandPoolCreateInfo command_pool_info{};
+	command_pool_info.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+	command_pool_info.queueFamilyIndex = mContext.queue_indices.graphics_family.value();
+
+	try
+	{
+		mCmdPool = mContext.logical_device->createCommandPoolUnique( command_pool_info );
+	}
+	catch ( vk::SystemError /*err*/ )
+	{
+		throw std::runtime_error( "Failed to create command pool!" );
+	}
+
+	vk::CommandBufferAllocateInfo alloc_info{};
+	alloc_info.commandPool = mCmdPool.get();
+	alloc_info.level = vk::CommandBufferLevel::ePrimary;
+	alloc_info.commandBufferCount = 1;
+
+	try
+	{
+		mPrimaryBuffer = std::move( mContext.logical_device->allocateCommandBuffersUnique( alloc_info )[0] );
+	}
+	catch ( vk::SystemError /*error*/ )
+	{
+		throw std::runtime_error( "Failed to create main command buffers." );
+	}
+
+	// Create primary fence
+	vk::FenceCreateInfo fence_info{};
+	fence_info.flags = vk::FenceCreateFlagBits::eSignaled;
+	try
+	{
+		mFence = mContext.logical_device->createFenceUnique( fence_info );
+	}
+	catch (vk::SystemError /*error*/)
+	{
+		throw std::runtime_error( "Failed to create synchronization fences!" );
+	}
 }
 
 VulkanCommandContext::~VulkanCommandContext()
 {
 }
 
-bool
-VulkanCommandContext::Init()
-{
-	return true;
-}
-
 void
 VulkanCommandContext::Begin()
 {
+	vk::CommandBufferBeginInfo begin_info{};
+	mPrimaryBuffer->begin( begin_info );
 }
 
-void
+vk::CommandBuffer&
 VulkanCommandContext::End()
 {
+	mPrimaryBuffer->end();
+	return *mPrimaryBuffer;
 }
 
 void
-VulkanCommandContext::Submit()
+VulkanCommandContext::WaitForCompletion()
 {
+	mContext.logical_device->waitForFences( *mFence, VK_TRUE, UINT64_MAX );
+	mContext.logical_device->resetFences( *mFence );
+}
+
+void
+VulkanCommandContext::Reset()
+{
+	mContext.logical_device->resetFences( *mFence );
+	mContext.logical_device->resetCommandPool( *mCmdPool, vk::CommandPoolResetFlagBits::eReleaseResources );
 }

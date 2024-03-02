@@ -21,10 +21,6 @@ namespace
 Renderer::Renderer()
 	: mFrameNumber( 0 )
 {
-	for( int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ )
-	{
-		mFrames.push_back( Frame{ {}, std::make_unique<VulkanCommandContext>() } );
-	}
 }
 
 Renderer::~Renderer()
@@ -39,6 +35,12 @@ Renderer::Init( SDL_Window& window )
 
 	LOG( "Initializing vulkan swap chain ..." );
 	mSwapChain = std::make_unique<VulkanSwapChain>( *mContext, 800, 600 );
+
+	LOG( "Initializing vulkan command buffers ..." );
+	for( int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ )
+	{
+		mFrames.push_back( Frame{ {}, std::make_unique<VulkanCommandContext>( *mContext ) } );
+	}
 
 	return true;
 }
@@ -63,6 +65,11 @@ Renderer::Render()
 void
 Renderer::AddToRenderQueue( std::shared_ptr<Renderable> renderable )
 {
+	if( mFrames.empty() )
+	{
+		LOG_ERROR( "No frames available, Init() must be called first." );
+		return;
+	}
 	GetCurrentFrame().renderables.push_back( renderable );
 }
 

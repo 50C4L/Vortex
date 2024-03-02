@@ -426,6 +426,18 @@ VulkanContext::VulkanContext( SDL_Window& window )
 	// Retrieve the queue
 	graphics_queue = logical_device->getQueue( queue_indices.graphics_family.value(), 0 );
 	present_queue  = logical_device->getQueue( queue_indices.present_family.value(), 0 );
+
+	vk::SemaphoreCreateInfo semaphore_info{};
+
+	try
+	{
+		image_available_semaphore = logical_device->createSemaphoreUnique( semaphore_info );
+		render_finsihed_semaphore = logical_device->createSemaphoreUnique( semaphore_info );
+	}
+	catch( vk::SystemError /*error*/ )
+	{
+		throw std::runtime_error( "Failed to create synchronization semaphores!" );
+	}
 }
 
 VulkanContext::~VulkanContext()

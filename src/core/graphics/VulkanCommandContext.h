@@ -1,8 +1,12 @@
 #ifndef _VULKAN_COMMAND_CONTEXT_H
 #define _VULKAN_COMMAND_CONTEXT_H
 
+#include <vulkan/vulkan.hpp>
+
 namespace graphics
 {
+	class VulkanContext;
+
 	///
 	/// VulkanCommandContext class
 	///
@@ -12,20 +16,12 @@ namespace graphics
 		///
 		/// Constructor
 		///
-		VulkanCommandContext();
+		VulkanCommandContext( VulkanContext& context );
 
 		///
 		/// Destructor
 		///
 		virtual ~VulkanCommandContext();
-
-		///
-		/// Initialize the command context
-		///
-		/// @return
-		///  true if successful, false otherwise
-		///
-		bool Init();
 
 		///
 		/// Begin recording commands
@@ -35,12 +31,24 @@ namespace graphics
 		///
 		/// End recording commands
 		///
-		void End();
+		vk::CommandBuffer& End();
 
 		///
-		/// Submit the command buffer
+		/// Wait for the execution on the primary buffer to be completed.
+		/// This function will block the caller thread until the primary buffer is available.
+		/// 
+		void WaitForCompletion();
+
 		///
-		void Submit();
+		/// Reset the command context
+		///
+		void Reset();
+
+	private:
+		vk::UniqueCommandPool   mCmdPool;		//< The guy that owns everything
+		vk::UniqueCommandBuffer mPrimaryBuffer; //< The primary command queue
+		vk::UniqueFence         mFence;			//< Useful for synchronization
+		VulkanContext& 			mContext;		//< The vulkan context
 	};
 } // namespace graphics
 

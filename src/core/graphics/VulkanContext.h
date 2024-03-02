@@ -28,7 +28,7 @@ namespace graphics
 				       present_family.has_value();
 			}
 		};
-
+		
 		vk::UniqueInstance						instance;
 		std::unique_ptr<VulkanDebugMessenger>	debug_messenger;
 		vk::UniqueSurfaceKHR					surface;
@@ -37,6 +37,8 @@ namespace graphics
 		QueueFamilyIndices						queue_indices;
 		vk::Queue								graphics_queue;
 		vk::Queue								present_queue;
+		vk::UniqueSemaphore						image_available_semaphore;
+		vk::UniqueSemaphore						render_finsihed_semaphore;
 	};
 } // namespace graphics
 
