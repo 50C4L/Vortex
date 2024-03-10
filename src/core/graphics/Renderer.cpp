@@ -100,6 +100,8 @@ Renderer::Render()
 	auto& cmd = frame.command_context->GetPrimaryBuffer();
 	auto& image = mSwapChain->GetImages()[ frame.index ];
 
+	frame.command_context->WaitForCompletion();
+	frame.command_context->Reset();
 	frame.command_context->Begin();
 
 	transition_image( cmd, image, vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral );
