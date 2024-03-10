@@ -8,6 +8,7 @@
 #include <graphics/VulkanContext.h>
 #include <graphics/VulkanSwapChain.h>
 #include <graphics/VulkanCommandContext.h>
+#include <graphics/VMAWrapper.h>
 
 using namespace graphics;
 using namespace utility;
@@ -79,6 +80,9 @@ Renderer::Init( SDL_Window& window )
 		LOG_ERROR( "Swap chain does not have enough images." );
 		return false;
 	}
+
+	LOG( "Initializing VMA ..." );
+	mVMA = std::make_unique<VMAWrapper>( *mContext );
 
 	LOG( "Initializing vulkan command buffers ..." );
 	for( uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ )

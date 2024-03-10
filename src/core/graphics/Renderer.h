@@ -13,6 +13,8 @@ namespace graphics
 	class VulkanCommandContext;
 	class Renderable;
 
+	struct VMAWrapper;
+
 	///
 	/// Renderer class
 	///
@@ -71,6 +73,8 @@ namespace graphics
 		std::unique_ptr<VulkanSwapChain>	mSwapChain;
 		std::vector<Frame>					mFrames;
 		int64_t								mFrameNumber;
+
+		std::unique_ptr<VMAWrapper> mVMA;
 	};
 }
 

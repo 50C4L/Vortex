@@ -19,6 +19,8 @@ add_executable(Vortex
 	./src/core/graphics/Renderer.cpp
 	./src/core/graphics/Renderable.h
 	./src/core/graphics/Renderable.cpp
+	./src/core/graphics/VMAWrapper.h
+	./src/core/graphics/VMAWrapper.cpp
 	./src/core/graphics/VulkanCommandContext.h
 	./src/core/graphics/VulkanCommandContext.cpp
 	./src/core/graphics/VulkanSwapchain.h
@@ -31,8 +33,16 @@ add_executable(Vortex
 )
 
 target_include_directories(Vortex PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/core)
-target_include_directories(Vortex PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/include)
-target_link_directories(Vortex PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib)
+
+# thirdparty
+target_include_directories(Vortex PRIVATE 
+	debug "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/debug/include"
+	optimized "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/release/include"
+)
+target_link_directories(Vortex PRIVATE 
+	debug ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/debug/lib
+	optimized ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/release/lib
+)
 target_link_libraries(Vortex PRIVATE
 	SDL2-static.lib
 	SDL2.lib
