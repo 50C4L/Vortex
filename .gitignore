@@ -1,4 +1,3 @@
 ﻿build
 .vscode
-thirdparty/include
-thirdparty/lib
+thirdparty
