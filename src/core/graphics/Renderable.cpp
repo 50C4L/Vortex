@@ -1,6 +1,6 @@
 #include "Renderable.h"
 
-using namespace vortex;
+using namespace graphics;
 
 Renderable::Renderable()
 {

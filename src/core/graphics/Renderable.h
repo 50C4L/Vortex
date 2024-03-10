@@ -1,7 +1,7 @@
 #ifndef _RENDERABLE_H
 #define _RENDERABLE_H
 
-namespace vortex
+namespace graphics
 {
 	///
 	/// Renderable class
@@ -19,6 +19,6 @@ namespace vortex
 		///
 		virtual ~Renderable();
 	};
-} // namespace vortex
+} // namespace graphics
 
 #endif // _RENDERABLE_H

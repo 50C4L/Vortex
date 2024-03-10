@@ -372,8 +372,19 @@ namespace
 			) );
 		}
 		
-		vk::PhysicalDeviceFeatures device_features{};
-		device_features.samplerAnisotropy = VK_TRUE;
+		// Check required features
+		vk::PhysicalDeviceVulkan13Features features_13{};
+		vk::PhysicalDeviceFeatures2 physical_feature{};
+		physical_feature.pNext = &features_13;
+
+		physical_device.getFeatures2( &physical_feature );
+
+		if( features_13.dynamicRendering == VK_FALSE ||
+			features_13.synchronization2 == VK_FALSE )
+		{
+			LOG_ERROR( "Vulkan 1.3 features are not supported!" );
+		}
+
 		vk::DeviceCreateInfo device_create_info(
 			vk::DeviceCreateFlags(),
 			static_cast<uint32_t>( queue_create_infos.size() ),
@@ -385,7 +396,8 @@ namespace
 			//
 			static_cast<uint32_t>( DEVICE_EXTENSIONS.size() ), 
 			DEVICE_EXTENSIONS.data(),
-			&device_features
+			{},
+			&physical_feature
 		);
 
 		vk::UniqueDevice logical_device;
@@ -442,4 +454,24 @@ VulkanContext::VulkanContext( SDL_Window& window )
 
 VulkanContext::~VulkanContext()
 {
+}
+
+vk::SemaphoreSubmitInfo
+VulkanContext::GetSemaphoreSubmitInfo( vk::PipelineStageFlagBits2 stage_mask, SemaphoreType type ) const
+{
+	vk::SemaphoreSubmitInfo semaphore_submit_info{};
+
+	if( type == SemaphoreType::WAIT )
+	{
+		semaphore_submit_info.semaphore = image_available_semaphore.get();
+	}
+	else
+	{
+		semaphore_submit_info.semaphore = render_finsihed_semaphore.get();
+	}
+	semaphore_submit_info.stageMask = stage_mask;
+	semaphore_submit_info.deviceIndex = 0;
+	semaphore_submit_info.value = 1;
+
+	return semaphore_submit_info;
 }

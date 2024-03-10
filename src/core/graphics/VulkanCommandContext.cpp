@@ -78,3 +78,25 @@ VulkanCommandContext::Reset()
 	mContext.logical_device->resetFences( *mFence );
 	mContext.logical_device->resetCommandPool( *mCmdPool, vk::CommandPoolResetFlagBits::eReleaseResources );
 }
+
+vk::CommandBuffer&
+VulkanCommandContext::GetPrimaryBuffer()
+{
+	return *mPrimaryBuffer;
+}
+
+vk::CommandBufferSubmitInfo
+VulkanCommandContext::GetSubmitInfo() const
+{
+	vk::CommandBufferSubmitInfo submit_info{};
+	submit_info.commandBuffer = *mPrimaryBuffer;
+	submit_info.deviceMask = 0;
+
+	return submit_info;
+}
+
+vk::Fence&
+VulkanCommandContext::GetFence()
+{
+	return *mFence;
+}

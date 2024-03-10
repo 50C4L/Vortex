@@ -44,6 +44,18 @@ namespace graphics
 		///
 		void Reset();
 
+		///
+		/// Get the primary command buffer
+		///
+		vk::CommandBuffer& GetPrimaryBuffer();
+
+		///
+		/// Get the primary command buffer
+		///
+		vk::CommandBufferSubmitInfo GetSubmitInfo() const;
+
+		vk::Fence& GetFence();
+
 	private:
 		vk::UniqueCommandPool   mCmdPool;		//< The guy that owns everything
 		vk::UniqueCommandBuffer mPrimaryBuffer; //< The primary command queue

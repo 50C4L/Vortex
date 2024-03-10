@@ -42,11 +42,11 @@ VortexGame::Run()
 			{
 				quit = true;
 			}
-
-			mSceneController->Update();
-
-			mRenderer->Render();
 		}
+
+		mSceneController->Update();
+
+		mRenderer->Render();
 	}
 }
 

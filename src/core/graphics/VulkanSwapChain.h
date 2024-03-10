@@ -23,8 +23,9 @@ namespace graphics
 		vk::Format GetImageFormat() { return mFormat; }
 		vk::Format GetDepthFormat() { return mDepthFormat; }
 		vk::Extent2D GetExtent() { return mExtent; }
-		std::vector<vk::UniqueImageView>& GetImageViews() { return mImageViews; }
+		std::vector<vk::Image>& GetImages() { return mImages; }
 		const vk::ImageView& GetDepthImageView() const { return mDepthImageView.get(); }
+		vk::SwapchainKHR& GetSwapChain() { return mSwapChain.get(); }
 
 	private:
 		// void CreateDepthImages( VmaAllocator allocator );

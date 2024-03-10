@@ -137,7 +137,7 @@ VulkanSwapChain::VulkanSwapChain( VulkanContext& context, uint32_t width, uint32
 	create_info.setImageExtent( mExtent );
 	constexpr uint32_t image_array_layers = 1;
 	create_info.setImageArrayLayers( image_array_layers );
-	create_info.setImageUsage( vk::ImageUsageFlagBits::eColorAttachment );
+	create_info.setImageUsage( vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eColorAttachment );
 	create_info.presentMode = present_mode;
 	create_info.imageSharingMode = queue_fam_indices.size() == 1 ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent;
 	create_info.queueFamilyIndexCount = static_cast<uint32_t>( queue_fam_indices.size() );
