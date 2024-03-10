@@ -55,11 +55,25 @@ namespace graphics
 		vk::CommandBufferSubmitInfo GetSubmitInfo() const;
 
 		vk::Fence& GetFence();
+		///
+		/// Get the queue family indices
+		///
+		/// @param stage_mask
+		///  The stage mask to use
+		///
+		vk::SemaphoreSubmitInfo GetSwapchainSemaphoreSubmitInfo( vk::PipelineStageFlagBits2 stage_mask ) const;
+		vk::SemaphoreSubmitInfo GetPresentSemaphoreSubmitInfo( vk::PipelineStageFlagBits2 stage_mask ) const;
+
+		vk::Semaphore& GetSwapchainSemaphore();
+		vk::Semaphore& GetPresentSemaphore();
 
 	private:
 		vk::UniqueCommandPool   mCmdPool;		//< The guy that owns everything
 		vk::UniqueCommandBuffer mPrimaryBuffer; //< The primary command queue
 		vk::UniqueFence         mFence;			//< Useful for synchronization
+		vk::UniqueSemaphore		mSwapchainSemaphore;
+		vk::UniqueSemaphore		mPresentSemaphore;
+
 		VulkanContext& 			mContext;		//< The vulkan context
 	};
 } // namespace graphics

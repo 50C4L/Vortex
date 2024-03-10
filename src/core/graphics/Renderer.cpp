@@ -87,7 +87,7 @@ Renderer::Init( SDL_Window& window )
 	LOG( "Initializing vulkan command buffers ..." );
 	for( uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ )
 	{
-		mFrames.push_back( Frame{ {}, std::make_unique<VulkanCommandContext>( *mContext ), i } );
+		mFrames.push_back( Frame{ {}, std::make_unique<VulkanCommandContext>( *mContext ) } );
 	}
 
 	return true;
@@ -98,7 +98,8 @@ Renderer::Render()
 {
 	auto& frame = GetCurrentFrame();
 	auto& cmd = frame.command_context->GetPrimaryBuffer();
-	auto& image = mSwapChain->GetImages()[ frame.index ];
+	uint32_t next_image_index = mSwapChain->GetNextImage( frame.command_context->GetSwapchainSemaphore() );
+	auto& image = mSwapChain->GetImages()[ next_image_index ];
 
 	frame.command_context->WaitForCompletion();
 	frame.command_context->Reset();
@@ -132,7 +133,7 @@ Renderer::Render()
 
 	Submit();
 
-	Present();
+	Present( next_image_index );
 
 	mFrameNumber++;
 }
@@ -161,25 +162,24 @@ Renderer::Submit()
 
 	auto submit_info = create_submit_info( 
 		frame.command_context->GetSubmitInfo(), 
-		mContext->GetSemaphoreSubmitInfo( vk::PipelineStageFlagBits2::eColorAttachmentOutput, VulkanContext::SemaphoreType::WAIT ),
-		mContext->GetSemaphoreSubmitInfo( vk::PipelineStageFlagBits2::eColorAttachmentOutput, VulkanContext::SemaphoreType::SIGNAL )
+		frame.command_context->GetSwapchainSemaphoreSubmitInfo( vk::PipelineStageFlagBits2::eColorAttachmentOutput ),
+		frame.command_context->GetPresentSemaphoreSubmitInfo( vk::PipelineStageFlagBits2::eColorAttachmentOutput )
 	);
 
 	mContext->graphics_queue.submit2( submit_info, frame.command_context->GetFence() );
 }
 
 void
-Renderer::Present()
+Renderer::Present( uint32_t image_index )
 {
 	auto& frame = GetCurrentFrame();
-	auto& image = mSwapChain->GetImages()[ frame.index ];
 
 	vk::PresentInfoKHR present_info{};
 	present_info.waitSemaphoreCount = 1;
-	present_info.pWaitSemaphores    = &mContext->image_available_semaphore.get();
+	present_info.pWaitSemaphores    = &frame.command_context->GetPresentSemaphore();
 	present_info.swapchainCount     = 1;
 	present_info.pSwapchains        = &mSwapChain->GetSwapChain();
-	present_info.pImageIndices      = &frame.index;
+	present_info.pImageIndices      = &image_index;
 
 	mContext->present_queue.presentKHR( present_info );
 }

@@ -45,6 +45,17 @@ VulkanCommandContext::VulkanCommandContext( VulkanContext& context )
 	{
 		throw std::runtime_error( "Failed to create synchronization fences!" );
 	}
+
+	vk::SemaphoreCreateInfo semaphore_info{};
+	try
+	{
+		mSwapchainSemaphore = mContext.logical_device->createSemaphoreUnique( semaphore_info );
+		mPresentSemaphore   = mContext.logical_device->createSemaphoreUnique( semaphore_info );
+	}
+	catch( vk::SystemError /*error*/ )
+	{
+		throw std::runtime_error( "Failed to create synchronization semaphores!" );
+	}
 }
 
 VulkanCommandContext::~VulkanCommandContext()
@@ -99,4 +110,42 @@ vk::Fence&
 VulkanCommandContext::GetFence()
 {
 	return *mFence;
+}
+
+vk::SemaphoreSubmitInfo
+VulkanCommandContext::GetSwapchainSemaphoreSubmitInfo( vk::PipelineStageFlagBits2 stage_mask ) const
+{
+	vk::SemaphoreSubmitInfo semaphore_submit_info{};
+
+	semaphore_submit_info.semaphore = mSwapchainSemaphore.get();
+	semaphore_submit_info.stageMask = stage_mask;
+	semaphore_submit_info.deviceIndex = 0;
+	semaphore_submit_info.value = 1;
+
+	return semaphore_submit_info;
+}
+
+vk::SemaphoreSubmitInfo
+VulkanCommandContext::GetPresentSemaphoreSubmitInfo( vk::PipelineStageFlagBits2 stage_mask ) const
+{
+	vk::SemaphoreSubmitInfo semaphore_submit_info{};
+
+	semaphore_submit_info.semaphore = mPresentSemaphore.get();
+	semaphore_submit_info.stageMask = stage_mask;
+	semaphore_submit_info.deviceIndex = 0;
+	semaphore_submit_info.value = 1;
+
+	return semaphore_submit_info;
+}
+
+vk::Semaphore&
+VulkanCommandContext::GetSwapchainSemaphore()
+{
+	return mSwapchainSemaphore.get();
+}
+
+vk::Semaphore&
+VulkanCommandContext::GetPresentSemaphore()
+{
+	return mPresentSemaphore.get();
 }

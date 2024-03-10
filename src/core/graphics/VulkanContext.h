@@ -28,22 +28,6 @@ namespace graphics
 				       present_family.has_value();
 			}
 		};
-
-		enum SemaphoreType
-		{
-			WAIT,
-			SIGNAL
-		};
-		///
-		/// Get the queue family indices
-		///
-		/// @param stage_mask
-		///  The stage mask to use
-		///
-		/// @param type
-		///  The semaphore type
-		///
-		vk::SemaphoreSubmitInfo GetSemaphoreSubmitInfo( vk::PipelineStageFlagBits2 stage_mask, SemaphoreType type ) const;
 		
 		vk::UniqueInstance						instance;
 		std::unique_ptr<VulkanDebugMessenger>	debug_messenger;
@@ -53,8 +37,6 @@ namespace graphics
 		QueueFamilyIndices						queue_indices;
 		vk::Queue								graphics_queue;
 		vk::Queue								present_queue;
-		vk::UniqueSemaphore						image_available_semaphore;
-		vk::UniqueSemaphore						render_finsihed_semaphore;
 	};
 } // namespace graphics
 

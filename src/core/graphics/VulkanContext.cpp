@@ -438,40 +438,8 @@ VulkanContext::VulkanContext( SDL_Window& window )
 	// Retrieve the queue
 	graphics_queue = logical_device->getQueue( queue_indices.graphics_family.value(), 0 );
 	present_queue  = logical_device->getQueue( queue_indices.present_family.value(), 0 );
-
-	vk::SemaphoreCreateInfo semaphore_info{};
-
-	try
-	{
-		image_available_semaphore = logical_device->createSemaphoreUnique( semaphore_info );
-		render_finsihed_semaphore = logical_device->createSemaphoreUnique( semaphore_info );
-	}
-	catch( vk::SystemError /*error*/ )
-	{
-		throw std::runtime_error( "Failed to create synchronization semaphores!" );
-	}
 }
 
 VulkanContext::~VulkanContext()
 {
-}
-
-vk::SemaphoreSubmitInfo
-VulkanContext::GetSemaphoreSubmitInfo( vk::PipelineStageFlagBits2 stage_mask, SemaphoreType type ) const
-{
-	vk::SemaphoreSubmitInfo semaphore_submit_info{};
-
-	if( type == SemaphoreType::WAIT )
-	{
-		semaphore_submit_info.semaphore = image_available_semaphore.get();
-	}
-	else
-	{
-		semaphore_submit_info.semaphore = render_finsihed_semaphore.get();
-	}
-	semaphore_submit_info.stageMask = stage_mask;
-	semaphore_submit_info.deviceIndex = 0;
-	semaphore_submit_info.value = 1;
-
-	return semaphore_submit_info;
 }

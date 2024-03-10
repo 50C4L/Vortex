@@ -25,7 +25,6 @@ namespace graphics
 		{
 			std::vector<std::shared_ptr<Renderable>> renderables;
 			std::unique_ptr<VulkanCommandContext> command_context;
-			uint32_t index = 0;
 		};
 
 		///
@@ -67,7 +66,7 @@ namespace graphics
 		
 		void Submit();
 
-		void Present();
+		void Present( uint32_t image_index );
 
 		std::unique_ptr<VulkanContext>		mContext;
 		std::unique_ptr<VulkanSwapChain>	mSwapChain;
