@@ -14,6 +14,7 @@ namespace graphics
 	class Renderable;
 
 	struct VMAWrapper;
+	struct AllocatedImage;
 
 	///
 	/// Renderer class
@@ -74,6 +75,7 @@ namespace graphics
 		int64_t								mFrameNumber;
 
 		std::unique_ptr<VMAWrapper> mVMA;
+		std::unique_ptr<AllocatedImage> mRenderImage;
 	};
 }
 

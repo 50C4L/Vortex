@@ -13,11 +13,11 @@ VMAWrapper::VMAWrapper( VulkanContext& context )
 	allocator_info.device         = context.logical_device.get();
 	allocator_info.instance       = context.instance.get();
 
-	VmaAllocator vma_allocator;
-	vmaCreateAllocator( &allocator_info, &vma_allocator );
+	VmaAllocator* vma_allocator = new VmaAllocator();
+	vmaCreateAllocator( &allocator_info, vma_allocator );
 
 	allocator = std::unique_ptr<VmaAllocator, std::function<void(VmaAllocator*)>>(
-		&vma_allocator,
+		std::move( vma_allocator ),
 		[]( VmaAllocator* allocator ) { vmaDestroyAllocator( *allocator ); }
 	);
 }

@@ -15,6 +15,7 @@ add_executable(Vortex
 	./src/VortexGame.h
 	./src/VortexGame.cpp
 
+	./src/core/graphics/ManagedVulkanResources.h
 	./src/core/graphics/Renderer.h
 	./src/core/graphics/Renderer.cpp
 	./src/core/graphics/Renderable.h

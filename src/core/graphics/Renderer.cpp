@@ -2,9 +2,11 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_vulkan.h>
+#include <SDL2/SDL_system.h>
 #include <iostream>
 
 #include <utility/Logger.h>
+#include <graphics/ManagedVulkanResources.h>
 #include <graphics/VulkanContext.h>
 #include <graphics/VulkanSwapChain.h>
 #include <graphics/VulkanCommandContext.h>
@@ -55,6 +57,32 @@ namespace
 
 		return submit_info;
 	}
+
+	vk::ImageCreateInfo create_image_info( vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usage )
+	{
+		vk::ImageCreateInfo image_info{};
+		image_info.imageType = vk::ImageType::e2D;
+		image_info.extent = extent;
+		image_info.mipLevels = 1;
+		image_info.arrayLayers = 1;
+		image_info.format = format;
+		image_info.tiling = vk::ImageTiling::eOptimal;
+		image_info.usage = usage;
+		image_info.samples = vk::SampleCountFlagBits::e1;
+
+		return image_info;
+	}
+
+	vk::ImageViewCreateInfo create_image_view_info( vk::Image image, vk::Format format, vk::ImageAspectFlags aspect_flags )
+	{
+		vk::ImageViewCreateInfo image_view_info{};
+		image_view_info.image = image;
+		image_view_info.viewType = vk::ImageViewType::e2D;
+		image_view_info.format = format;
+		image_view_info.subresourceRange = vk::ImageSubresourceRange{ aspect_flags, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
+
+		return image_view_info;
+	}
 }
 
 
@@ -73,8 +101,11 @@ Renderer::Init( SDL_Window& window )
 	LOG( "Initializing vulkan context ..." );
 	mContext = std::make_unique<VulkanContext>( window );
 
+	int width, height = 0;
+	SDL_Vulkan_GetDrawableSize( &window, &width, &height );
+
 	LOG( "Initializing vulkan swap chain ..." );
-	mSwapChain = std::make_unique<VulkanSwapChain>( *mContext, 800, 600 );
+	mSwapChain = std::make_unique<VulkanSwapChain>( *mContext, static_cast<uint32_t>( width ), static_cast<uint32_t>( height ) );
 	if( mSwapChain->GetImages().size() <MAX_FRAMES_IN_FLIGHT )
 	{
 		LOG_ERROR( "Swap chain does not have enough images." );
@@ -89,6 +120,34 @@ Renderer::Init( SDL_Window& window )
 	{
 		mFrames.push_back( Frame{ {}, std::make_unique<VulkanCommandContext>( *mContext ) } );
 	}
+
+	LOG( "Creating render image ..." );
+	mRenderImage = std::make_unique<AllocatedImage>();
+	vk::Extent3D extent{ static_cast<uint32_t>( width ), static_cast<uint32_t>( height ), 1 };
+	mRenderImage->format = vk::Format::eR16G16B16A16Sfloat;
+	mRenderImage->extent = extent;
+
+	vk::ImageUsageFlags image_usage_flags;
+	image_usage_flags |= vk::ImageUsageFlagBits::eTransferSrc;
+	image_usage_flags |= vk::ImageUsageFlagBits::eTransferDst;
+	image_usage_flags |= vk::ImageUsageFlagBits::eStorage;
+	image_usage_flags |= vk::ImageUsageFlagBits::eColorAttachment;
+
+	auto render_image_create_info = create_image_info( extent, mRenderImage->format, image_usage_flags );
+	VmaAllocationCreateInfo image_alloc_info{};
+	image_alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+	image_alloc_info.requiredFlags = VkMemoryPropertyFlags( VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+
+	// allocate and create the image
+	vmaCreateImage( 
+		*mVMA->allocator.get(), 
+		reinterpret_cast<VkImageCreateInfo*>( &render_image_create_info ), 
+		&image_alloc_info, 
+		reinterpret_cast<VkImage*>( &mRenderImage->image.get() ), &mRenderImage->allocation, nullptr );
+
+	// create the image view
+	auto image_view_info = create_image_view_info( mRenderImage->image.get(), mRenderImage->format, vk::ImageAspectFlagBits::eColor );
+	mRenderImage->image_view = mContext->logical_device->createImageViewUnique( image_view_info );
 
 	return true;
 }
