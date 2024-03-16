@@ -65,6 +65,8 @@ namespace graphics
 		///
 		void AddToRenderQueue( std::shared_ptr<Renderable> renderable );
 
+		void WaitForIdle();
+
 	private:
 		Frame& GetCurrentFrame();
 		
@@ -73,6 +75,8 @@ namespace graphics
 		void Present( uint32_t image_index );
 
 		void InitDescriptors();
+		void InitPipelines();
+		void InitBackgroundPipeline();
 
 		std::unique_ptr<VulkanContext>		mContext;
 		std::unique_ptr<VulkanSwapChain>	mSwapChain;
@@ -85,6 +89,9 @@ namespace graphics
 		std::unique_ptr<DescriptorAllocator> 	mDescriptorAllocator;
 		vk::UniqueDescriptorSet 				mRenderImageDescriptorSet;
 		vk::UniqueDescriptorSetLayout			mRenderImageDescriptorSetLayout;
+
+		vk::UniquePipeline 			mBackgroundPipeline;
+		vk::UniquePipelineLayout 	mBackgroundPipelineLayout;
 	};
 }
 

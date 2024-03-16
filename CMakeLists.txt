@@ -29,6 +29,8 @@ add_executable(Vortex
 	./src/core/graphics/VulkanDescriptor.cpp
 	./src/core/graphics/VulkanCommandContext.h
 	./src/core/graphics/VulkanCommandContext.cpp
+	./src/core/graphics/VulkanShader.h
+	./src/core/graphics/VulkanShader.cpp
 	./src/core/graphics/VulkanSwapchain.h
 	./src/core/graphics/VulkanSwapchain.cpp
 	./src/core/graphics/VulkanContext.h

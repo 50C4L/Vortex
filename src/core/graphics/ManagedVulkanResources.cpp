@@ -70,3 +70,8 @@ vk::ImageView& ManagedImage::GetImageView()
 {
 	return mImageView.get();
 }
+
+vk::Extent2D ManagedImage::GetExtent2D() const
+{
+	return { mExtent.width, mExtent.height };
+}

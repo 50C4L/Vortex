@@ -48,6 +48,7 @@ VortexGame::Run()
 
 		mRenderer->Render();
 	}
+	mRenderer->WaitForIdle();
 }
 
 bool

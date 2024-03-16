@@ -10,6 +10,7 @@
 #include <graphics/ManagedVulkanResources.h>
 #include <graphics/VulkanContext.h>
 #include <graphics/VulkanSwapChain.h>
+#include <graphics/VulkanShader.h>
 #include <graphics/VulkanCommandContext.h>
 #include <graphics/VulkanDescriptor.h>
 #include <graphics/VMAWrapper.h>
@@ -89,6 +90,9 @@ Renderer::Init( SDL_Window& window )
 	// Init descriptor set layout
 	InitDescriptors();
 
+	// Init pipelines
+	InitPipelines();
+
 	return true;
 }
 
@@ -98,23 +102,32 @@ Renderer::Render()
 	auto& frame = GetCurrentFrame();
 	auto& cmd = frame.command_context->GetPrimaryBuffer();
 	uint32_t next_image_index = mSwapChain->GetNextImage( frame.command_context->GetSwapchainSemaphore() );
-	auto& image = mSwapChain->GetImages()[ next_image_index ];
 
 	frame.command_context->WaitForCompletion();
 	frame.command_context->Reset();
 	frame.command_context->Begin();
 
-	transition_image( cmd, image, vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral );
+	// Transition the main render image to a general layout
+	transition_image( cmd, mRenderImage->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral );
 
-	vk::ClearColorValue clear_color;
-	float flash = abs( sin( mFrameNumber / 100.0f ) );
-	clear_color.setFloat32( { 0.0f, 0.0f, flash, 1.0f } );
+	// Actual rendering here
 
-	vk::ImageSubresourceRange clear_range{ vk::ImageAspectFlagBits::eColor, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
+	auto render_extent = mRenderImage->GetExtent2D();
+	cmd.bindPipeline( vk::PipelineBindPoint::eCompute, mBackgroundPipeline.get() );
+	cmd.bindDescriptorSets( vk::PipelineBindPoint::eCompute, mBackgroundPipelineLayout.get(), 0, 1, &mRenderImageDescriptorSet.get(), 0, nullptr );
+	cmd.dispatch( std::ceil( render_extent.width / 16.0 ), std::ceil( render_extent.height / 16.0 ), 1 );
 
-	cmd.clearColorImage( image, vk::ImageLayout::eGeneral, clear_color, clear_range );
+	// End of rendering
 
-	transition_image( cmd, image, vk::ImageLayout::eGeneral, vk::ImageLayout::ePresentSrcKHR );
+	// Transition the main render image and the current swapchain image to the appropriate layout, so later we can copy the render image to the swapchain image
+	transition_image( cmd, mRenderImage->GetImage(), vk::ImageLayout::eGeneral, vk::ImageLayout::eTransferSrcOptimal );
+	transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal );
+
+	// Copy the render image to the swapchain image
+	copy_image_to_image( cmd, mRenderImage->GetImage(), mSwapChain->GetImages()[ next_image_index ], render_extent, mSwapChain->GetExtent() );
+
+	// Transition the swapchain image back to the present layout
+	transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::ePresentSrcKHR );
 
 	frame.command_context->End();
 
@@ -146,6 +159,12 @@ Renderer::AddToRenderQueue( std::shared_ptr<Renderable> renderable )
 		return;
 	}
 	GetCurrentFrame().renderables.push_back( renderable );
+}
+
+void
+Renderer::WaitForIdle()
+{
+	mContext->logical_device->waitIdle();
 }
 
 Renderer::Frame&
@@ -213,4 +232,38 @@ Renderer::InitDescriptors()
 	write.pImageInfo = &image_info;
 
 	mContext->logical_device->updateDescriptorSets( write, nullptr );
+}
+
+void
+Renderer::InitPipelines()
+{
+	InitBackgroundPipeline();
+}
+
+void
+Renderer::InitBackgroundPipeline()
+{
+	vk::PipelineLayoutCreateInfo compute_layout_info{};
+	compute_layout_info.pSetLayouts = &mRenderImageDescriptorSetLayout.get();
+	compute_layout_info.setLayoutCount = 1;
+
+	mBackgroundPipelineLayout = mContext->logical_device->createPipelineLayoutUnique( compute_layout_info );
+
+	auto compute_shader = create_shader_module_from_file( *mContext->logical_device, "./src/core/graphics/shaders/compiled/gradient.comp.spv" );
+	if( !compute_shader.has_value() )
+	{
+		LOG_ERROR( "Failed to create shader module." );
+		return;
+	}
+
+	vk::PipelineShaderStageCreateInfo compute_stage_info{};
+	compute_stage_info.stage = vk::ShaderStageFlagBits::eCompute;
+	compute_stage_info.module = compute_shader.value().get();
+	compute_stage_info.pName = "main";
+
+	vk::ComputePipelineCreateInfo compute_pipeline_info{};
+	compute_pipeline_info.stage = compute_stage_info;
+	compute_pipeline_info.layout = mBackgroundPipelineLayout.get();
+
+	mBackgroundPipeline = mContext->logical_device->createComputePipelineUnique( nullptr, compute_pipeline_info );
 }

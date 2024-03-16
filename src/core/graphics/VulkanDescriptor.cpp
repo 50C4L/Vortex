@@ -51,6 +51,7 @@ DescriptorAllocator::DescriptorAllocator( vk::Device& device, uint32_t max_sets,
 	pool_info.poolSizeCount = static_cast<uint32_t>( pool_sizes_vk.size() );
 	pool_info.pPoolSizes    = pool_sizes_vk.data();
 	pool_info.maxSets       = max_sets;
+	pool_info.flags		 	= vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 
 	mPool = mDevice.createDescriptorPoolUnique( pool_info );
 }
