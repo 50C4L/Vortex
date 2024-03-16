@@ -4,6 +4,8 @@
 #include <memory>
 #include <vector>
 
+#include <vulkan/vulkan.hpp>
+
 struct SDL_Window;
 
 namespace graphics
@@ -11,10 +13,11 @@ namespace graphics
 	class VulkanContext;
 	class VulkanSwapChain;
 	class VulkanCommandContext;
+	class DescriptorAllocator;
 	class Renderable;
 
 	struct VMAWrapper;
-	struct AllocatedImage;
+	class ManagedImage;
 
 	///
 	/// Renderer class
@@ -69,13 +72,19 @@ namespace graphics
 
 		void Present( uint32_t image_index );
 
+		void InitDescriptors();
+
 		std::unique_ptr<VulkanContext>		mContext;
 		std::unique_ptr<VulkanSwapChain>	mSwapChain;
 		std::vector<Frame>					mFrames;
 		int64_t								mFrameNumber;
 
 		std::unique_ptr<VMAWrapper> mVMA;
-		std::unique_ptr<AllocatedImage> mRenderImage;
+		std::unique_ptr<ManagedImage> mRenderImage;
+
+		std::unique_ptr<DescriptorAllocator> 	mDescriptorAllocator;
+		vk::UniqueDescriptorSet 				mRenderImageDescriptorSet;
+		vk::UniqueDescriptorSetLayout			mRenderImageDescriptorSetLayout;
 	};
 }
 

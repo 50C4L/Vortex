@@ -15,13 +15,18 @@ add_executable(Vortex
 	./src/VortexGame.h
 	./src/VortexGame.cpp
 
+	./src/core/graphics/ImageUtilities.h
+	./src/core/graphics/ImageUtilities.cpp
 	./src/core/graphics/ManagedVulkanResources.h
+	./src/core/graphics/ManagedVulkanResources.cpp
 	./src/core/graphics/Renderer.h
 	./src/core/graphics/Renderer.cpp
 	./src/core/graphics/Renderable.h
 	./src/core/graphics/Renderable.cpp
 	./src/core/graphics/VMAWrapper.h
 	./src/core/graphics/VMAWrapper.cpp
+	./src/core/graphics/VulkanDescriptor.h
+	./src/core/graphics/VulkanDescriptor.cpp
 	./src/core/graphics/VulkanCommandContext.h
 	./src/core/graphics/VulkanCommandContext.cpp
 	./src/core/graphics/VulkanSwapchain.h

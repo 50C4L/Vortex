@@ -6,10 +6,12 @@
 #include <iostream>
 
 #include <utility/Logger.h>
+#include <graphics/ImageUtilities.h>
 #include <graphics/ManagedVulkanResources.h>
 #include <graphics/VulkanContext.h>
 #include <graphics/VulkanSwapChain.h>
 #include <graphics/VulkanCommandContext.h>
+#include <graphics/VulkanDescriptor.h>
 #include <graphics/VMAWrapper.h>
 
 using namespace graphics;
@@ -18,32 +20,6 @@ using namespace utility;
 namespace
 {
 	const uint32_t MAX_FRAMES_IN_FLIGHT = 2; // Double buffering
-
-	void transition_image( vk::CommandBuffer& cmd_buffer, vk::Image image, vk::ImageLayout current_layout, vk::ImageLayout new_layout )
-	{
-		vk::ImageMemoryBarrier2 image_barrier{};
-		image_barrier.sType = vk::StructureType::eImageMemoryBarrier2;
-
-		image_barrier.oldLayout = current_layout;
-		image_barrier.newLayout = new_layout;
-
-		image_barrier.srcStageMask  = vk::PipelineStageFlagBits2::eAllCommands; //< This means it blocks all GPU commands, can be optimized
-		image_barrier.srcAccessMask = vk::AccessFlagBits2::eMemoryWrite;
-		image_barrier.dstStageMask  = vk::PipelineStageFlagBits2::eAllCommands;
-		image_barrier.dstAccessMask = vk::AccessFlagBits2::eMemoryWrite | vk::AccessFlagBits2::eMemoryRead;
-
-		vk::ImageAspectFlags aspect_mask =
-			( new_layout == vk::ImageLayout::eDepthStencilAttachmentOptimal ) ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor;
-		image_barrier.subresourceRange = vk::ImageSubresourceRange{ aspect_mask, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
-		image_barrier.image = image;
-
-		vk::DependencyInfo dep_info{};
-		dep_info.sType = vk::StructureType::eDependencyInfo;
-		dep_info.imageMemoryBarrierCount = 1;
-		dep_info.pImageMemoryBarriers = &image_barrier;
-
-		cmd_buffer.pipelineBarrier2( dep_info );
-	}
 
 	vk::SubmitInfo2 create_submit_info( vk::CommandBufferSubmitInfo cmd_submit_info, vk::SemaphoreSubmitInfo semaphore_wait_info, vk::SemaphoreSubmitInfo semaphore_signal_info )
 	{
@@ -56,32 +32,6 @@ namespace
 		submit_info.pCommandBufferInfos = &cmd_submit_info;
 
 		return submit_info;
-	}
-
-	vk::ImageCreateInfo create_image_info( vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usage )
-	{
-		vk::ImageCreateInfo image_info{};
-		image_info.imageType = vk::ImageType::e2D;
-		image_info.extent = extent;
-		image_info.mipLevels = 1;
-		image_info.arrayLayers = 1;
-		image_info.format = format;
-		image_info.tiling = vk::ImageTiling::eOptimal;
-		image_info.usage = usage;
-		image_info.samples = vk::SampleCountFlagBits::e1;
-
-		return image_info;
-	}
-
-	vk::ImageViewCreateInfo create_image_view_info( vk::Image image, vk::Format format, vk::ImageAspectFlags aspect_flags )
-	{
-		vk::ImageViewCreateInfo image_view_info{};
-		image_view_info.image = image;
-		image_view_info.viewType = vk::ImageViewType::e2D;
-		image_view_info.format = format;
-		image_view_info.subresourceRange = vk::ImageSubresourceRange{ aspect_flags, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
-
-		return image_view_info;
 	}
 }
 
@@ -122,32 +72,22 @@ Renderer::Init( SDL_Window& window )
 	}
 
 	LOG( "Creating render image ..." );
-	mRenderImage = std::make_unique<AllocatedImage>();
-	vk::Extent3D extent{ static_cast<uint32_t>( width ), static_cast<uint32_t>( height ), 1 };
-	mRenderImage->format = vk::Format::eR16G16B16A16Sfloat;
-	mRenderImage->extent = extent;
-
 	vk::ImageUsageFlags image_usage_flags;
 	image_usage_flags |= vk::ImageUsageFlagBits::eTransferSrc;
 	image_usage_flags |= vk::ImageUsageFlagBits::eTransferDst;
 	image_usage_flags |= vk::ImageUsageFlagBits::eStorage;
 	image_usage_flags |= vk::ImageUsageFlagBits::eColorAttachment;
 
-	auto render_image_create_info = create_image_info( extent, mRenderImage->format, image_usage_flags );
-	VmaAllocationCreateInfo image_alloc_info{};
-	image_alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-	image_alloc_info.requiredFlags = VkMemoryPropertyFlags( VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+	mRenderImage = std::make_unique<ManagedImage>(
+		mContext->logical_device.get(),
+		*mVMA->allocator.get(),
+		vk::Extent3D{ static_cast<uint32_t>( width ), static_cast<uint32_t>( height ), 1 },
+		vk::Format::eR16G16B16A16Sfloat,
+		image_usage_flags
+	);
 
-	// allocate and create the image
-	vmaCreateImage( 
-		*mVMA->allocator.get(), 
-		reinterpret_cast<VkImageCreateInfo*>( &render_image_create_info ), 
-		&image_alloc_info, 
-		reinterpret_cast<VkImage*>( &mRenderImage->image.get() ), &mRenderImage->allocation, nullptr );
-
-	// create the image view
-	auto image_view_info = create_image_view_info( mRenderImage->image.get(), mRenderImage->format, vk::ImageAspectFlagBits::eColor );
-	mRenderImage->image_view = mContext->logical_device->createImageViewUnique( image_view_info );
+	// Init descriptor set layout
+	InitDescriptors();
 
 	return true;
 }
@@ -241,4 +181,36 @@ Renderer::Present( uint32_t image_index )
 	present_info.pImageIndices      = &image_index;
 
 	mContext->present_queue.presentKHR( present_info );
+}
+
+void
+Renderer::InitDescriptors()
+{
+	LOG( "Initializing descriptor sets ..." );
+	std::vector<DescriptorAllocator::PoolSizeRatio> sizes =
+	{
+		{ vk::DescriptorType::eStorageImage, 1 }
+	};
+	mDescriptorAllocator = std::make_unique<DescriptorAllocator>( *mContext->logical_device, 10, sizes );
+
+	{
+		DescriptorLayoutBuilder layout_builder;
+		layout_builder.AddBinding( 0, vk::DescriptorType::eStorageImage );
+		mRenderImageDescriptorSetLayout = layout_builder.Build( *mContext->logical_device, vk::ShaderStageFlagBits::eCompute );
+	}
+
+	mRenderImageDescriptorSet = mDescriptorAllocator->Allocate( *mRenderImageDescriptorSetLayout );
+
+	vk::DescriptorImageInfo image_info;
+	image_info.imageLayout = vk::ImageLayout::eGeneral;
+	image_info.imageView = mRenderImage->GetImageView();
+
+	vk::WriteDescriptorSet write;
+	write.dstSet = mRenderImageDescriptorSet.get();
+	write.dstBinding = 0;
+	write.descriptorCount = 1;
+	write.descriptorType = vk::DescriptorType::eStorageImage;
+	write.pImageInfo = &image_info;
+
+	mContext->logical_device->updateDescriptorSets( write, nullptr );
 }

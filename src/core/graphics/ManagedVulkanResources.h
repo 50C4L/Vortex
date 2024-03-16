@@ -6,13 +6,22 @@
 
 namespace graphics
 {
-	struct AllocatedImage
+	class ManagedImage
 	{
-		vk::UniqueImage image;
-		vk::UniqueImageView image_view;
-		VmaAllocation allocation;
-		vk::Extent3D extent;
-		vk::Format format;
+	public:
+		ManagedImage( vk::Device& device, VmaAllocator& allocator, vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usage );
+		virtual ~ManagedImage();
+
+		vk::Image& GetImage();
+		vk::ImageView& GetImageView();
+
+	private:
+		VmaAllocator& mAllocator;
+		VmaAllocation mAllocation;
+		vk::Extent3D mExtent;
+		vk::Format mFormat;
+		vk::Image mImage;
+		vk::UniqueImageView mImageView;
 	};
 }
 
