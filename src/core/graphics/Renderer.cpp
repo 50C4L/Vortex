@@ -112,6 +112,13 @@ Renderer::Render()
 
 	// Actual rendering here
 
+	/* TODO
+	for( const auto& renderable : GetCurrentFrame().mRenderables )
+	{
+		renderable.Render( *vulkan_main_buffer );
+	}
+	*/
+
 	auto render_extent = mRenderImage->GetExtent2D();
 	cmd.bindPipeline( vk::PipelineBindPoint::eCompute, mBackgroundPipeline.get() );
 	cmd.bindDescriptorSets( vk::PipelineBindPoint::eCompute, mBackgroundPipelineLayout.get(), 0, 1, &mRenderImageDescriptorSet.get(), 0, nullptr );
@@ -130,18 +137,6 @@ Renderer::Render()
 	transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::ePresentSrcKHR );
 
 	frame.command_context->End();
-
-	/* TODO
-	vulkan_main_buffer->begin();
-	vulkan_main_buffer->clear( 0.0f, 0.0f, 0.0f, 1.0f );
-
-	for( const auto& renderable : GetCurrentFrame().mRenderables )
-	{
-		renderable.Render( *vulkan_main_buffer );
-	}
-
-	vulkan_main_buffer->end();
-	*/
 
 	Submit();
 

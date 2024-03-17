@@ -8,3 +8,4 @@ Thirdparty dependencies (put the headers and libs under ./thirdparty/include & .
  - VulkanSDK 1.3
  - glm
  - VulkanMemoryAllocator 3.0.1
+ - imgui 1.90.4
