@@ -15,6 +15,10 @@
 #include <graphics/VulkanDescriptor.h>
 #include <graphics/VMAWrapper.h>
 
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_vulkan.h>
+#include <imgui/imgui_impl_sdl2.h>
+
 using namespace graphics;
 using namespace utility;
 
@@ -22,13 +26,13 @@ namespace
 {
 	const uint32_t MAX_FRAMES_IN_FLIGHT = 2; // Double buffering
 
-	vk::SubmitInfo2 create_submit_info( vk::CommandBufferSubmitInfo cmd_submit_info, vk::SemaphoreSubmitInfo semaphore_wait_info, vk::SemaphoreSubmitInfo semaphore_signal_info )
+	vk::SubmitInfo2 create_submit_info( vk::CommandBufferSubmitInfo cmd_submit_info, std::optional<vk::SemaphoreSubmitInfo> semaphore_wait_info, std::optional<vk::SemaphoreSubmitInfo> semaphore_signal_info )
 	{
 		vk::SubmitInfo2 submit_info{};
-		submit_info.waitSemaphoreInfoCount = 1;
-		submit_info.pWaitSemaphoreInfos = &semaphore_wait_info;
-		submit_info.signalSemaphoreInfoCount = 1;
-		submit_info.pSignalSemaphoreInfos = &semaphore_signal_info;
+		submit_info.waitSemaphoreInfoCount = semaphore_wait_info.has_value() ? 1 : 0;
+		submit_info.pWaitSemaphoreInfos = semaphore_wait_info.has_value() ? &semaphore_wait_info.value() : nullptr;
+		submit_info.signalSemaphoreInfoCount = semaphore_signal_info.has_value() ? 1 : 0;
+		submit_info.pSignalSemaphoreInfos = semaphore_signal_info.has_value() ? &semaphore_signal_info.value() : nullptr;
 		submit_info.commandBufferInfoCount = 1;
 		submit_info.pCommandBufferInfos = &cmd_submit_info;
 
@@ -39,11 +43,18 @@ namespace
 
 Renderer::Renderer()
 	: mFrameNumber( 0 )
+	, mIMGUIInitialized( false )
 {
 }
 
 Renderer::~Renderer()
 {
+	if( mIMGUIInitialized )
+	{
+		ImGui_ImplVulkan_Shutdown();
+		ImGui_ImplSDL2_Shutdown();
+		ImGui::DestroyContext();
+	}
 }
 
 bool
@@ -71,6 +82,7 @@ Renderer::Init( SDL_Window& window )
 	{
 		mFrames.push_back( Frame{ {}, std::make_unique<VulkanCommandContext>( *mContext ) } );
 	}
+	mImmidiateCommandContext = std::make_unique<VulkanCommandContext>( *mContext );
 
 	LOG( "Creating render image ..." );
 	vk::ImageUsageFlags image_usage_flags;
@@ -92,6 +104,9 @@ Renderer::Init( SDL_Window& window )
 
 	// Init pipelines
 	InitPipelines();
+
+	// Init IMGUI
+	mIMGUIInitialized = InitIMGUI( window );
 
 	return true;
 }
@@ -122,7 +137,7 @@ Renderer::Render()
 	auto render_extent = mRenderImage->GetExtent2D();
 	cmd.bindPipeline( vk::PipelineBindPoint::eCompute, mBackgroundPipeline.get() );
 	cmd.bindDescriptorSets( vk::PipelineBindPoint::eCompute, mBackgroundPipelineLayout.get(), 0, 1, &mRenderImageDescriptorSet.get(), 0, nullptr );
-	cmd.dispatch( std::ceil( render_extent.width / 16.0 ), std::ceil( render_extent.height / 16.0 ), 1 );
+	cmd.dispatch( static_cast<uint32_t>( std::ceil( render_extent.width / 16.0 ) ), static_cast<uint32_t>( std::ceil( render_extent.height / 16.0 ) ), 1 );
 
 	// End of rendering
 
@@ -194,7 +209,7 @@ Renderer::Present( uint32_t image_index )
 	present_info.pSwapchains        = &mSwapChain->GetSwapChain();
 	present_info.pImageIndices      = &image_index;
 
-	mContext->present_queue.presentKHR( present_info );
+	std::ignore = mContext->present_queue.presentKHR( present_info );
 }
 
 void
@@ -235,7 +250,7 @@ Renderer::InitPipelines()
 	InitBackgroundPipeline();
 }
 
-void
+bool
 Renderer::InitBackgroundPipeline()
 {
 	vk::PipelineLayoutCreateInfo compute_layout_info{};
@@ -248,7 +263,7 @@ Renderer::InitBackgroundPipeline()
 	if( !compute_shader.has_value() )
 	{
 		LOG_ERROR( "Failed to create shader module." );
-		return;
+		return false;
 	}
 
 	vk::PipelineShaderStageCreateInfo compute_stage_info{};
@@ -260,5 +275,99 @@ Renderer::InitBackgroundPipeline()
 	compute_pipeline_info.stage = compute_stage_info;
 	compute_pipeline_info.layout = mBackgroundPipelineLayout.get();
 
-	mBackgroundPipeline = mContext->logical_device->createComputePipelineUnique( nullptr, compute_pipeline_info );
+	auto result = mContext->logical_device->createComputePipelineUnique( nullptr, compute_pipeline_info );
+	if( result.result != vk::Result::eSuccess )
+	{
+		LOG_ERROR( "Failed to create compute pipeline." );
+		return false;
+	}
+
+	mBackgroundPipeline = std::move( result.value );
+	return true;
+}
+
+bool
+Renderer::InitIMGUI( SDL_Window& window )
+{
+	LOG( "Initializing IMGUI ..." );
+
+	const uint32_t max_sets = 1000;
+	vk::DescriptorPoolSize pool_sizes[] =
+	{
+		{ vk::DescriptorType::eSampler, max_sets },
+		{ vk::DescriptorType::eCombinedImageSampler, max_sets },
+		{ vk::DescriptorType::eSampledImage, max_sets },
+		{ vk::DescriptorType::eStorageImage, max_sets },
+		{ vk::DescriptorType::eUniformTexelBuffer, max_sets },
+		{ vk::DescriptorType::eStorageTexelBuffer, max_sets },
+		{ vk::DescriptorType::eUniformBuffer, max_sets },
+		{ vk::DescriptorType::eStorageBuffer, max_sets },
+		{ vk::DescriptorType::eUniformBufferDynamic, max_sets },
+		{ vk::DescriptorType::eStorageBufferDynamic, max_sets },
+		{ vk::DescriptorType::eInputAttachment, max_sets }
+	};
+
+	vk::DescriptorPoolCreateInfo pool_info{};
+	pool_info.poolSizeCount = static_cast<uint32_t>( std::size( pool_sizes ) );
+	pool_info.pPoolSizes = pool_sizes;
+	pool_info.maxSets = max_sets;
+	pool_info.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
+
+	vk::DescriptorPool descriptor_pool = mContext->logical_device->createDescriptorPool( pool_info );
+
+	ImGui::CreateContext();
+
+	if( !ImGui_ImplSDL2_InitForVulkan( &window ) )
+	{
+		LOG_ERROR( "Failed to initialize IMGUI for SDL2" );
+		return false;
+	}
+
+	VkPipelineRenderingCreateInfoKHR pipeline_rendering_create_info{};
+	pipeline_rendering_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
+
+	ImGui_ImplVulkan_InitInfo init_info{};
+	init_info.Instance = mContext->instance.get();
+	init_info.PhysicalDevice = mContext->physical_device;
+	init_info.Device = mContext->logical_device.get();
+	init_info.Queue = mContext->graphics_queue;
+	init_info.DescriptorPool = std::move( descriptor_pool );
+	init_info.MinImageCount = MAX_FRAMES_IN_FLIGHT;
+	init_info.ImageCount = static_cast<uint32_t>( mSwapChain->GetImages().size() );
+	init_info.UseDynamicRendering = true;
+	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+	init_info.PipelineRenderingCreateInfo = std::move( pipeline_rendering_create_info );
+	
+	
+	if( !ImGui_ImplVulkan_Init( &init_info ) )
+	{
+		LOG_ERROR( "Failed to initialize IMGUI for Vulkan." );
+		return false;
+	}
+
+	ImmediateSubmit( []( vk::CommandBuffer& )
+	{
+		ImGui_ImplVulkan_CreateFontsTexture();
+	} );
+
+	return true;
+}
+
+void
+Renderer::ImmediateSubmit( std::function<void( vk::CommandBuffer& )> work )
+{
+	auto& cmd = mImmidiateCommandContext->GetPrimaryBuffer();
+	mImmidiateCommandContext->Reset();
+	mImmidiateCommandContext->Begin();
+
+	work( cmd );
+
+	mImmidiateCommandContext->End();
+
+	auto submit_info = create_submit_info(
+		mImmidiateCommandContext->GetSubmitInfo(), std::nullopt, std::nullopt
+	);
+
+	mContext->graphics_queue.submit2( submit_info, mImmidiateCommandContext->GetFence() );
+	mImmidiateCommandContext->WaitForCompletion();
 }

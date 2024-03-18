@@ -65,6 +65,9 @@ namespace graphics
 		///
 		void AddToRenderQueue( std::shared_ptr<Renderable> renderable );
 
+		///
+		/// Wait for the renderer to be idle
+		///
 		void WaitForIdle();
 
 	private:
@@ -76,7 +79,10 @@ namespace graphics
 
 		void InitDescriptors();
 		void InitPipelines();
-		void InitBackgroundPipeline();
+		bool InitBackgroundPipeline();
+		bool InitIMGUI( SDL_Window& window );
+
+		void ImmediateSubmit( std::function<void( vk::CommandBuffer& )> work );
 
 		std::unique_ptr<VulkanContext>		mContext;
 		std::unique_ptr<VulkanSwapChain>	mSwapChain;
@@ -92,6 +98,9 @@ namespace graphics
 
 		vk::UniquePipeline 			mBackgroundPipeline;
 		vk::UniquePipelineLayout 	mBackgroundPipelineLayout;
+
+		std::unique_ptr<VulkanCommandContext> mImmidiateCommandContext;
+		bool mIMGUIInitialized;
 	};
 }
 
