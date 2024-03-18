@@ -17,6 +17,7 @@
 #include <graphics/ImGUILifetime.h>
 
 #include <imgui/imgui_impl_vulkan.h>
+#include <imgui/imgui_impl_sdl2.h>
 
 using namespace graphics;
 using namespace utility;
@@ -36,6 +37,35 @@ namespace
 		submit_info.pCommandBufferInfos = &cmd_submit_info;
 
 		return submit_info;
+	}
+
+	vk::RenderingAttachmentInfo create_attachment_info( vk::ImageView& view, std::optional<vk::ClearValue> clear, vk::ImageLayout layout )
+	{
+		vk::RenderingAttachmentInfo color_attachment_info{};
+		color_attachment_info.imageView = view;
+		color_attachment_info.imageLayout = layout;
+		color_attachment_info.loadOp = clear.has_value() ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad;
+		color_attachment_info.storeOp = vk::AttachmentStoreOp::eStore;
+		if( clear.has_value() )
+		{
+			color_attachment_info.clearValue = clear.value();
+		}
+
+		return color_attachment_info;
+	}
+
+	void render_imgui( vk::CommandBuffer& cmd, vk::ImageView& target_image_view, vk::Extent2D extent )
+	{
+		vk::RenderingAttachmentInfo color_attachment_info = create_attachment_info( target_image_view, std::nullopt, vk::ImageLayout::eGeneral );
+		vk::RenderingInfo render_info{};
+		render_info.colorAttachmentCount = 1;
+		render_info.pColorAttachments = &color_attachment_info;
+		render_info.renderArea = vk::Rect2D{ vk::Offset2D{ 0, 0 }, std::move( extent ) };
+		render_info.layerCount = 1;
+
+		cmd.beginRendering( render_info );
+		ImGui_ImplVulkan_RenderDrawData( ImGui::GetDrawData(), cmd );
+		cmd.endRendering();
 	}
 }
 
@@ -98,7 +128,7 @@ Renderer::Init( SDL_Window& window )
 	InitPipelines();
 
 	// Init IMGUI
-	InitIMGUI( window );
+	InitImGUI( window );
 
 	return true;
 }
@@ -106,6 +136,8 @@ Renderer::Init( SDL_Window& window )
 void
 Renderer::Render()
 {
+	PrepareImGUI();
+
 	auto& frame = GetCurrentFrame();
 	auto& cmd = frame.command_context->GetPrimaryBuffer();
 	uint32_t next_image_index = mSwapChain->GetNextImage( frame.command_context->GetSwapchainSemaphore() );
@@ -140,8 +172,14 @@ Renderer::Render()
 	// Copy the render image to the swapchain image
 	copy_image_to_image( cmd, mRenderImage->GetImage(), mSwapChain->GetImages()[ next_image_index ], render_extent, mSwapChain->GetExtent() );
 
+	// Transition the swapchain image to a color optimal layout so we can draw imgui on it
+	transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eColorAttachmentOptimal );
+
+	// Render imgui
+	render_imgui( cmd, mSwapChain->GetImageViews()[ next_image_index ].get(), mSwapChain->GetExtent() );
+
 	// Transition the swapchain image back to the present layout
-	transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::ePresentSrcKHR );
+	transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR );
 
 	frame.command_context->End();
 
@@ -279,14 +317,17 @@ Renderer::InitBackgroundPipeline()
 }
 
 void
-Renderer::InitIMGUI( SDL_Window& window )
+Renderer::InitImGUI( SDL_Window& window )
 {
 	mImGUILifetime = std::make_unique<ImGUILifetime>( *mContext );
-	mImGUILifetime->Init( window, MAX_FRAMES_IN_FLIGHT, static_cast<uint32_t>( mSwapChain->GetImages().size() ) );
+	mImGUILifetime->Init( window, MAX_FRAMES_IN_FLIGHT, static_cast<uint32_t>( mSwapChain->GetImages().size() ), mSwapChain->GetImageFormat() );
 
 	ImmediateSubmit( []( vk::CommandBuffer& )
 	{
-		ImGui_ImplVulkan_CreateFontsTexture();
+		if( !ImGui_ImplVulkan_CreateFontsTexture() )
+		{
+			LOG_ERROR( "Failed to create IMGUI fonts texture." );
+		}
 	} );
 }
 
@@ -307,4 +348,15 @@ Renderer::ImmediateSubmit( std::function<void( vk::CommandBuffer& )> work )
 
 	mContext->graphics_queue.submit2( submit_info, mImmidiateCommandContext->GetFence() );
 	mImmidiateCommandContext->WaitForCompletion();
+}
+
+void
+Renderer::PrepareImGUI()
+{
+	ImGui_ImplVulkan_NewFrame();
+	ImGui_ImplSDL2_NewFrame();
+	ImGui::NewFrame();
+	// @TODO: Actual setup of the GUI should be passed in as a callback
+	ImGui::ShowDemoWindow();
+	ImGui::Render();
 }

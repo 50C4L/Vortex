@@ -28,7 +28,7 @@ namespace graphics
 		/// @return
 		///  true if successful, false otherwise
 		///
-		bool Init( SDL_Window& window, uint32_t min_image_count, uint32_t max_image_count );
+		bool Init( SDL_Window& window, uint32_t min_image_count, uint32_t max_image_count, vk::Format format );
 
 	private:
 		VulkanContext& mContext;

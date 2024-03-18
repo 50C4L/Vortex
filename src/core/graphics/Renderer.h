@@ -81,9 +81,11 @@ namespace graphics
 		void InitDescriptors();
 		void InitPipelines();
 		bool InitBackgroundPipeline();
-		void InitIMGUI( SDL_Window& window );
+		void InitImGUI( SDL_Window& window );
 
 		void ImmediateSubmit( std::function<void( vk::CommandBuffer& )> work );
+
+		void PrepareImGUI();
 
 		std::unique_ptr<VulkanContext>		mContext;
 		std::unique_ptr<VulkanSwapChain>	mSwapChain;

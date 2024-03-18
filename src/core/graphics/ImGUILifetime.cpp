@@ -24,7 +24,7 @@ ImGUILifetime::~ImGUILifetime()
 }
 
 bool
-ImGUILifetime::Init( SDL_Window& window, uint32_t min_image_count, uint32_t max_image_count )
+ImGUILifetime::Init( SDL_Window& window, uint32_t min_image_count, uint32_t max_image_count, vk::Format format )
 {
 	LOG( "Initializing IMGUI ..." );
 
@@ -62,6 +62,8 @@ ImGUILifetime::Init( SDL_Window& window, uint32_t min_image_count, uint32_t max_
 
 	VkPipelineRenderingCreateInfoKHR pipeline_rendering_create_info{};
 	pipeline_rendering_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
+	pipeline_rendering_create_info.pColorAttachmentFormats = reinterpret_cast<VkFormat*>( &format );
+	pipeline_rendering_create_info.colorAttachmentCount = 1;
 
 	ImGui_ImplVulkan_InitInfo init_info{};
 	init_info.Instance = mContext.instance.get();

@@ -26,6 +26,7 @@ namespace graphics
 		std::vector<vk::Image>& GetImages() { return mImages; }
 		const vk::ImageView& GetDepthImageView() const { return mDepthImageView.get(); }
 		vk::SwapchainKHR& GetSwapChain() { return mSwapChain.get(); }
+		std::vector<vk::UniqueImageView>& GetImageViews() { return mImageViews; }
 
 	private:
 		// void CreateDepthImages( VmaAllocator allocator );

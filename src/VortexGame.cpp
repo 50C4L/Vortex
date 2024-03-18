@@ -8,6 +8,7 @@
 #include <utility/Pointers.h>
 #include <utility/Logger.h>
 #include <graphics/Renderer.h>
+#include <imgui/imgui_impl_sdl2.h>
 
 #include "SceneController.h"
 #include "MainScene.h"
@@ -42,6 +43,8 @@ VortexGame::Run()
 			{
 				quit = true;
 			}
+
+			ImGui_ImplSDL2_ProcessEvent( &event );
 		}
 
 		mSceneController->Update();
