@@ -15,6 +15,7 @@ namespace graphics
 	class VulkanCommandContext;
 	class DescriptorAllocator;
 	class Renderable;
+	class ImGUILifetime;
 
 	struct VMAWrapper;
 	class ManagedImage;
@@ -80,7 +81,7 @@ namespace graphics
 		void InitDescriptors();
 		void InitPipelines();
 		bool InitBackgroundPipeline();
-		bool InitIMGUI( SDL_Window& window );
+		void InitIMGUI( SDL_Window& window );
 
 		void ImmediateSubmit( std::function<void( vk::CommandBuffer& )> work );
 
@@ -100,7 +101,7 @@ namespace graphics
 		vk::UniquePipelineLayout 	mBackgroundPipelineLayout;
 
 		std::unique_ptr<VulkanCommandContext> mImmidiateCommandContext;
-		bool mIMGUIInitialized;
+		std::unique_ptr<ImGUILifetime> mImGUILifetime;
 	};
 }
 

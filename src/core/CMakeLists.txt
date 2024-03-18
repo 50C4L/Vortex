@@ -59,6 +59,8 @@ endif (WIN32)
 add_library(eage_core STATIC
 	./graphics/ImageUtilities.h
 	./graphics/ImageUtilities.cpp
+	./graphics/ImGUILifetime.h
+	./graphics/ImGUILifetime.cpp
 	./graphics/ManagedVulkanResources.h
 	./graphics/ManagedVulkanResources.cpp
 	./graphics/Renderer.h
