@@ -282,7 +282,7 @@ void
 Renderer::InitIMGUI( SDL_Window& window )
 {
 	mImGUILifetime = std::make_unique<ImGUILifetime>( *mContext );
-	mImGUILifetime->Init( window, MAX_FRAMES_IN_FLIGHT, MAX_FRAMES_IN_FLIGHT );
+	mImGUILifetime->Init( window, MAX_FRAMES_IN_FLIGHT, static_cast<uint32_t>( mSwapChain->GetImages().size() ) );
 
 	ImmediateSubmit( []( vk::CommandBuffer& )
 	{
