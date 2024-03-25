@@ -13,6 +13,7 @@
 #include <graphics/VulkanShader.h>
 #include <graphics/VulkanCommandContext.h>
 #include <graphics/VulkanDescriptor.h>
+#include <graphics/VulkanPipeline.h>
 #include <graphics/VMAWrapper.h>
 #include <graphics/ImGUILifetime.h>
 
@@ -147,9 +148,10 @@ Renderer::Render()
 	frame.command_context->Begin();
 
 	// Transition the main render image to a general layout
-	transition_image( cmd, mRenderImage->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral );
+	transition_image( cmd, mRenderImage->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal );
 
 	// Actual rendering here
+	DrawGeometry( cmd );
 
 	/* TODO
 	for( const auto& renderable : GetCurrentFrame().mRenderables )
@@ -159,14 +161,11 @@ Renderer::Render()
 	*/
 
 	auto render_extent = mRenderImage->GetExtent2D();
-	cmd.bindPipeline( vk::PipelineBindPoint::eCompute, mBackgroundPipeline.get() );
-	cmd.bindDescriptorSets( vk::PipelineBindPoint::eCompute, mBackgroundPipelineLayout.get(), 0, 1, &mRenderImageDescriptorSet.get(), 0, nullptr );
-	cmd.dispatch( static_cast<uint32_t>( std::ceil( render_extent.width / 16.0 ) ), static_cast<uint32_t>( std::ceil( render_extent.height / 16.0 ) ), 1 );
 
 	// End of rendering
 
 	// Transition the main render image and the current swapchain image to the appropriate layout, so later we can copy the render image to the swapchain image
-	transition_image( cmd, mRenderImage->GetImage(), vk::ImageLayout::eGeneral, vk::ImageLayout::eTransferSrcOptimal );
+	transition_image( cmd, mRenderImage->GetImage(), vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eTransferSrcOptimal );
 	transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal );
 
 	// Copy the render image to the swapchain image
@@ -277,42 +276,44 @@ Renderer::InitDescriptors()
 void
 Renderer::InitPipelines()
 {
-	InitBackgroundPipeline();
+	InitTrianglePipeline();
 }
 
+
 bool
-Renderer::InitBackgroundPipeline()
+Renderer::InitTrianglePipeline()
 {
-	vk::PipelineLayoutCreateInfo compute_layout_info{};
-	compute_layout_info.pSetLayouts = &mRenderImageDescriptorSetLayout.get();
-	compute_layout_info.setLayoutCount = 1;
-
-	mBackgroundPipelineLayout = mContext->logical_device->createPipelineLayoutUnique( compute_layout_info );
-
-	auto compute_shader = create_shader_module_from_file( *mContext->logical_device, "./src/core/graphics/shaders/compiled/gradient.comp.spv" );
-	if( !compute_shader.has_value() )
+	auto vertex_shader = create_shader_module_from_file( *mContext->logical_device, "./src/shaders/compiled/colored_triangle.vert.spv" );
+	if( !vertex_shader.has_value() )
 	{
-		LOG_ERROR( "Failed to create shader module." );
+		LOG_ERROR( "Failed to create vertex shader module." );
 		return false;
 	}
 
-	vk::PipelineShaderStageCreateInfo compute_stage_info{};
-	compute_stage_info.stage = vk::ShaderStageFlagBits::eCompute;
-	compute_stage_info.module = compute_shader.value().get();
-	compute_stage_info.pName = "main";
-
-	vk::ComputePipelineCreateInfo compute_pipeline_info{};
-	compute_pipeline_info.stage = compute_stage_info;
-	compute_pipeline_info.layout = mBackgroundPipelineLayout.get();
-
-	auto result = mContext->logical_device->createComputePipelineUnique( nullptr, compute_pipeline_info );
-	if( result.result != vk::Result::eSuccess )
+	auto fragment_shader = create_shader_module_from_file( *mContext->logical_device, "./src/shaders/compiled/colored_triangle.frag.spv" );
+	if( !fragment_shader.has_value() )
 	{
-		LOG_ERROR( "Failed to create compute pipeline." );
+		LOG_ERROR( "Failed to create fragment shader module." );
 		return false;
 	}
 
-	mBackgroundPipeline = std::move( result.value );
+	vk::PipelineLayoutCreateInfo pipeline_layout_info{};
+	mTrianglePipelineLayout = mContext->logical_device->createPipelineLayoutUnique( pipeline_layout_info );
+
+	VulkanPipelineBuilder pipeline_builder;
+	mTrianglePipeline = pipeline_builder
+		.SetPipelineLayout( mTrianglePipelineLayout.get() )
+		.SetShaders( vertex_shader.value().get(), fragment_shader.value().get() )
+		.SetInputTopology( vk::PrimitiveTopology::eTriangleList )
+		.SetPolygonMode( vk::PolygonMode::eFill )
+		.SetCullMode( vk::CullModeFlagBits::eNone, vk::FrontFace::eClockwise )
+		.SetMultisampling()
+		.SetBlendMode()
+		.SetDepthTest()
+		.SetColorAttachmentFormat( mRenderImage->GetFormat() )
+		.SetDepthFormat( vk::Format::eUndefined )
+		.Build( *mContext->logical_device );
+
 	return true;
 }
 
@@ -359,4 +360,38 @@ Renderer::PrepareImGUI()
 	// @TODO: Actual setup of the GUI should be passed in as a callback
 	ImGui::ShowDemoWindow();
 	ImGui::Render();
+}
+
+void
+Renderer::DrawGeometry( vk::CommandBuffer& cmd )
+{
+	auto color_attachment = create_attachment_info( mRenderImage->GetImageView(), std::nullopt, vk::ImageLayout::eGeneral );
+
+	auto render_extent = mRenderImage->GetExtent2D();
+	vk::RenderingInfo render_info{};
+	render_info.colorAttachmentCount = 1;
+	render_info.pColorAttachments = &color_attachment;
+	render_info.renderArea = vk::Rect2D{ vk::Offset2D{ 0, 0 }, std::move( render_extent ) };
+	render_info.layerCount = 1;
+
+	cmd.beginRendering( render_info );
+	cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, mTrianglePipeline.get() );
+
+	vk::Viewport viewport{};
+	viewport.width = static_cast<float>( render_extent.width );
+	viewport.height = static_cast<float>( render_extent.height );
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	viewport.x = 0;
+	viewport.y = 0;
+	cmd.setViewport( 0, viewport );
+
+	vk::Rect2D scissor{};
+	scissor.extent = render_extent;
+	scissor.offset = vk::Offset2D{ 0, 0 };
+	cmd.setScissor( 0, scissor );
+
+	cmd.draw( 3, 1, 0, 0 );
+
+	cmd.endRendering();
 }

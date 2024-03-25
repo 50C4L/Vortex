@@ -15,6 +15,7 @@ namespace graphics
 		vk::Image& GetImage();
 		vk::ImageView& GetImageView();
 		vk::Extent2D GetExtent2D() const;
+		vk::Format GetFormat() const;
 
 	private:
 		VmaAllocator& mAllocator;

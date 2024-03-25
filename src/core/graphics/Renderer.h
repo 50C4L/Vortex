@@ -80,12 +80,14 @@ namespace graphics
 
 		void InitDescriptors();
 		void InitPipelines();
-		bool InitBackgroundPipeline();
+		bool InitTrianglePipeline();
 		void InitImGUI( SDL_Window& window );
 
 		void ImmediateSubmit( std::function<void( vk::CommandBuffer& )> work );
 
 		void PrepareImGUI();
+
+		void DrawGeometry( vk::CommandBuffer& cmd );
 
 		std::unique_ptr<VulkanContext>		mContext;
 		std::unique_ptr<VulkanSwapChain>	mSwapChain;
@@ -99,11 +101,11 @@ namespace graphics
 		vk::UniqueDescriptorSet 				mRenderImageDescriptorSet;
 		vk::UniqueDescriptorSetLayout			mRenderImageDescriptorSetLayout;
 
-		vk::UniquePipeline 			mBackgroundPipeline;
-		vk::UniquePipelineLayout 	mBackgroundPipelineLayout;
-
 		std::unique_ptr<VulkanCommandContext> mImmidiateCommandContext;
 		std::unique_ptr<ImGUILifetime> mImGUILifetime;
+
+		vk::UniquePipeline mTrianglePipeline;
+		vk::UniquePipelineLayout mTrianglePipelineLayout;
 	};
 }
 

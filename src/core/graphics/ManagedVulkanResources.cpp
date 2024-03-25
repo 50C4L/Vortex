@@ -75,3 +75,8 @@ vk::Extent2D ManagedImage::GetExtent2D() const
 {
 	return { mExtent.width, mExtent.height };
 }
+
+vk::Format ManagedImage::GetFormat() const
+{
+	return mFormat;
+}

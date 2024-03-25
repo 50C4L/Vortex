@@ -73,6 +73,8 @@ add_library(eage_core STATIC
 	./graphics/VulkanDescriptor.cpp
 	./graphics/VulkanCommandContext.h
 	./graphics/VulkanCommandContext.cpp
+	./graphics/VulkanPipeline.h
+	./graphics/VulkanPipeline.cpp
 	./graphics/VulkanShader.h
 	./graphics/VulkanShader.cpp
 	./graphics/VulkanSwapchain.h
