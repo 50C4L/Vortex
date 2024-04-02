@@ -13,6 +13,7 @@
 #include <graphics/VulkanShader.h>
 #include <graphics/VulkanCommandContext.h>
 #include <graphics/VulkanDescriptor.h>
+#include <graphics/VulkanMesh.h>
 #include <graphics/VulkanPipeline.h>
 #include <graphics/VMAWrapper.h>
 #include <graphics/ImGUILifetime.h>
@@ -130,6 +131,8 @@ Renderer::Init( SDL_Window& window )
 
 	// Init IMGUI
 	InitImGUI( window );
+
+	InitData();
 
 	return true;
 }
@@ -276,14 +279,14 @@ Renderer::InitDescriptors()
 void
 Renderer::InitPipelines()
 {
-	InitTrianglePipeline();
+	InitMeshPipeline();
 }
 
 
 bool
-Renderer::InitTrianglePipeline()
+Renderer::InitMeshPipeline()
 {
-	auto vertex_shader = create_shader_module_from_file( *mContext->logical_device, "./src/shaders/compiled/colored_triangle.vert.spv" );
+	auto vertex_shader = create_shader_module_from_file( *mContext->logical_device, "./src/shaders/compiled/colored_triangle_mesh.vert.spv" );
 	if( !vertex_shader.has_value() )
 	{
 		LOG_ERROR( "Failed to create vertex shader module." );
@@ -297,12 +300,19 @@ Renderer::InitTrianglePipeline()
 		return false;
 	}
 
+	vk::PushConstantRange push_constant_range{};
+	push_constant_range.stageFlags = vk::ShaderStageFlagBits::eVertex;
+	push_constant_range.offset = 0;
+	push_constant_range.size = sizeof( GPUDrawPushConstants );
+
 	vk::PipelineLayoutCreateInfo pipeline_layout_info{};
-	mTrianglePipelineLayout = mContext->logical_device->createPipelineLayoutUnique( pipeline_layout_info );
+	pipeline_layout_info.pPushConstantRanges = &push_constant_range;
+	pipeline_layout_info.pushConstantRangeCount = 1;
+	mMeshPipelineLayout = mContext->logical_device->createPipelineLayoutUnique( pipeline_layout_info );
 
 	VulkanPipelineBuilder pipeline_builder;
-	mTrianglePipeline = pipeline_builder
-		.SetPipelineLayout( mTrianglePipelineLayout.get() )
+	mMeshPipeline = pipeline_builder
+		.SetPipelineLayout( mMeshPipelineLayout.get() )
 		.SetShaders( vertex_shader.value().get(), fragment_shader.value().get() )
 		.SetInputTopology( vk::PrimitiveTopology::eTriangleList )
 		.SetPolygonMode( vk::PolygonMode::eFill )
@@ -330,6 +340,34 @@ Renderer::InitImGUI( SDL_Window& window )
 			LOG_ERROR( "Failed to create IMGUI fonts texture." );
 		}
 	} );
+}
+
+void
+Renderer::InitData()
+{
+	std::array<Vertex,4> rect_vertices;
+
+	rect_vertices[0].position = {0.5,-0.5, 0};
+	rect_vertices[1].position = {0.5,0.5, 0};
+	rect_vertices[2].position = {-0.5,-0.5, 0};
+	rect_vertices[3].position = {-0.5,0.5, 0};
+
+	rect_vertices[0].color = { 1, 0, 0, 1 };
+	rect_vertices[1].color = { 1, 1, 0, 1 };
+	rect_vertices[2].color = { 1, 0, 1, 1 };
+	rect_vertices[3].color = { 0, 0, 1, 1 };
+
+	std::array<uint32_t,6> rect_indices;
+
+	rect_indices[0] = 0;
+	rect_indices[1] = 1;
+	rect_indices[2] = 2;
+
+	rect_indices[3] = 2;
+	rect_indices[4] = 1;
+	rect_indices[5] = 3;
+
+	mRectangleMesh = UploadMesh( rect_indices, rect_vertices );
 }
 
 void
@@ -375,7 +413,14 @@ Renderer::DrawGeometry( vk::CommandBuffer& cmd )
 	render_info.layerCount = 1;
 
 	cmd.beginRendering( render_info );
-	cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, mTrianglePipeline.get() );
+	cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, mMeshPipeline.get() );
+
+	GPUDrawPushConstants push_constants{};
+	push_constants.world_matrix = glm::mat4( 1.0f );
+	push_constants.vertex_buffer = mRectangleMesh->vertex_buffer_address;
+
+	cmd.pushConstants( mMeshPipelineLayout.get(), vk::ShaderStageFlagBits::eVertex, 0, sizeof( GPUDrawPushConstants ), &push_constants );
+	cmd.bindIndexBuffer( mRectangleMesh->index_buffer->buffer, 0, vk::IndexType::eUint32 );
 
 	vk::Viewport viewport{};
 	viewport.width = static_cast<float>( render_extent.width );
@@ -391,7 +436,53 @@ Renderer::DrawGeometry( vk::CommandBuffer& cmd )
 	scissor.offset = vk::Offset2D{ 0, 0 };
 	cmd.setScissor( 0, scissor );
 
-	cmd.draw( 3, 1, 0, 0 );
+	cmd.drawIndexed( 6, 1, 0, 0, 0 );
 
 	cmd.endRendering();
+}
+
+std::unique_ptr<GPUMeshBuffers>
+Renderer::UploadMesh( std::span<uint32_t> indices, std::span<Vertex> vertices )
+{
+	const size_t vertex_buffer_size = sizeof( Vertex ) * vertices.size();
+	const size_t index_buffer_size = sizeof( uint32_t ) * indices.size();
+
+	GPUMeshBuffers new_surface{
+		ManagedBuffer::Create( *mVMA->allocator.get(), index_buffer_size, vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst, VMA_MEMORY_USAGE_GPU_ONLY ),
+		ManagedBuffer::Create( *mVMA->allocator.get(), vertex_buffer_size, vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eShaderDeviceAddress, VMA_MEMORY_USAGE_GPU_ONLY )
+	};
+
+	vk::BufferDeviceAddressInfo vertex_buffer_address_info{};
+	vertex_buffer_address_info.buffer = new_surface.vertex_buffer->buffer;
+	new_surface.vertex_buffer_address = mContext->logical_device->getBufferAddress( vertex_buffer_address_info );
+
+
+	// Copying to the staging buffer on CPU
+	auto staging_buffer = ManagedBuffer::Create( *mVMA->allocator.get(), vertex_buffer_size + index_buffer_size, vk::BufferUsageFlagBits::eTransferSrc, VMA_MEMORY_USAGE_CPU_ONLY );
+
+	void* data = staging_buffer->allocation_info.pMappedData;
+	memcpy( data, vertices.data(), vertex_buffer_size );
+	memcpy( static_cast<char*>( data ) + vertex_buffer_size, indices.data(), index_buffer_size );
+
+	// Copying to the GPU buffer
+	ImmediateSubmit(
+		[&]( vk::CommandBuffer& cmd )
+		{
+			vk::BufferCopy vertex_copy{};
+			vertex_copy.size = vertex_buffer_size;
+			vertex_copy.srcOffset = 0;
+			vertex_copy.dstOffset = 0;
+
+			cmd.copyBuffer( staging_buffer->buffer, new_surface.vertex_buffer->buffer, vertex_copy );
+
+			vk::BufferCopy index_copy{};
+			index_copy.size = index_buffer_size;
+			index_copy.srcOffset = vertex_buffer_size;
+			index_copy.dstOffset = 0;
+
+			cmd.copyBuffer( staging_buffer->buffer, new_surface.index_buffer->buffer, index_copy );
+		}
+	);
+
+	return std::make_unique<GPUMeshBuffers>( std::move( new_surface ) );
 }

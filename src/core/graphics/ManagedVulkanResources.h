@@ -4,6 +4,10 @@
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 
+#include <optional>
+#include <memory>
+#include <functional>
+
 namespace graphics
 {
 	class ManagedImage
@@ -20,10 +24,21 @@ namespace graphics
 	private:
 		VmaAllocator& mAllocator;
 		VmaAllocation mAllocation;
+		VmaAllocationInfo mAllocationInfo;
 		vk::Extent3D mExtent;
 		vk::Format mFormat;
 		vk::Image mImage;
 		vk::UniqueImageView mImageView;
+	};
+
+	struct ManagedBuffer
+	{
+		using Ptr = std::unique_ptr<ManagedBuffer, std::function<void(ManagedBuffer*)>>;
+		static Ptr Create( VmaAllocator& allocator, size_t buffer_size, vk::BufferUsageFlags usage, VmaMemoryUsage memory_usage );
+
+		VmaAllocation allocation;
+		VmaAllocationInfo allocation_info;
+		vk::Buffer buffer;
 	};
 }
 

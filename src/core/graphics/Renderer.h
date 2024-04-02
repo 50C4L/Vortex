@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include <span>
 
 #include <vulkan/vulkan.hpp>
 
@@ -16,9 +17,10 @@ namespace graphics
 	class DescriptorAllocator;
 	class Renderable;
 	class ImGUILifetime;
-
 	struct VMAWrapper;
 	class ManagedImage;
+	struct Vertex;
+	struct GPUMeshBuffers;
 
 	///
 	/// Renderer class
@@ -80,14 +82,17 @@ namespace graphics
 
 		void InitDescriptors();
 		void InitPipelines();
-		bool InitTrianglePipeline();
+		bool InitMeshPipeline();
 		void InitImGUI( SDL_Window& window );
+		void InitData();
 
 		void ImmediateSubmit( std::function<void( vk::CommandBuffer& )> work );
 
 		void PrepareImGUI();
 
 		void DrawGeometry( vk::CommandBuffer& cmd );
+
+		std::unique_ptr<GPUMeshBuffers> UploadMesh( std::span<uint32_t> indices, std::span<Vertex> vertices );
 
 		std::unique_ptr<VulkanContext>		mContext;
 		std::unique_ptr<VulkanSwapChain>	mSwapChain;
@@ -104,8 +109,9 @@ namespace graphics
 		std::unique_ptr<VulkanCommandContext> mImmidiateCommandContext;
 		std::unique_ptr<ImGUILifetime> mImGUILifetime;
 
-		vk::UniquePipeline mTrianglePipeline;
-		vk::UniquePipelineLayout mTrianglePipelineLayout;
+		vk::UniquePipeline mMeshPipeline;
+		vk::UniquePipelineLayout mMeshPipelineLayout;
+		std::unique_ptr<GPUMeshBuffers> mRectangleMesh;
 	};
 }
 

@@ -373,17 +373,30 @@ namespace
 		}
 		
 		// Check required features
+		vk::PhysicalDeviceVulkan12Features features_12{};
 		vk::PhysicalDeviceVulkan13Features features_13{};
+		features_13.pNext = &features_12;
+
 		vk::PhysicalDeviceFeatures2 physical_feature{};
 		physical_feature.pNext = &features_13;
-
 		physical_device.getFeatures2( &physical_feature );
+
+		if( features_12.bufferDeviceAddress == VK_FALSE ||
+			features_12.descriptorIndexing == VK_FALSE )
+		{
+			LOG_ERROR( "Vulkan 1.2 features are not supported!" );
+		}
 
 		if( features_13.dynamicRendering == VK_FALSE ||
 			features_13.synchronization2 == VK_FALSE )
 		{
 			LOG_ERROR( "Vulkan 1.3 features are not supported!" );
 		}
+
+		// if( buffer_device_address_features.bufferDeviceAddress == VK_FALSE )
+		// {
+		// 	LOG_ERROR( "Vulkan bufferDeviceAddress  features are not supported!" );
+		// }
 
 		vk::DeviceCreateInfo device_create_info(
 			vk::DeviceCreateFlags(),

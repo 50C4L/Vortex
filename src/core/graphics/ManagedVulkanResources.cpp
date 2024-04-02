@@ -1,6 +1,9 @@
 #include "ManagedVulkanResources.h"
 
+#include <utility/Logger.h>
+
 using namespace graphics;
+using namespace utility;
 
 namespace
 {
@@ -49,7 +52,7 @@ ManagedImage::ManagedImage( vk::Device& device, VmaAllocator& allocator, vk::Ext
 		&alloc_info,
 		reinterpret_cast<VkImage*>( &mImage ),
 		&mAllocation,
-		nullptr );
+		&mAllocationInfo );
 
 	// create the image view
 	auto image_view_info = create_image_view_info( mImage, format, vk::ImageAspectFlagBits::eColor );
@@ -79,4 +82,37 @@ vk::Extent2D ManagedImage::GetExtent2D() const
 vk::Format ManagedImage::GetFormat() const
 {
 	return mFormat;
+}
+
+/*static*/
+ManagedBuffer::Ptr
+ManagedBuffer::Create( VmaAllocator& allocator, size_t buffer_size, vk::BufferUsageFlags usage, VmaMemoryUsage memory_usage )
+{
+	vk::BufferCreateInfo buffer_info{};
+	buffer_info.size = buffer_size;
+	buffer_info.usage = usage;
+
+	VmaAllocationCreateInfo alloc_info{};
+	alloc_info.usage = memory_usage;
+	alloc_info.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+	Ptr buffer = Ptr( new ManagedBuffer(), [&allocator]( ManagedBuffer* buffer )
+	{
+		vmaDestroyBuffer( allocator, buffer->buffer, buffer->allocation );
+		delete buffer;
+	} );
+
+	if( vmaCreateBuffer(
+		allocator,
+		reinterpret_cast<VkBufferCreateInfo*>( &buffer_info ),
+		&alloc_info,
+		reinterpret_cast<VkBuffer*>( &buffer->buffer ),
+		&buffer->allocation,
+		&buffer->allocation_info ) != VK_SUCCESS )
+	{
+		LOG_ERROR( "Failed to create buffer" );
+		throw std::runtime_error( "Failed to create buffer" );
+	}
+
+	return buffer;
 }
