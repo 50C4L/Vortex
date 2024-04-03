@@ -43,17 +43,17 @@ namespace
 
 	vk::RenderingAttachmentInfo create_attachment_info( vk::ImageView& view, std::optional<vk::ClearValue> clear, vk::ImageLayout layout )
 	{
-		vk::RenderingAttachmentInfo color_attachment_info{};
-		color_attachment_info.imageView = view;
-		color_attachment_info.imageLayout = layout;
-		color_attachment_info.loadOp = clear.has_value() ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad;
-		color_attachment_info.storeOp = vk::AttachmentStoreOp::eStore;
+		vk::RenderingAttachmentInfo attachment_info{};
+		attachment_info.imageView = view;
+		attachment_info.imageLayout = layout;
+		attachment_info.loadOp = clear.has_value() ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad;
+		attachment_info.storeOp = vk::AttachmentStoreOp::eStore;
 		if( clear.has_value() )
 		{
-			color_attachment_info.clearValue = clear.value();
+			attachment_info.clearValue = clear.value();
 		}
 
-		return color_attachment_info;
+		return attachment_info;
 	}
 
 	void render_imgui( vk::CommandBuffer& cmd, vk::ImageView& target_image_view, vk::Extent2D extent )
@@ -109,18 +109,25 @@ Renderer::Init( SDL_Window& window )
 	mImmidiateCommandContext = std::make_unique<VulkanCommandContext>( *mContext );
 
 	LOG( "Creating render image ..." );
-	vk::ImageUsageFlags image_usage_flags;
-	image_usage_flags |= vk::ImageUsageFlagBits::eTransferSrc;
-	image_usage_flags |= vk::ImageUsageFlagBits::eTransferDst;
-	image_usage_flags |= vk::ImageUsageFlagBits::eStorage;
-	image_usage_flags |= vk::ImageUsageFlagBits::eColorAttachment;
 
 	mRenderImage = std::make_unique<ManagedImage>(
 		mContext->logical_device.get(),
 		*mVMA->allocator.get(),
 		vk::Extent3D{ static_cast<uint32_t>( width ), static_cast<uint32_t>( height ), 1 },
 		vk::Format::eR16G16B16A16Sfloat,
-		image_usage_flags
+		vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eColorAttachment,
+		vk::ImageAspectFlagBits::eColor
+	);
+
+	LOG( "Creating depth image ..." );
+
+	mDepthImage = std::make_unique<ManagedImage>(
+		mContext->logical_device.get(),
+		*mVMA->allocator.get(),
+		vk::Extent3D{ static_cast<uint32_t>( width ), static_cast<uint32_t>( height ), 1 },
+		vk::Format::eD32Sfloat,
+		vk::ImageUsageFlagBits::eDepthStencilAttachment,
+		vk::ImageAspectFlagBits::eDepth
 	);
 
 	// Init descriptor set layout
@@ -152,6 +159,7 @@ Renderer::Render()
 
 	// Transition the main render image to a general layout
 	transition_image( cmd, mRenderImage->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal );
+	transition_image( cmd, mDepthImage->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal );
 
 	// Actual rendering here
 	DrawGeometry( cmd );
@@ -319,9 +327,9 @@ Renderer::InitMeshPipeline()
 		.SetCullMode( vk::CullModeFlagBits::eNone, vk::FrontFace::eClockwise )
 		.SetMultisampling()
 		.SetBlendMode()
-		.SetDepthTest()
 		.SetColorAttachmentFormat( mRenderImage->GetFormat() )
-		.SetDepthFormat( vk::Format::eUndefined )
+		.SetDepthTest( vk::Bool32( VK_TRUE ), vk::Bool32( VK_TRUE ), vk::CompareOp::eGreaterOrEqual )
+		.SetDepthFormat( mDepthImage->GetFormat() )
 		.Build( *mContext->logical_device );
 
 	return true;
@@ -345,19 +353,27 @@ Renderer::InitImGUI( SDL_Window& window )
 void
 Renderer::InitData()
 {
-	std::array<Vertex,4> rect_vertices;
+	std::array<Vertex,8> rect_vertices;
 
-	rect_vertices[0].position = {0.5,-0.5, 0};
-	rect_vertices[1].position = {0.5,0.5, 0};
-	rect_vertices[2].position = {-0.5,-0.5, 0};
-	rect_vertices[3].position = {-0.5,0.5, 0};
+	rect_vertices[0].position = {  0.5, -0.5, 0 };
+	rect_vertices[1].position = {  0.5,  0.5, 0 };
+	rect_vertices[2].position = { -0.5, -0.5, 0 };
+	rect_vertices[3].position = { -0.5,  0.5, 0 };
+	rect_vertices[4].position = {  1, -0.8, 0.5 };
+	rect_vertices[5].position = {  1,  0.3, 0.5 };
+	rect_vertices[6].position = { -0.2, -0.5, 0.5 };
+	rect_vertices[7].position = { -0.5,  0.3, 0.5 };
 
 	rect_vertices[0].color = { 1, 0, 0, 1 };
 	rect_vertices[1].color = { 1, 1, 0, 1 };
 	rect_vertices[2].color = { 1, 0, 1, 1 };
 	rect_vertices[3].color = { 0, 0, 1, 1 };
+	rect_vertices[4].color = { 0, 1, 0, 1 };
+	rect_vertices[5].color = { 0, 1, 0, 1 };
+	rect_vertices[6].color = { 0, 1, 0, 1 };
+	rect_vertices[7].color = { 0, 1, 0, 1 };
 
-	std::array<uint32_t,6> rect_indices;
+	std::array<uint32_t,12> rect_indices;
 
 	rect_indices[0] = 0;
 	rect_indices[1] = 1;
@@ -367,7 +383,15 @@ Renderer::InitData()
 	rect_indices[4] = 1;
 	rect_indices[5] = 3;
 
-	mRectangleMesh = UploadMesh( rect_indices, rect_vertices );
+	rect_indices[6] = 4;
+	rect_indices[7] = 5;
+	rect_indices[8] = 6;
+
+	rect_indices[9]  = 6;
+	rect_indices[10] = 5;
+	rect_indices[11] = 7;
+
+	mRectangleMeshes = UploadMesh( rect_indices, rect_vertices );
 }
 
 void
@@ -404,6 +428,9 @@ void
 Renderer::DrawGeometry( vk::CommandBuffer& cmd )
 {
 	auto color_attachment = create_attachment_info( mRenderImage->GetImageView(), std::nullopt, vk::ImageLayout::eGeneral );
+	vk::ClearValue depth_clear_value;
+	depth_clear_value.depthStencil.depth = 0.f;
+	auto depth_attachment = create_attachment_info( mDepthImage->GetImageView(), std::move( depth_clear_value ), vk::ImageLayout::eDepthAttachmentOptimal );
 
 	auto render_extent = mRenderImage->GetExtent2D();
 	vk::RenderingInfo render_info{};
@@ -411,16 +438,17 @@ Renderer::DrawGeometry( vk::CommandBuffer& cmd )
 	render_info.pColorAttachments = &color_attachment;
 	render_info.renderArea = vk::Rect2D{ vk::Offset2D{ 0, 0 }, std::move( render_extent ) };
 	render_info.layerCount = 1;
+	render_info.pDepthAttachment = &depth_attachment;
 
 	cmd.beginRendering( render_info );
 	cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, mMeshPipeline.get() );
 
 	GPUDrawPushConstants push_constants{};
 	push_constants.world_matrix = glm::mat4( 1.0f );
-	push_constants.vertex_buffer = mRectangleMesh->vertex_buffer_address;
+	push_constants.vertex_buffer = mRectangleMeshes->vertex_buffer_address;
 
 	cmd.pushConstants( mMeshPipelineLayout.get(), vk::ShaderStageFlagBits::eVertex, 0, sizeof( GPUDrawPushConstants ), &push_constants );
-	cmd.bindIndexBuffer( mRectangleMesh->index_buffer->buffer, 0, vk::IndexType::eUint32 );
+	cmd.bindIndexBuffer( mRectangleMeshes->index_buffer->buffer, 0, vk::IndexType::eUint32 );
 
 	vk::Viewport viewport{};
 	viewport.width = static_cast<float>( render_extent.width );
@@ -436,7 +464,7 @@ Renderer::DrawGeometry( vk::CommandBuffer& cmd )
 	scissor.offset = vk::Offset2D{ 0, 0 };
 	cmd.setScissor( 0, scissor );
 
-	cmd.drawIndexed( 6, 1, 0, 0, 0 );
+	cmd.drawIndexed( 12, 1, 0, 0, 0 );
 
 	cmd.endRendering();
 }

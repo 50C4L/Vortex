@@ -14,7 +14,7 @@ void graphics::transition_image( vk::CommandBuffer& cmd_buffer, vk::Image image,
 	image_barrier.dstAccessMask = vk::AccessFlagBits2::eMemoryWrite | vk::AccessFlagBits2::eMemoryRead;
 
 	vk::ImageAspectFlags aspect_mask =
-		( new_layout == vk::ImageLayout::eDepthStencilAttachmentOptimal ) ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor;
+		( new_layout == vk::ImageLayout::eDepthAttachmentOptimal ) ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor;
 	image_barrier.subresourceRange = vk::ImageSubresourceRange{ aspect_mask, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
 	image_barrier.image = image;
 

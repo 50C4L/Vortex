@@ -13,7 +13,7 @@ namespace graphics
 	class ManagedImage
 	{
 	public:
-		ManagedImage( vk::Device& device, VmaAllocator& allocator, vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usage );
+		ManagedImage( vk::Device& device, VmaAllocator& allocator, vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usage, vk::ImageAspectFlags aspect_flags );
 		virtual ~ManagedImage();
 
 		vk::Image& GetImage();

@@ -101,6 +101,7 @@ namespace graphics
 
 		std::unique_ptr<VMAWrapper> mVMA;
 		std::unique_ptr<ManagedImage> mRenderImage;
+		std::unique_ptr<ManagedImage> mDepthImage;
 
 		std::unique_ptr<DescriptorAllocator> 	mDescriptorAllocator;
 		vk::UniqueDescriptorSet 				mRenderImageDescriptorSet;
@@ -111,7 +112,7 @@ namespace graphics
 
 		vk::UniquePipeline mMeshPipeline;
 		vk::UniquePipelineLayout mMeshPipelineLayout;
-		std::unique_ptr<GPUMeshBuffers> mRectangleMesh;
+		std::unique_ptr<GPUMeshBuffers> mRectangleMeshes;
 	};
 }
 

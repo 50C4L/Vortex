@@ -34,12 +34,19 @@ namespace
 	}
 }
 
-ManagedImage::ManagedImage( vk::Device& device, VmaAllocator& allocator, vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usage )
+ManagedImage::ManagedImage( 
+	vk::Device& device, 
+	VmaAllocator& allocator, 
+	vk::Extent3D extent, 
+	vk::Format format, 
+	vk::ImageUsageFlags usage,
+	vk::ImageAspectFlags aspect_flags
+)
 	: mAllocator( allocator )
 	, mExtent( extent )
 	, mFormat( format )
 {
-	auto render_image_create_info = create_image_info( extent, format, usage );
+	auto image_create_info = create_image_info( extent, format, usage );
 
 	VmaAllocationCreateInfo alloc_info{};
 	alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
@@ -48,14 +55,14 @@ ManagedImage::ManagedImage( vk::Device& device, VmaAllocator& allocator, vk::Ext
 	// allocate and create the image
 	vmaCreateImage(
 		allocator,
-		reinterpret_cast<VkImageCreateInfo*>( &render_image_create_info ),
+		reinterpret_cast<VkImageCreateInfo*>( &image_create_info ),
 		&alloc_info,
 		reinterpret_cast<VkImage*>( &mImage ),
 		&mAllocation,
 		&mAllocationInfo );
 
 	// create the image view
-	auto image_view_info = create_image_view_info( mImage, format, vk::ImageAspectFlagBits::eColor );
+	auto image_view_info = create_image_view_info( mImage, format, aspect_flags );
 	mImageView = device.createImageViewUnique( image_view_info );
 }
 

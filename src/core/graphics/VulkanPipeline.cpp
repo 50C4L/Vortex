@@ -163,11 +163,11 @@ VulkanPipelineBuilder::SetDepthFormat( vk::Format format )
 }
 
 VulkanPipelineBuilder&
-VulkanPipelineBuilder::SetDepthTest( /*vk::Bool32 enable, vk::Bool32 write_enable, vk::CompareOp compare_op*/ )
+VulkanPipelineBuilder::SetDepthTest( vk::Bool32 enable, vk::Bool32 write_enable, vk::CompareOp compare_op )
 {
-	depth_stencil.depthTestEnable = VK_TRUE;
-	depth_stencil.depthWriteEnable = VK_TRUE;
-	depth_stencil.depthCompareOp = vk::CompareOp::eNever;
+	depth_stencil.depthTestEnable = enable;
+	depth_stencil.depthWriteEnable = write_enable;
+	depth_stencil.depthCompareOp = compare_op;
 	depth_stencil.depthBoundsTestEnable = VK_FALSE;
 	depth_stencil.stencilTestEnable = VK_FALSE;
 	depth_stencil.minDepthBounds = 0.0f;
