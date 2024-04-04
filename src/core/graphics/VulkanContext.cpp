@@ -382,7 +382,13 @@ namespace
 		physical_device.getFeatures2( &physical_feature );
 
 		if( features_12.bufferDeviceAddress == VK_FALSE ||
-			features_12.descriptorIndexing == VK_FALSE )
+			features_12.descriptorIndexing == VK_FALSE ||
+			features_12.shaderSampledImageArrayNonUniformIndexing == VK_FALSE || 
+			features_12.descriptorBindingSampledImageUpdateAfterBind == VK_FALSE ||
+			features_12.shaderUniformBufferArrayNonUniformIndexing == VK_FALSE ||
+			features_12.descriptorBindingUniformBufferUpdateAfterBind == VK_FALSE ||
+			features_12.shaderStorageBufferArrayNonUniformIndexing == VK_FALSE ||
+			features_12.descriptorBindingStorageBufferUpdateAfterBind == VK_FALSE )
 		{
 			LOG_ERROR( "Vulkan 1.2 features are not supported!" );
 		}
