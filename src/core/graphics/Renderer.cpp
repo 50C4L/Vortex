@@ -326,7 +326,7 @@ Renderer::InitMeshPipeline()
 		.SetPolygonMode( vk::PolygonMode::eFill )
 		.SetCullMode( vk::CullModeFlagBits::eNone, vk::FrontFace::eClockwise )
 		.SetMultisampling()
-		.SetBlendMode()
+		.SetBlendMode( vk::Bool32( VK_TRUE ), vk::BlendFactor::eOne, vk::BlendFactor::eDstAlpha, vk::BlendOp::eAdd )
 		.SetColorAttachmentFormat( mRenderImage->GetFormat() )
 		.SetDepthTest( vk::Bool32( VK_TRUE ), vk::Bool32( VK_TRUE ), vk::CompareOp::eGreaterOrEqual )
 		.SetDepthFormat( mDepthImage->GetFormat() )
@@ -368,9 +368,9 @@ Renderer::InitData()
 	rect_vertices[1].color = { 1, 1, 0, 1 };
 	rect_vertices[2].color = { 1, 0, 1, 1 };
 	rect_vertices[3].color = { 0, 0, 1, 1 };
-	rect_vertices[4].color = { 0, 1, 0, 1 };
-	rect_vertices[5].color = { 0, 1, 0, 1 };
-	rect_vertices[6].color = { 0, 1, 0, 1 };
+	rect_vertices[4].color = { 0, 1, 0, 0.3 };
+	rect_vertices[5].color = { 0, 1, 0, 0.5 };
+	rect_vertices[6].color = { 0, 1, 0, 0.7 };
 	rect_vertices[7].color = { 0, 1, 0, 1 };
 
 	std::array<uint32_t,12> rect_indices;
@@ -441,6 +441,7 @@ Renderer::DrawGeometry( vk::CommandBuffer& cmd )
 	render_info.pDepthAttachment = &depth_attachment;
 
 	cmd.beginRendering( render_info );
+	cmd.clearColorImage( mRenderImage->GetImage(), vk::ImageLayout::eGeneral, vk::ClearColorValue{ std::array<float,4>{ 0.0f, 0.0f, 0.0f, 1.0f } }, vk::ImageSubresourceRange{ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 } );
 	cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, mMeshPipeline.get() );
 
 	GPUDrawPushConstants push_constants{};
