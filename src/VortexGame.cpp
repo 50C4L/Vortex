@@ -76,8 +76,8 @@ VortexGame::Init()
 	}
 
 	// Initialize Renderer
-	mRenderer = std::make_unique<graphics::Renderer>();
-	if( !mRenderer->Init( *mWindow ) )
+	mRenderer = std::make_unique<graphics::Renderer>( *mWindow );
+	if( !mRenderer->Init() )
 	{
 		std::cerr << "Failed to initialize Renderer" << std::endl;
 		return false;

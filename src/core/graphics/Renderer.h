@@ -37,7 +37,7 @@ namespace graphics
 		///
 		/// Constructor
 		///
-		Renderer();
+		Renderer( SDL_Window& window );
 
 		///
 		/// Destructor
@@ -47,13 +47,10 @@ namespace graphics
 		///
 		/// Initialize the renderer
 		///
-		///	@param window
-		///	 The window to render to
-		///
 		/// @return
 		///  true if successful, false otherwise
 		///
-		bool Init( SDL_Window& window );
+		bool Init();
 
 		///
 		/// Output the rendered frame
@@ -83,7 +80,7 @@ namespace graphics
 		void InitDescriptors();
 		void InitPipelines();
 		bool InitMeshPipeline();
-		void InitImGUI( SDL_Window& window );
+		void InitImGUI();
 		void InitData();
 
 		void ImmediateSubmit( std::function<void( vk::CommandBuffer& )> work );
@@ -94,6 +91,7 @@ namespace graphics
 
 		std::unique_ptr<GPUMeshBuffers> UploadMesh( std::span<uint32_t> indices, std::span<Vertex> vertices );
 
+		SDL_Window& mWindow;
 		std::unique_ptr<VulkanContext>		mContext;
 		std::unique_ptr<VulkanSwapChain>	mSwapChain;
 		std::vector<Frame>					mFrames;

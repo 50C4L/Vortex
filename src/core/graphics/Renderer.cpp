@@ -72,8 +72,9 @@ namespace
 }
 
 
-Renderer::Renderer()
-	: mFrameNumber( 0 )
+Renderer::Renderer( SDL_Window& window )
+	: mWindow( window )
+	, mFrameNumber( 0 )
 {
 }
 
@@ -82,13 +83,13 @@ Renderer::~Renderer()
 }
 
 bool
-Renderer::Init( SDL_Window& window )
+Renderer::Init()
 {
 	LOG( "Initializing vulkan context ..." );
-	mContext = std::make_unique<VulkanContext>( window );
+	mContext = std::make_unique<VulkanContext>( mWindow );
 
 	int width, height = 0;
-	SDL_Vulkan_GetDrawableSize( &window, &width, &height );
+	SDL_Vulkan_GetDrawableSize( &mWindow, &width, &height );
 
 	LOG( "Initializing vulkan swap chain ..." );
 	mSwapChain = std::make_unique<VulkanSwapChain>( *mContext, static_cast<uint32_t>( width ), static_cast<uint32_t>( height ) );
@@ -137,7 +138,7 @@ Renderer::Init( SDL_Window& window )
 	InitPipelines();
 
 	// Init IMGUI
-	InitImGUI( window );
+	InitImGUI();
 
 	InitData();
 
@@ -158,7 +159,14 @@ Renderer::Render()
 	frame.command_context->Begin();
 
 	// Transition the main render image to a general layout
-	transition_image( cmd, mRenderImage->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal );
+	transition_image( cmd, mRenderImage->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral );
+	cmd.clearColorImage( 
+		mRenderImage->GetImage(),
+		vk::ImageLayout::eGeneral,
+		vk::ClearColorValue{ std::array<float,4>{ 0.0f, 0.0f, 0.0f, 1.0f } },
+		vk::ImageSubresourceRange{ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 } );
+
+	transition_image( cmd, mRenderImage->GetImage(), vk::ImageLayout::eGeneral, vk::ImageLayout::eColorAttachmentOptimal );
 	transition_image( cmd, mDepthImage->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal );
 
 	// Actual rendering here
@@ -336,10 +344,10 @@ Renderer::InitMeshPipeline()
 }
 
 void
-Renderer::InitImGUI( SDL_Window& window )
+Renderer::InitImGUI()
 {
 	mImGUILifetime = std::make_unique<ImGUILifetime>( *mContext );
-	mImGUILifetime->Init( window, MAX_FRAMES_IN_FLIGHT, static_cast<uint32_t>( mSwapChain->GetImages().size() ), mSwapChain->GetImageFormat() );
+	mImGUILifetime->Init( mWindow, MAX_FRAMES_IN_FLIGHT, static_cast<uint32_t>( mSwapChain->GetImages().size() ), mSwapChain->GetImageFormat() );
 
 	ImmediateSubmit( []( vk::CommandBuffer& )
 	{
@@ -441,7 +449,6 @@ Renderer::DrawGeometry( vk::CommandBuffer& cmd )
 	render_info.pDepthAttachment = &depth_attachment;
 
 	cmd.beginRendering( render_info );
-	cmd.clearColorImage( mRenderImage->GetImage(), vk::ImageLayout::eGeneral, vk::ClearColorValue{ std::array<float,4>{ 0.0f, 0.0f, 0.0f, 1.0f } }, vk::ImageSubresourceRange{ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 } );
 	cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, mMeshPipeline.get() );
 
 	GPUDrawPushConstants push_constants{};
