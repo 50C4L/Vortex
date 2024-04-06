@@ -19,7 +19,7 @@ namespace graphics
 		std::vector<vk::DescriptorSetLayoutBinding> mBindings;
 	};
 
-	class DescriptorAllocator
+	class DynamicDescriptorAllocator
 	{
 	public:
 		struct PoolSizeRatio
@@ -27,17 +27,23 @@ namespace graphics
 			vk::DescriptorType type;
 			float ratio;
 		};
-
-		DescriptorAllocator( vk::Device& device, uint32_t max_sets, const std::vector<PoolSizeRatio>& pool_sizes );
-		~DescriptorAllocator();
+		DynamicDescriptorAllocator( vk::Device& device, uint32_t sets_per_pool, const std::vector<DynamicDescriptorAllocator::PoolSizeRatio>& pool_ratios );
+		~DynamicDescriptorAllocator();
 
 		void Reset();
 
 		vk::UniqueDescriptorSet Allocate( vk::DescriptorSetLayout layout );
 
 	private:
+		vk::UniqueDescriptorPool GetPool();
+		vk::UniqueDescriptorPool CreatePool( uint32_t set_counts, const std::vector<DynamicDescriptorAllocator::PoolSizeRatio>& pool_sizes);
+		void GrowSetsPerPool();
+
 		vk::Device& mDevice;
-		vk::UniqueDescriptorPool mPool;
+		std::vector<DynamicDescriptorAllocator::PoolSizeRatio> mRatios;
+		std::vector<vk::UniqueDescriptorPool> mFullPools;
+		std::vector<vk::UniqueDescriptorPool> mFreePools;
+		uint32_t mSetsPerPool;
 	};
 }
 

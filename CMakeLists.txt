@@ -18,6 +18,6 @@ add_executable(Vortex
 	./src/VortexGame.cpp
 )
 
-target_link_libraries(Vortex
+target_link_libraries(Vortex PRIVATE
 	eage_core
 )

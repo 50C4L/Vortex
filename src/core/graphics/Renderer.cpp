@@ -264,11 +264,11 @@ void
 Renderer::InitDescriptors()
 {
 	LOG( "Initializing descriptor sets ..." );
-	std::vector<DescriptorAllocator::PoolSizeRatio> sizes =
+	std::vector<DynamicDescriptorAllocator::PoolSizeRatio> sizes =
 	{
 		{ vk::DescriptorType::eStorageImage, 1 }
 	};
-	mDescriptorAllocator = std::make_unique<DescriptorAllocator>( *mContext->logical_device, 10, sizes );
+	mDescriptorAllocator = std::make_unique<DynamicDescriptorAllocator>( *mContext->logical_device, 10, sizes );
 
 	{
 		DescriptorLayoutBuilder layout_builder;

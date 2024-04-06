@@ -14,7 +14,7 @@ namespace graphics
 	class VulkanContext;
 	class VulkanSwapChain;
 	class VulkanCommandContext;
-	class DescriptorAllocator;
+	class DynamicDescriptorAllocator;
 	class Renderable;
 	class ImGUILifetime;
 	struct VMAWrapper;
@@ -101,9 +101,9 @@ namespace graphics
 		std::unique_ptr<ManagedImage> mRenderImage;
 		std::unique_ptr<ManagedImage> mDepthImage;
 
-		std::unique_ptr<DescriptorAllocator> 	mDescriptorAllocator;
-		vk::UniqueDescriptorSet 				mRenderImageDescriptorSet;
-		vk::UniqueDescriptorSetLayout			mRenderImageDescriptorSetLayout;
+		std::unique_ptr<DynamicDescriptorAllocator> 	mDescriptorAllocator;
+		vk::UniqueDescriptorSet 						mRenderImageDescriptorSet;
+		vk::UniqueDescriptorSetLayout					mRenderImageDescriptorSetLayout;
 
 		std::unique_ptr<VulkanCommandContext> mImmidiateCommandContext;
 		std::unique_ptr<ImGUILifetime> mImGUILifetime;

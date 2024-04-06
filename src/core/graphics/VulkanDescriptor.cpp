@@ -2,6 +2,12 @@
 
 using namespace graphics;
 
+namespace
+{
+	const float SETS_PER_POOL_GROWTH = 1.5f;
+	const uint32_t MAX_SETS_PER_POOL = 2048;
+}
+
 DescriptorLayoutBuilder::DescriptorLayoutBuilder()
 {
 }
@@ -38,41 +44,113 @@ DescriptorLayoutBuilder::Clear()
 	mBindings.clear();
 }
 
-DescriptorAllocator::DescriptorAllocator( vk::Device& device, uint32_t max_sets, const std::vector<PoolSizeRatio>& pool_sizes )
+DynamicDescriptorAllocator::DynamicDescriptorAllocator( vk::Device& device, uint32_t sets_per_pool, const std::vector<PoolSizeRatio>& pool_sizes )
 	: mDevice( device )
+	, mRatios( pool_sizes )
+	, mSetsPerPool( sets_per_pool )
 {
-	std::vector<vk::DescriptorPoolSize> pool_sizes_vk;
-	for( const auto& pool_size : pool_sizes )
-	{
-		pool_sizes_vk.push_back( vk::DescriptorPoolSize( pool_size.type, static_cast<uint32_t>( max_sets * pool_size.ratio ) ) );
-	}
-
-	vk::DescriptorPoolCreateInfo pool_info;
-	pool_info.poolSizeCount = static_cast<uint32_t>( pool_sizes_vk.size() );
-	pool_info.pPoolSizes    = pool_sizes_vk.data();
-	pool_info.maxSets       = max_sets;
-	pool_info.flags		 	= vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
-
-	mPool = mDevice.createDescriptorPoolUnique( pool_info );
+	mFreePools.push_back( std::move( CreatePool( sets_per_pool, pool_sizes ) ) );
+	GrowSetsPerPool();
 }
 
-DescriptorAllocator::~DescriptorAllocator()
+DynamicDescriptorAllocator::~DynamicDescriptorAllocator()
 {
 }
 
 void
-DescriptorAllocator::Reset()
+DynamicDescriptorAllocator::Reset()
 {
-	mDevice.resetDescriptorPool( mPool.get() );
+	for( auto& pool : mFreePools )
+	{
+		mDevice.resetDescriptorPool( pool.get() );
+	}
+
+	for( auto& pool : mFullPools )
+	{
+		mDevice.resetDescriptorPool( pool.get() );
+		mFreePools.push_back( std::move( pool ) );
+	}
+	mFullPools.clear();
 }
 
 vk::UniqueDescriptorSet
-DescriptorAllocator::Allocate( vk::DescriptorSetLayout layout )
+DynamicDescriptorAllocator::Allocate( vk::DescriptorSetLayout layout )
 {
-	vk::DescriptorSetAllocateInfo alloc_info;
-	alloc_info.descriptorPool     = mPool.get();
-	alloc_info.descriptorSetCount  = 1;
-	alloc_info.pSetLayouts         = &layout;
+	auto pool_to_use = GetPool();
 
-	return std::move( mDevice.allocateDescriptorSetsUnique( alloc_info )[ 0 ] );
+	vk::DescriptorSetAllocateInfo alloc_info;
+	alloc_info.descriptorPool		= pool_to_use.get();
+	alloc_info.descriptorSetCount	= 1;
+	alloc_info.pSetLayouts			= &layout;
+
+	vk::UniqueDescriptorSet ret;
+
+	try
+	{
+		ret = std::move( mDevice.allocateDescriptorSetsUnique( alloc_info )[0] );
+	}
+	catch( const vk::SystemError& e )
+	{
+		if( e.code().value() == VK_ERROR_FRAGMENTED_POOL || e.code().value() == VK_ERROR_OUT_OF_POOL_MEMORY )
+		{
+			mFullPools.push_back( std::move( pool_to_use ) );
+			pool_to_use = GetPool();
+			alloc_info.descriptorPool = pool_to_use.get();
+			ret = std::move( mDevice.allocateDescriptorSetsUnique( alloc_info )[0] );
+		}
+		else
+		{
+			throw e;
+		}
+	}
+	
+	mFreePools.push_back( std::move( pool_to_use ) );
+	return std::move( ret );
+}
+
+vk::UniqueDescriptorPool
+DynamicDescriptorAllocator::GetPool()
+{
+	vk::UniqueDescriptorPool ret;
+	if( !mFreePools.empty() )
+	{
+		ret = std::move( mFreePools.back() );
+		mFreePools.pop_back();
+	}
+	else
+	{
+		ret = CreatePool( mSetsPerPool, mRatios );
+		GrowSetsPerPool();
+	}
+
+	return ret;
+}
+
+vk::UniqueDescriptorPool
+DynamicDescriptorAllocator::CreatePool( uint32_t set_counts, const std::vector<PoolSizeRatio>& pool_ratios )
+{
+	std::vector<vk::DescriptorPoolSize> pool_sizes_vk;
+	for( const auto& ratio : pool_ratios )
+	{
+		pool_sizes_vk.push_back( 
+			vk::DescriptorPoolSize( ratio.type, static_cast<uint32_t>( set_counts * ratio.ratio ) ) );
+	}
+
+	vk::DescriptorPoolCreateInfo pool_info;
+	pool_info.poolSizeCount	= static_cast<uint32_t>( pool_sizes_vk.size() );
+	pool_info.pPoolSizes	= pool_sizes_vk.data();
+	pool_info.maxSets		= set_counts;
+	pool_info.flags			= vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
+
+	return mDevice.createDescriptorPoolUnique( pool_info );
+}
+
+void
+DynamicDescriptorAllocator::GrowSetsPerPool()
+{
+	mSetsPerPool = static_cast<uint32_t>( mSetsPerPool * SETS_PER_POOL_GROWTH );
+	if( mSetsPerPool > MAX_SETS_PER_POOL )
+	{
+		mSetsPerPool = MAX_SETS_PER_POOL;
+	}
 }

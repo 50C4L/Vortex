@@ -79,7 +79,7 @@ VulkanCommandContext::End()
 void
 VulkanCommandContext::WaitForCompletion()
 {
-	mContext.logical_device->waitForFences( *mFence, VK_TRUE, UINT64_MAX );
+	std::ignore = mContext.logical_device->waitForFences( *mFence, VK_TRUE, UINT64_MAX );
 	mContext.logical_device->resetFences( *mFence );
 }
 
