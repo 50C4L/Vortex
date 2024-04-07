@@ -2,6 +2,7 @@
 #define _VULKAN_DESCRIPTOR_H_
 
 #include <vulkan/vulkan.hpp>
+#include <deque>
 
 namespace graphics
 {
@@ -44,6 +45,26 @@ namespace graphics
 		std::vector<vk::UniqueDescriptorPool> mFullPools;
 		std::vector<vk::UniqueDescriptorPool> mFreePools;
 		uint32_t mSetsPerPool;
+	};
+
+	class DescriptorWriter
+	{
+	public:
+		DescriptorWriter() = default;
+		~DescriptorWriter() = default;
+
+		void WriteBuffer( uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize offset, vk::DeviceSize range );
+		void WriteImage( uint32_t binding, vk::DescriptorType type, vk::ImageView image_view, vk::ImageLayout layout, vk::Sampler sampler );
+
+		void Update( vk::Device device, vk::DescriptorSet descriptor_set );
+		void AddImageInfo( vk::DescriptorImageInfo image_info );
+		void AddBufferInfo( vk::DescriptorBufferInfo buffer_info );
+		void Clear();
+
+	private:
+		std::vector<vk::WriteDescriptorSet> mWrites;
+		std::deque<vk::DescriptorImageInfo> mImageInfos;
+		std::deque<vk::DescriptorBufferInfo> mBufferInfos;
 	};
 }
 

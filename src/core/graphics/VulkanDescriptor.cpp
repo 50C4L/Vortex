@@ -154,3 +154,57 @@ DynamicDescriptorAllocator::GrowSetsPerPool()
 		mSetsPerPool = MAX_SETS_PER_POOL;
 	}
 }
+
+void
+DescriptorWriter::WriteBuffer( uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize offset, vk::DeviceSize range )
+{
+	vk::DescriptorBufferInfo& buffer_info = mBufferInfos.emplace_back( buffer, offset, range );
+	vk::WriteDescriptorSet write{};
+	write.dstBinding = binding;
+	write.descriptorCount = 1;
+	write.descriptorType = type;
+	write.pBufferInfo = &buffer_info;
+	mWrites.push_back( std::move( write ) );
+}
+
+void
+DescriptorWriter::WriteImage( uint32_t binding, vk::DescriptorType type, vk::ImageView image_view, vk::ImageLayout layout, vk::Sampler sampler )
+{
+	vk::DescriptorImageInfo& image_info = mImageInfos.emplace_back( sampler, image_view, layout );
+	vk::WriteDescriptorSet write{};
+	write.dstBinding = binding;
+	write.descriptorCount = 1;
+	write.descriptorType = type;
+	write.pImageInfo = &image_info;
+	mWrites.push_back( std::move( write ) );
+}
+
+void
+DescriptorWriter::Update( vk::Device device, vk::DescriptorSet descriptor_set )
+{
+	for( auto& write : mWrites )
+	{
+		write.dstSet = descriptor_set;
+	}
+	device.updateDescriptorSets( static_cast<uint32_t>( mWrites.size() ), mWrites.data(), 0, nullptr );
+}
+
+void
+DescriptorWriter::Clear()
+{
+	mWrites.clear();
+	mImageInfos.clear();
+	mBufferInfos.clear();
+}
+
+void
+DescriptorWriter::AddImageInfo( vk::DescriptorImageInfo image_info )
+{
+	mImageInfos.push_back( image_info );
+}
+
+void
+DescriptorWriter::AddBufferInfo( vk::DescriptorBufferInfo buffer_info )
+{
+	mBufferInfos.push_back( buffer_info );
+}

@@ -278,18 +278,9 @@ Renderer::InitDescriptors()
 
 	mRenderImageDescriptorSet = mDescriptorAllocator->Allocate( *mRenderImageDescriptorSetLayout );
 
-	vk::DescriptorImageInfo image_info;
-	image_info.imageLayout = vk::ImageLayout::eGeneral;
-	image_info.imageView = mRenderImage->GetImageView();
-
-	vk::WriteDescriptorSet write;
-	write.dstSet = mRenderImageDescriptorSet.get();
-	write.dstBinding = 0;
-	write.descriptorCount = 1;
-	write.descriptorType = vk::DescriptorType::eStorageImage;
-	write.pImageInfo = &image_info;
-
-	mContext->logical_device->updateDescriptorSets( write, nullptr );
+	DescriptorWriter writer;
+	writer.WriteImage( 0, vk::DescriptorType::eStorageImage, mRenderImage->GetImageView(), vk::ImageLayout::eGeneral, nullptr );
+	writer.Update( *mContext->logical_device, mRenderImageDescriptorSet.get() );
 }
 
 void
