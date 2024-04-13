@@ -3,6 +3,8 @@
 #include <iostream>
 
 #include <graphics/VulkanMesh.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 using namespace graphics;
 
@@ -32,4 +34,10 @@ const Renderable::UniformData&
 Renderable::GetFixedUniformData() const
 {
 	return mFixedUniformData;
+}
+
+void
+Renderable::Rotate( float angle, const glm::vec3& axis )
+{
+	mFixedUniformData.model_matrix = glm::rotate( mFixedUniformData.model_matrix, angle, axis );
 }

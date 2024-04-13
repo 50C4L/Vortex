@@ -64,6 +64,7 @@ MainScene::Update()
 	// player input
 
 	// player update
+	mPlayer->Rotate( 0.01f, { 0, 0, 1 } );
 
 	// enemy update
 

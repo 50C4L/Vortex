@@ -34,6 +34,8 @@ namespace graphics
 
 		const UniformData& GetFixedUniformData() const;
 
+		void Rotate( float angle, const glm::vec3& axis );
+
 	private:
 		std::shared_ptr<GPUMeshBuffers> mMeshBuffer;
 		UniformData mFixedUniformData;
