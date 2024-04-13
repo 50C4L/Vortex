@@ -10,12 +10,12 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/core)
 add_executable(Vortex 
 	./src/AbstractScene.h
 	./src/main.cpp
-	./src/MainScene.h
-	./src/MainScene.cpp
 	./src/SceneController.h
 	./src/SceneController.cpp
 	./src/VortexGame.h
 	./src/VortexGame.cpp
+	./src/game/MainScene.h
+	./src/game/MainScene.cpp
 )
 
 target_link_libraries(Vortex PRIVATE

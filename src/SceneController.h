@@ -20,6 +20,8 @@ namespace vortex
 
 		void Update();
 
+		void FreeAllScenes();
+
 	private:
 		std::unordered_map<int64_t, std::unique_ptr<AbstractScene>> mScenes;
 		AbstractScene* mCurrentScene;

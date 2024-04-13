@@ -11,7 +11,7 @@
 #include <imgui/imgui_impl_sdl2.h>
 
 #include "SceneController.h"
-#include "MainScene.h"
+#include "game/MainScene.h"
 
 using namespace vortex;
 
@@ -52,6 +52,7 @@ VortexGame::Run()
 		mRenderer->Render();
 	}
 	mRenderer->WaitForIdle();
+	mSceneController->FreeAllScenes();
 }
 
 bool
@@ -85,7 +86,7 @@ VortexGame::Init()
 
 	// Initialize SceneController
 	mSceneController = std::make_unique<SceneController>();
-	mSceneController->AddScene( MAIN_SCENE_ID, std::make_unique<MainScene>() );
+	mSceneController->AddScene( MAIN_SCENE_ID, std::make_unique<MainScene>( *mRenderer ) );
 	mSceneController->ChangeScene( MAIN_SCENE_ID );
 
 	return true;

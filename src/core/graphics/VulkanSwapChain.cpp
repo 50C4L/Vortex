@@ -44,7 +44,6 @@ namespace
 
 	///
 	/// Try to find the best surface format based on the requirement
-	/// @TODO: Consider requirements that's passed from the outside
 	/// 
 	/// @param available_formats
 	///  The available formats for the surface

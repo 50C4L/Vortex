@@ -50,3 +50,11 @@ SceneController::Update()
 		mCurrentScene->Update();
 	}
 }
+
+void
+SceneController::FreeAllScenes()
+{
+	mScenes.clear();
+	mCurrentScene = nullptr;
+	mCurrentSceneId = -1;
+}

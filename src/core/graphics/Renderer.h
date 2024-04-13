@@ -21,6 +21,7 @@ namespace graphics
 	class ManagedImage;
 	struct Vertex;
 	struct GPUMeshBuffers;
+	struct ManagedBuffer;
 
 	///
 	/// Renderer class
@@ -30,8 +31,10 @@ namespace graphics
 	public:
 		struct Frame
 		{
-			std::vector<std::shared_ptr<Renderable>> renderables;
 			std::unique_ptr<VulkanCommandContext> command_context;
+			std::unique_ptr<DynamicDescriptorAllocator> descriptor_allocator;
+			vk::UniqueDescriptorSet renderable_descriptor_set;
+			std::unique_ptr<ManagedBuffer, std::function<void(ManagedBuffer*)>> renderable_uniform_buffer;
 		};
 
 		///
@@ -70,6 +73,11 @@ namespace graphics
 		///
 		void WaitForIdle();
 
+		///
+		/// Immediately upload a mesh to the GPU
+		///
+		std::shared_ptr<GPUMeshBuffers> UploadMesh( std::span<uint32_t> indices, std::span<Vertex> vertices );
+
 	private:
 		Frame& GetCurrentFrame();
 		
@@ -77,31 +85,27 @@ namespace graphics
 
 		void Present( uint32_t image_index );
 
+		void InitFrameResources();
 		void InitDescriptors();
 		void InitPipelines();
 		bool InitMeshPipeline();
 		void InitImGUI();
-		void InitData();
 
 		void ImmediateSubmit( std::function<void( vk::CommandBuffer& )> work );
 
 		void PrepareImGUI();
 
-		void DrawGeometry( vk::CommandBuffer& cmd );
-
-		std::unique_ptr<GPUMeshBuffers> UploadMesh( std::span<uint32_t> indices, std::span<Vertex> vertices );
+		void DrawRenderables( vk::CommandBuffer& cmd );
 
 		SDL_Window& mWindow;
 		std::unique_ptr<VulkanContext>		mContext;
 		std::unique_ptr<VulkanSwapChain>	mSwapChain;
-		std::vector<Frame>					mFrames;
-		int64_t								mFrameNumber;
 
 		std::unique_ptr<VMAWrapper> mVMA;
 		std::unique_ptr<ManagedImage> mRenderImage;
 		std::unique_ptr<ManagedImage> mDepthImage;
 
-		std::unique_ptr<DynamicDescriptorAllocator> 	mDescriptorAllocator;
+		std::unique_ptr<DynamicDescriptorAllocator> 	mGlobalDescriptorAllocator; //< Don't use this for per frame data
 		vk::UniqueDescriptorSet 						mRenderImageDescriptorSet;
 		vk::UniqueDescriptorSetLayout					mRenderImageDescriptorSetLayout;
 
@@ -110,7 +114,12 @@ namespace graphics
 
 		vk::UniquePipeline mMeshPipeline;
 		vk::UniquePipelineLayout mMeshPipelineLayout;
-		std::unique_ptr<GPUMeshBuffers> mRectangleMeshes;
+
+		std::vector<std::shared_ptr<Renderable>> mRenderQueue;
+		vk::UniqueDescriptorSetLayout mRenderableFixedDescriptorSetLayout;
+
+		std::vector<Frame>					mFrames;
+		int64_t								mFrameNumber;
 	};
 }
 

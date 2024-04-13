@@ -112,7 +112,6 @@ namespace
 
 	///
 	/// Vulkan extention functions to create and destroy a `VkDebugUtilsMessengerEXT`
-	/// TODO: It should be able to use instance.CreateDebugUtilsMessengerEXT( ... ) and instance.DestroyDebugUtilsMessengerEXT( ... )
 	/// so we can get rid of this address retrieving shit.
 	/// 
 	VkResult CreateDebugUtilsMessengerEXT( VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger )

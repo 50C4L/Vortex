@@ -17,6 +17,7 @@
 #include <graphics/VulkanPipeline.h>
 #include <graphics/VMAWrapper.h>
 #include <graphics/ImGUILifetime.h>
+#include <graphics/Renderable.h>
 
 #include <imgui/imgui_impl_vulkan.h>
 #include <imgui/imgui_impl_sdl2.h>
@@ -26,7 +27,8 @@ using namespace utility;
 
 namespace
 {
-	const uint32_t MAX_FRAMES_IN_FLIGHT = 2; // Double buffering
+	const uint32_t MAX_FRAMES_IN_FLIGHT = 2u; // Double buffering
+	const uint32_t DEFAULT_DESCRIPTOR_SET_COUNT = 1000u;
 
 	vk::SubmitInfo2 create_submit_info( vk::CommandBufferSubmitInfo cmd_submit_info, std::optional<vk::SemaphoreSubmitInfo> semaphore_wait_info, std::optional<vk::SemaphoreSubmitInfo> semaphore_signal_info )
 	{
@@ -102,11 +104,7 @@ Renderer::Init()
 	LOG( "Initializing VMA ..." );
 	mVMA = std::make_unique<VMAWrapper>( *mContext );
 
-	LOG( "Initializing vulkan command buffers ..." );
-	for( uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ )
-	{
-		mFrames.push_back( Frame{ {}, std::make_unique<VulkanCommandContext>( *mContext ) } );
-	}
+	InitFrameResources();
 	mImmidiateCommandContext = std::make_unique<VulkanCommandContext>( *mContext );
 
 	LOG( "Creating render image ..." );
@@ -140,8 +138,6 @@ Renderer::Init()
 	// Init IMGUI
 	InitImGUI();
 
-	InitData();
-
 	return true;
 }
 
@@ -170,14 +166,7 @@ Renderer::Render()
 	transition_image( cmd, mDepthImage->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal );
 
 	// Actual rendering here
-	DrawGeometry( cmd );
-
-	/* TODO
-	for( const auto& renderable : GetCurrentFrame().mRenderables )
-	{
-		renderable.Render( *vulkan_main_buffer );
-	}
-	*/
+	DrawRenderables( cmd );
 
 	auto render_extent = mRenderImage->GetExtent2D();
 
@@ -216,7 +205,7 @@ Renderer::AddToRenderQueue( std::shared_ptr<Renderable> renderable )
 		LOG_ERROR( "No frames available, Init() must be called first." );
 		return;
 	}
-	GetCurrentFrame().renderables.push_back( renderable );
+	mRenderQueue.push_back( std::move( renderable ) );
 }
 
 void
@@ -225,250 +214,7 @@ Renderer::WaitForIdle()
 	mContext->logical_device->waitIdle();
 }
 
-Renderer::Frame&
-Renderer::GetCurrentFrame()
-{
-	return mFrames[ mFrameNumber % MAX_FRAMES_IN_FLIGHT ];
-}
-
-void
-Renderer::Submit()
-{
-	auto& frame = GetCurrentFrame();
-
-	auto submit_info = create_submit_info( 
-		frame.command_context->GetSubmitInfo(), 
-		frame.command_context->GetSwapchainSemaphoreSubmitInfo( vk::PipelineStageFlagBits2::eColorAttachmentOutput ),
-		frame.command_context->GetPresentSemaphoreSubmitInfo( vk::PipelineStageFlagBits2::eColorAttachmentOutput )
-	);
-
-	mContext->graphics_queue.submit2( submit_info, frame.command_context->GetFence() );
-}
-
-void
-Renderer::Present( uint32_t image_index )
-{
-	auto& frame = GetCurrentFrame();
-
-	vk::PresentInfoKHR present_info{};
-	present_info.waitSemaphoreCount = 1;
-	present_info.pWaitSemaphores    = &frame.command_context->GetPresentSemaphore();
-	present_info.swapchainCount     = 1;
-	present_info.pSwapchains        = &mSwapChain->GetSwapChain();
-	present_info.pImageIndices      = &image_index;
-
-	std::ignore = mContext->present_queue.presentKHR( present_info );
-}
-
-void
-Renderer::InitDescriptors()
-{
-	LOG( "Initializing descriptor sets ..." );
-	std::vector<DynamicDescriptorAllocator::PoolSizeRatio> sizes =
-	{
-		{ vk::DescriptorType::eStorageImage, 1 }
-	};
-	mDescriptorAllocator = std::make_unique<DynamicDescriptorAllocator>( *mContext->logical_device, 10, sizes );
-
-	{
-		DescriptorLayoutBuilder layout_builder;
-		layout_builder.AddBinding( 0, vk::DescriptorType::eStorageImage );
-		mRenderImageDescriptorSetLayout = layout_builder.Build( *mContext->logical_device, vk::ShaderStageFlagBits::eCompute );
-	}
-
-	mRenderImageDescriptorSet = mDescriptorAllocator->Allocate( *mRenderImageDescriptorSetLayout );
-
-	DescriptorWriter writer;
-	writer.WriteImage( 0, vk::DescriptorType::eStorageImage, mRenderImage->GetImageView(), vk::ImageLayout::eGeneral, nullptr );
-	writer.Update( *mContext->logical_device, mRenderImageDescriptorSet.get() );
-}
-
-void
-Renderer::InitPipelines()
-{
-	InitMeshPipeline();
-}
-
-
-bool
-Renderer::InitMeshPipeline()
-{
-	auto vertex_shader = create_shader_module_from_file( *mContext->logical_device, "./src/shaders/compiled/colored_triangle_mesh.vert.spv" );
-	if( !vertex_shader.has_value() )
-	{
-		LOG_ERROR( "Failed to create vertex shader module." );
-		return false;
-	}
-
-	auto fragment_shader = create_shader_module_from_file( *mContext->logical_device, "./src/shaders/compiled/colored_triangle.frag.spv" );
-	if( !fragment_shader.has_value() )
-	{
-		LOG_ERROR( "Failed to create fragment shader module." );
-		return false;
-	}
-
-	vk::PushConstantRange push_constant_range{};
-	push_constant_range.stageFlags = vk::ShaderStageFlagBits::eVertex;
-	push_constant_range.offset = 0;
-	push_constant_range.size = sizeof( GPUDrawPushConstants );
-
-	vk::PipelineLayoutCreateInfo pipeline_layout_info{};
-	pipeline_layout_info.pPushConstantRanges = &push_constant_range;
-	pipeline_layout_info.pushConstantRangeCount = 1;
-	mMeshPipelineLayout = mContext->logical_device->createPipelineLayoutUnique( pipeline_layout_info );
-
-	VulkanPipelineBuilder pipeline_builder;
-	mMeshPipeline = pipeline_builder
-		.SetPipelineLayout( mMeshPipelineLayout.get() )
-		.SetShaders( vertex_shader.value().get(), fragment_shader.value().get() )
-		.SetInputTopology( vk::PrimitiveTopology::eTriangleList )
-		.SetPolygonMode( vk::PolygonMode::eFill )
-		.SetCullMode( vk::CullModeFlagBits::eNone, vk::FrontFace::eClockwise )
-		.SetMultisampling()
-		.SetBlendMode( vk::Bool32( VK_TRUE ), vk::BlendFactor::eOne, vk::BlendFactor::eDstAlpha, vk::BlendOp::eAdd )
-		.SetColorAttachmentFormat( mRenderImage->GetFormat() )
-		.SetDepthTest( vk::Bool32( VK_TRUE ), vk::Bool32( VK_TRUE ), vk::CompareOp::eGreaterOrEqual )
-		.SetDepthFormat( mDepthImage->GetFormat() )
-		.Build( *mContext->logical_device );
-
-	return true;
-}
-
-void
-Renderer::InitImGUI()
-{
-	mImGUILifetime = std::make_unique<ImGUILifetime>( *mContext );
-	mImGUILifetime->Init( mWindow, MAX_FRAMES_IN_FLIGHT, static_cast<uint32_t>( mSwapChain->GetImages().size() ), mSwapChain->GetImageFormat() );
-
-	ImmediateSubmit( []( vk::CommandBuffer& )
-	{
-		if( !ImGui_ImplVulkan_CreateFontsTexture() )
-		{
-			LOG_ERROR( "Failed to create IMGUI fonts texture." );
-		}
-	} );
-}
-
-void
-Renderer::InitData()
-{
-	std::array<Vertex,8> rect_vertices;
-
-	rect_vertices[0].position = {  0.5, -0.5, 0 };
-	rect_vertices[1].position = {  0.5,  0.5, 0 };
-	rect_vertices[2].position = { -0.5, -0.5, 0 };
-	rect_vertices[3].position = { -0.5,  0.5, 0 };
-	rect_vertices[4].position = {  1, -0.8, 0.5 };
-	rect_vertices[5].position = {  1,  0.3, 0.5 };
-	rect_vertices[6].position = { -0.2, -0.5, 0.5 };
-	rect_vertices[7].position = { -0.5,  0.3, 0.5 };
-
-	rect_vertices[0].color = { 1, 0, 0, 1 };
-	rect_vertices[1].color = { 1, 1, 0, 1 };
-	rect_vertices[2].color = { 1, 0, 1, 1 };
-	rect_vertices[3].color = { 0, 0, 1, 1 };
-	rect_vertices[4].color = { 0, 1, 0, 0.3 };
-	rect_vertices[5].color = { 0, 1, 0, 0.5 };
-	rect_vertices[6].color = { 0, 1, 0, 0.7 };
-	rect_vertices[7].color = { 0, 1, 0, 1 };
-
-	std::array<uint32_t,12> rect_indices;
-
-	rect_indices[0] = 0;
-	rect_indices[1] = 1;
-	rect_indices[2] = 2;
-
-	rect_indices[3] = 2;
-	rect_indices[4] = 1;
-	rect_indices[5] = 3;
-
-	rect_indices[6] = 4;
-	rect_indices[7] = 5;
-	rect_indices[8] = 6;
-
-	rect_indices[9]  = 6;
-	rect_indices[10] = 5;
-	rect_indices[11] = 7;
-
-	mRectangleMeshes = UploadMesh( rect_indices, rect_vertices );
-}
-
-void
-Renderer::ImmediateSubmit( std::function<void( vk::CommandBuffer& )> work )
-{
-	auto& cmd = mImmidiateCommandContext->GetPrimaryBuffer();
-	mImmidiateCommandContext->Reset();
-	mImmidiateCommandContext->Begin();
-
-	work( cmd );
-
-	mImmidiateCommandContext->End();
-
-	auto submit_info = create_submit_info(
-		mImmidiateCommandContext->GetSubmitInfo(), std::nullopt, std::nullopt
-	);
-
-	mContext->graphics_queue.submit2( submit_info, mImmidiateCommandContext->GetFence() );
-	mImmidiateCommandContext->WaitForCompletion();
-}
-
-void
-Renderer::PrepareImGUI()
-{
-	ImGui_ImplVulkan_NewFrame();
-	ImGui_ImplSDL2_NewFrame();
-	ImGui::NewFrame();
-	// @TODO: Actual setup of the GUI should be passed in as a callback
-	ImGui::ShowDemoWindow();
-	ImGui::Render();
-}
-
-void
-Renderer::DrawGeometry( vk::CommandBuffer& cmd )
-{
-	auto color_attachment = create_attachment_info( mRenderImage->GetImageView(), std::nullopt, vk::ImageLayout::eGeneral );
-	vk::ClearValue depth_clear_value;
-	depth_clear_value.depthStencil.depth = 0.f;
-	auto depth_attachment = create_attachment_info( mDepthImage->GetImageView(), std::move( depth_clear_value ), vk::ImageLayout::eDepthAttachmentOptimal );
-
-	auto render_extent = mRenderImage->GetExtent2D();
-	vk::RenderingInfo render_info{};
-	render_info.colorAttachmentCount = 1;
-	render_info.pColorAttachments = &color_attachment;
-	render_info.renderArea = vk::Rect2D{ vk::Offset2D{ 0, 0 }, std::move( render_extent ) };
-	render_info.layerCount = 1;
-	render_info.pDepthAttachment = &depth_attachment;
-
-	cmd.beginRendering( render_info );
-	cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, mMeshPipeline.get() );
-
-	GPUDrawPushConstants push_constants{};
-	push_constants.world_matrix = glm::mat4( 1.0f );
-	push_constants.vertex_buffer = mRectangleMeshes->vertex_buffer_address;
-
-	cmd.pushConstants( mMeshPipelineLayout.get(), vk::ShaderStageFlagBits::eVertex, 0, sizeof( GPUDrawPushConstants ), &push_constants );
-	cmd.bindIndexBuffer( mRectangleMeshes->index_buffer->buffer, 0, vk::IndexType::eUint32 );
-
-	vk::Viewport viewport{};
-	viewport.width = static_cast<float>( render_extent.width );
-	viewport.height = static_cast<float>( render_extent.height );
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	viewport.x = 0;
-	viewport.y = 0;
-	cmd.setViewport( 0, viewport );
-
-	vk::Rect2D scissor{};
-	scissor.extent = render_extent;
-	scissor.offset = vk::Offset2D{ 0, 0 };
-	cmd.setScissor( 0, scissor );
-
-	cmd.drawIndexed( 12, 1, 0, 0, 0 );
-
-	cmd.endRendering();
-}
-
-std::unique_ptr<GPUMeshBuffers>
+std::shared_ptr<GPUMeshBuffers>
 Renderer::UploadMesh( std::span<uint32_t> indices, std::span<Vertex> vertices )
 {
 	const size_t vertex_buffer_size = sizeof( Vertex ) * vertices.size();
@@ -511,5 +257,240 @@ Renderer::UploadMesh( std::span<uint32_t> indices, std::span<Vertex> vertices )
 		}
 	);
 
-	return std::make_unique<GPUMeshBuffers>( std::move( new_surface ) );
+	return std::make_shared<GPUMeshBuffers>( std::move( new_surface ) );
+}
+
+Renderer::Frame&
+Renderer::GetCurrentFrame()
+{
+	return mFrames[ mFrameNumber % MAX_FRAMES_IN_FLIGHT ];
+}
+
+void
+Renderer::Submit()
+{
+	auto& frame = GetCurrentFrame();
+
+	auto submit_info = create_submit_info( 
+		frame.command_context->GetSubmitInfo(), 
+		frame.command_context->GetSwapchainSemaphoreSubmitInfo( vk::PipelineStageFlagBits2::eColorAttachmentOutput ),
+		frame.command_context->GetPresentSemaphoreSubmitInfo( vk::PipelineStageFlagBits2::eColorAttachmentOutput )
+	);
+
+	mContext->graphics_queue.submit2( submit_info, frame.command_context->GetFence() );
+}
+
+void
+Renderer::Present( uint32_t image_index )
+{
+	auto& frame = GetCurrentFrame();
+
+	vk::PresentInfoKHR present_info{};
+	present_info.waitSemaphoreCount = 1;
+	present_info.pWaitSemaphores    = &frame.command_context->GetPresentSemaphore();
+	present_info.swapchainCount     = 1;
+	present_info.pSwapchains        = &mSwapChain->GetSwapChain();
+	present_info.pImageIndices      = &image_index;
+
+	std::ignore = mContext->present_queue.presentKHR( present_info );
+}
+
+void
+Renderer::InitFrameResources()
+{
+	LOG( "Initializing frame resources ..." );
+	{
+		DescriptorLayoutBuilder layout_builder;
+		layout_builder.AddBinding( 0, vk::DescriptorType::eUniformBuffer );
+		mRenderableFixedDescriptorSetLayout = layout_builder.Build( *mContext->logical_device, vk::ShaderStageFlagBits::eVertex );
+	}
+
+	for( uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ )
+	{
+		std::vector<DynamicDescriptorAllocator::PoolSizeRatio> frame_pool_ratio =
+		{
+			{ vk::DescriptorType::eStorageImage, 3 },
+			{ vk::DescriptorType::eUniformBuffer, 3 },
+			{ vk::DescriptorType::eStorageBuffer, 3 },
+			{ vk::DescriptorType::eCombinedImageSampler, 4 }
+		};
+		Frame new_frame;
+		new_frame.command_context = std::make_unique<VulkanCommandContext>( *mContext );
+		new_frame.descriptor_allocator = std::make_unique<DynamicDescriptorAllocator>( *mContext->logical_device, DEFAULT_DESCRIPTOR_SET_COUNT, std::move( frame_pool_ratio ) );
+		new_frame.renderable_descriptor_set = new_frame.descriptor_allocator->Allocate( *mRenderableFixedDescriptorSetLayout );
+		new_frame.renderable_uniform_buffer = ManagedBuffer::Create( *mVMA->allocator.get(), sizeof( Renderable::UniformData ), vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU );
+
+		DescriptorWriter writer;
+		writer.WriteBuffer( 0, vk::DescriptorType::eUniformBuffer, new_frame.renderable_uniform_buffer->buffer, 0, sizeof( Renderable::UniformData ) );
+		writer.Update( *mContext->logical_device, new_frame.renderable_descriptor_set.get() );
+
+		mFrames.push_back( std::move( new_frame ) );
+	}
+}
+
+void
+Renderer::InitDescriptors()
+{
+	LOG( "Initializing descriptor sets ..." );
+	std::vector<DynamicDescriptorAllocator::PoolSizeRatio> sizes =
+	{
+		{ vk::DescriptorType::eStorageImage, 1 }
+	};
+	mGlobalDescriptorAllocator = std::make_unique<DynamicDescriptorAllocator>( *mContext->logical_device, 10, sizes );
+
+	{
+		DescriptorLayoutBuilder layout_builder;
+		layout_builder.AddBinding( 0, vk::DescriptorType::eStorageImage );
+		mRenderImageDescriptorSetLayout = layout_builder.Build( *mContext->logical_device, vk::ShaderStageFlagBits::eCompute );
+	}
+
+	mRenderImageDescriptorSet = mGlobalDescriptorAllocator->Allocate( *mRenderImageDescriptorSetLayout );
+
+	DescriptorWriter writer;
+	writer.WriteImage( 0, vk::DescriptorType::eStorageImage, mRenderImage->GetImageView(), vk::ImageLayout::eGeneral, nullptr );
+	writer.Update( *mContext->logical_device, mRenderImageDescriptorSet.get() );
+}
+
+void
+Renderer::InitPipelines()
+{
+	InitMeshPipeline();
+}
+
+
+bool
+Renderer::InitMeshPipeline()
+{
+	auto vertex_shader = create_shader_module_from_file( *mContext->logical_device, "./src/shaders/compiled/colored_triangle_mesh.vert.spv" );
+	if( !vertex_shader.has_value() )
+	{
+		LOG_ERROR( "Failed to create vertex shader module." );
+		return false;
+	}
+
+	auto fragment_shader = create_shader_module_from_file( *mContext->logical_device, "./src/shaders/compiled/colored_triangle.frag.spv" );
+	if( !fragment_shader.has_value() )
+	{
+		LOG_ERROR( "Failed to create fragment shader module." );
+		return false;
+	}
+
+	vk::PipelineLayoutCreateInfo pipeline_layout_info{};
+	pipeline_layout_info.setLayoutCount = 1;
+	pipeline_layout_info.pSetLayouts = &mRenderableFixedDescriptorSetLayout.get();
+	mMeshPipelineLayout = mContext->logical_device->createPipelineLayoutUnique( pipeline_layout_info );
+
+	VulkanPipelineBuilder pipeline_builder;
+	mMeshPipeline = pipeline_builder
+		.SetPipelineLayout( mMeshPipelineLayout.get() )
+		.SetShaders( vertex_shader.value().get(), fragment_shader.value().get() )
+		.SetInputTopology( vk::PrimitiveTopology::eTriangleList )
+		.SetPolygonMode( vk::PolygonMode::eFill )
+		.SetCullMode( vk::CullModeFlagBits::eNone, vk::FrontFace::eClockwise )
+		.SetMultisampling()
+		.SetBlendMode( vk::Bool32( VK_TRUE ), vk::BlendFactor::eOne, vk::BlendFactor::eDstAlpha, vk::BlendOp::eAdd )
+		.SetColorAttachmentFormat( mRenderImage->GetFormat() )
+		.SetDepthTest( vk::Bool32( VK_TRUE ), vk::Bool32( VK_TRUE ), vk::CompareOp::eGreaterOrEqual )
+		.SetDepthFormat( mDepthImage->GetFormat() )
+		.Build( *mContext->logical_device );
+
+	return true;
+}
+
+void
+Renderer::InitImGUI()
+{
+	mImGUILifetime = std::make_unique<ImGUILifetime>( *mContext );
+	mImGUILifetime->Init( mWindow, MAX_FRAMES_IN_FLIGHT, static_cast<uint32_t>( mSwapChain->GetImages().size() ), mSwapChain->GetImageFormat() );
+
+	ImmediateSubmit( []( vk::CommandBuffer& )
+	{
+		if( !ImGui_ImplVulkan_CreateFontsTexture() )
+		{
+			LOG_ERROR( "Failed to create IMGUI fonts texture." );
+		}
+	} );
+}
+
+void
+Renderer::ImmediateSubmit( std::function<void( vk::CommandBuffer& )> work )
+{
+	auto& cmd = mImmidiateCommandContext->GetPrimaryBuffer();
+	mImmidiateCommandContext->Reset();
+	mImmidiateCommandContext->Begin();
+
+	work( cmd );
+
+	mImmidiateCommandContext->End();
+
+	auto submit_info = create_submit_info(
+		mImmidiateCommandContext->GetSubmitInfo(), std::nullopt, std::nullopt
+	);
+
+	mContext->graphics_queue.submit2( submit_info, mImmidiateCommandContext->GetFence() );
+	mImmidiateCommandContext->WaitForCompletion();
+}
+
+void
+Renderer::PrepareImGUI()
+{
+	ImGui_ImplVulkan_NewFrame();
+	ImGui_ImplSDL2_NewFrame();
+	ImGui::NewFrame();
+	// @TODO: Actual setup of the GUI should be passed in as a callback
+	ImGui::ShowDemoWindow();
+	ImGui::Render();
+}
+
+void
+Renderer::DrawRenderables( vk::CommandBuffer& cmd )
+{
+	auto color_attachment = create_attachment_info( mRenderImage->GetImageView(), std::nullopt, vk::ImageLayout::eGeneral );
+	vk::ClearValue depth_clear_value;
+	depth_clear_value.depthStencil.depth = 0.f;
+	auto depth_attachment = create_attachment_info( mDepthImage->GetImageView(), std::move( depth_clear_value ), vk::ImageLayout::eDepthAttachmentOptimal );
+
+	auto render_extent = mRenderImage->GetExtent2D();
+	vk::RenderingInfo render_info{};
+	render_info.colorAttachmentCount = 1;
+	render_info.pColorAttachments = &color_attachment;
+	render_info.renderArea = vk::Rect2D{ vk::Offset2D{ 0, 0 }, std::move( render_extent ) };
+	render_info.layerCount = 1;
+	render_info.pDepthAttachment = &depth_attachment;
+
+	cmd.beginRendering( render_info );
+	cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, mMeshPipeline.get() );
+
+	vk::Viewport viewport{};
+	viewport.width = static_cast<float>( render_extent.width );
+	viewport.height = static_cast<float>( render_extent.height );
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	viewport.x = 0;
+	viewport.y = 0;
+	cmd.setViewport( 0, viewport );
+
+	vk::Rect2D scissor{};
+	scissor.extent = render_extent;
+	scissor.offset = vk::Offset2D{ 0, 0 };
+	cmd.setScissor( 0, scissor );
+
+	for( auto& renderable : mRenderQueue )
+	{
+		const auto* mesh_buffers = renderable->GetMeshBuffer();
+		auto& frame = GetCurrentFrame();
+		auto& descriptor_set = frame.renderable_descriptor_set;
+
+		void* data;
+		vmaMapMemory( *mVMA->allocator, frame.renderable_uniform_buffer->allocation, &data );
+		memcpy( data, &renderable->GetFixedUniformData(), sizeof( Renderable::UniformData ) );
+		vmaUnmapMemory( *mVMA->allocator, frame.renderable_uniform_buffer->allocation );
+
+		cmd.bindDescriptorSets( vk::PipelineBindPoint::eGraphics, mMeshPipelineLayout.get(), 0, 1, &descriptor_set.get(), 0, nullptr );
+
+		cmd.bindIndexBuffer( mesh_buffers->index_buffer->buffer, 0, vk::IndexType::eUint32 );
+		cmd.drawIndexed( 6, 1, 0, 0, 0 );
+	}
+
+	cmd.endRendering();
 }
