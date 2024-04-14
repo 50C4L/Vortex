@@ -4,6 +4,7 @@
 #include <graphics/Renderer.h>
 #include <graphics/Renderable.h>
 #include <graphics/VulkanMesh.h>
+#include <graphics/Camera.h>
 
 using namespace vortex;
 using namespace utility;
@@ -21,6 +22,10 @@ void
 MainScene::OnEnter()
 {
 	LOG( "MainScene::OnEnter" );
+
+	mCamera = std::make_shared<graphics::OrthographicCamera>( 0.f, 1.f, 0.f, 1.f, 0.1f, 100.0f );
+	mCamera->SetPosition( { 0, 0, 2.f } );
+	mRenderer.SetCamera( mCamera );
 
 	mPlayer = std::make_shared<graphics::Renderable>();
 

@@ -22,6 +22,7 @@ namespace graphics
 	struct Vertex;
 	struct GPUMeshBuffers;
 	struct ManagedBuffer;
+	class AbstractCamera;
 
 	///
 	/// Renderer class
@@ -78,6 +79,8 @@ namespace graphics
 		///
 		std::shared_ptr<GPUMeshBuffers> UploadMesh( std::span<uint32_t> indices, std::span<Vertex> vertices );
 
+		void SetCamera( std::shared_ptr<AbstractCamera> camera );
+
 	private:
 		Frame& GetCurrentFrame();
 		
@@ -120,6 +123,8 @@ namespace graphics
 
 		std::vector<Frame>					mFrames;
 		int64_t								mFrameNumber;
+
+		std::shared_ptr<AbstractCamera> mCamera;
 	};
 }
 

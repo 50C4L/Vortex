@@ -9,6 +9,7 @@ namespace graphics
 {
 	class Renderable;;
 	class Renderer;
+	class OrthographicCamera;
 }
 
 namespace vortex
@@ -27,6 +28,7 @@ namespace vortex
 	private:
 		graphics::Renderer& mRenderer;
 		std::shared_ptr<graphics::Renderable> mPlayer;
+		std::shared_ptr<graphics::OrthographicCamera> mCamera;
 	};
 }
 

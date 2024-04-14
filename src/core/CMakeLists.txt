@@ -61,6 +61,8 @@ add_library(eage_core STATIC
 	./graphics/ImageUtilities.cpp
 	./graphics/ImGUILifetime.h
 	./graphics/ImGUILifetime.cpp
+	./graphics/Camera.h
+	./graphics/Camera.cpp
 	./graphics/ManagedVulkanResources.h
 	./graphics/ManagedVulkanResources.cpp
 	./graphics/Renderer.h
@@ -87,6 +89,8 @@ add_library(eage_core STATIC
 	./utility/Logger.h
 
 )
+
+add_definitions(-DGLM_FORCE_DEPTH_ZERO_TO_ONE)
 
 target_include_directories(eage_core PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 

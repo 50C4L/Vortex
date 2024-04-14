@@ -17,6 +17,7 @@ namespace graphics
 		struct UniformData
 		{
 			glm::mat4 model_matrix;
+			glm::mat4 project_view_matrix;
 			uint64_t vertex_buffer_address;
 		};
 		///

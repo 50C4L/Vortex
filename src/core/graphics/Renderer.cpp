@@ -18,6 +18,7 @@
 #include <graphics/VMAWrapper.h>
 #include <graphics/ImGUILifetime.h>
 #include <graphics/Renderable.h>
+#include <graphics/Camera.h>
 
 #include <imgui/imgui_impl_vulkan.h>
 #include <imgui/imgui_impl_sdl2.h>
@@ -260,6 +261,12 @@ Renderer::UploadMesh( std::span<uint32_t> indices, std::span<Vertex> vertices )
 	return std::make_shared<GPUMeshBuffers>( std::move( new_surface ) );
 }
 
+void
+Renderer::SetCamera( std::shared_ptr<AbstractCamera> camera )
+{
+	mCamera = std::move( camera );
+}
+
 Renderer::Frame&
 Renderer::GetCurrentFrame()
 {
@@ -475,6 +482,8 @@ Renderer::DrawRenderables( vk::CommandBuffer& cmd )
 	scissor.offset = vk::Offset2D{ 0, 0 };
 	cmd.setScissor( 0, scissor );
 
+	auto projection_view_matrix = mCamera ? mCamera->GetViewProjectionMatrix() : glm::mat4( 1.0f );
+
 	for( auto& renderable : mRenderQueue )
 	{
 		const auto* mesh_buffers = renderable->GetMeshBuffer();
@@ -483,7 +492,9 @@ Renderer::DrawRenderables( vk::CommandBuffer& cmd )
 
 		void* data;
 		vmaMapMemory( *mVMA->allocator, frame.renderable_uniform_buffer->allocation, &data );
-		memcpy( data, &renderable->GetFixedUniformData(), sizeof( Renderable::UniformData ) );
+		auto uniform_data = renderable->GetFixedUniformData();
+		uniform_data.project_view_matrix = projection_view_matrix;
+		memcpy( data, &uniform_data, sizeof( Renderable::UniformData ) );
 		vmaUnmapMemory( *mVMA->allocator, frame.renderable_uniform_buffer->allocation );
 
 		cmd.bindDescriptorSets( vk::PipelineBindPoint::eGraphics, mMeshPipelineLayout.get(), 0, 1, &descriptor_set.get(), 0, nullptr );

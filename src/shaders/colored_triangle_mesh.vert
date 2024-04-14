@@ -19,6 +19,7 @@ layout(buffer_reference, std140) readonly buffer VertexBuffer{
 
 layout(set = 0, binding = 0) uniform RenderableFixedData {
 	mat4 model_matrix;
+	mat4 project_view_matrix;
 	VertexBuffer vertexBuffer;
 } renderableData;
 
@@ -28,7 +29,7 @@ void main()
 	Vertex v = renderableData.vertexBuffer.vertices[gl_VertexIndex];
 
 	//output data
-	gl_Position = renderableData.model_matrix * vec4(v.position, 1.0f);
+	gl_Position = renderableData.project_view_matrix * renderableData.model_matrix * vec4(v.position, 1.0f);
 	outColor = v.color;
 	outUV = vec2( v.uv_x, v.uv_y );
 }
