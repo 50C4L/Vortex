@@ -12,13 +12,9 @@
 
 #include "SceneController.h"
 #include "game/MainScene.h"
+#include "game/GameConfig.h"
 
 using namespace vortex;
-
-namespace
-{
-	const int64_t MAIN_SCENE_ID = 0;
-}
 
 VortexGame::VortexGame()
 {
@@ -68,8 +64,11 @@ VortexGame::Init()
 	}
 
 	mWindow = utility::make_resource( 
-		SDL_CreateWindow, SDL_DestroyWindow, 
-		"Vortex Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN );
+		SDL_CreateWindow, SDL_DestroyWindow,
+		"Vortex Game", 
+		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
+		static_cast<int>( config::DesignResolution::WIDTH ), static_cast<int>( config::DesignResolution::HEIGHT ),
+		SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN );
 	if( !mWindow )
 	{
 		std::cerr << "Failed to create SDL window: " << SDL_GetError() << std::endl;
@@ -86,8 +85,8 @@ VortexGame::Init()
 
 	// Initialize SceneController
 	mSceneController = std::make_unique<SceneController>();
-	mSceneController->AddScene( MAIN_SCENE_ID, std::make_unique<MainScene>( *mRenderer ) );
-	mSceneController->ChangeScene( MAIN_SCENE_ID );
+	mSceneController->AddScene( static_cast<int>( config::SceneID::MAIN_SCENE ), std::make_unique<MainScene>( *mRenderer ) );
+	mSceneController->ChangeScene( static_cast<int>( config::SceneID::MAIN_SCENE ) );
 
 	return true;
 }

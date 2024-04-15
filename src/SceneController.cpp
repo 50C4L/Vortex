@@ -19,13 +19,13 @@ SceneController::~SceneController()
 }
 
 void
-SceneController::AddScene( int64_t id, std::unique_ptr<AbstractScene> scene )
+SceneController::AddScene( int id, std::unique_ptr<AbstractScene> scene )
 {
 	mScenes[id] = std::move( scene );
 }
 
 void
-SceneController::ChangeScene( int64_t id )
+SceneController::ChangeScene( int id )
 {
 	auto it = mScenes.find( id );
 	if( it != mScenes.end() )

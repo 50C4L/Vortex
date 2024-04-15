@@ -14,6 +14,7 @@ add_executable(Vortex
 	./src/SceneController.cpp
 	./src/VortexGame.h
 	./src/VortexGame.cpp
+	./src/game/GameConfig.h
 	./src/game/MainScene.h
 	./src/game/MainScene.cpp
 )

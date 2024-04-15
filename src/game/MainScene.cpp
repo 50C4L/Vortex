@@ -6,6 +6,8 @@
 #include <graphics/VulkanMesh.h>
 #include <graphics/Camera.h>
 
+#include "GameConfig.h"
+
 using namespace vortex;
 using namespace utility;
 
@@ -23,7 +25,9 @@ MainScene::OnEnter()
 {
 	LOG( "MainScene::OnEnter" );
 
-	mCamera = std::make_shared<graphics::OrthographicCamera>( 0.f, 1.f, 0.f, 1.f, 0.1f, 100.0f );
+	float half_width = static_cast<float>( config::DesignResolution::WIDTH ) / 2.f;
+	float half_height = static_cast<float>( config::DesignResolution::HEIGHT ) / 2.f;
+	mCamera = std::make_shared<graphics::OrthographicCamera>( half_width * -1.f, half_width, half_height * -1.f, half_height, 0.1f, 100.0f );
 	mCamera->SetPosition( { 0, 0, 2.f } );
 	mRenderer.SetCamera( mCamera );
 
@@ -31,10 +35,10 @@ MainScene::OnEnter()
 
 	std::vector<graphics::Vertex> rect_vertices;
 	rect_vertices.resize( 4 );
-	rect_vertices[0].position = {  0.5, -0.5, 0 };
-	rect_vertices[1].position = {  0.5,  0.5, 0 };
-	rect_vertices[2].position = { -0.5, -0.5, 0 };
-	rect_vertices[3].position = { -0.5,  0.5, 0 };
+	rect_vertices[0].position = {  25, -25, 0 };
+	rect_vertices[1].position = {  25,  25, 0 };
+	rect_vertices[2].position = { -25, -25, 0 };
+	rect_vertices[3].position = { -25,  25, 0 };
 
 	rect_vertices[0].color = { 1, 0, 0, 1 };
 	rect_vertices[1].color = { 1, 1, 0, 1 };

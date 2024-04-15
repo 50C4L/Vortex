@@ -14,18 +14,18 @@ namespace vortex
 		SceneController();
 		virtual ~SceneController();
 
-		void AddScene( int64_t id, std::unique_ptr<AbstractScene> scene );
+		void AddScene( int id, std::unique_ptr<AbstractScene> scene );
 
-		void ChangeScene( int64_t id );
+		void ChangeScene( int id );
 
 		void Update();
 
 		void FreeAllScenes();
 
 	private:
-		std::unordered_map<int64_t, std::unique_ptr<AbstractScene>> mScenes;
+		std::unordered_map<int, std::unique_ptr<AbstractScene>> mScenes;
 		AbstractScene* mCurrentScene;
-		int64_t mCurrentSceneId;
+		int mCurrentSceneId;
 	};
 }
 
