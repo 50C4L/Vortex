@@ -10,25 +10,17 @@
 
 namespace graphics
 {
-	class ManagedImage
+	struct ManagedImage
 	{
-	public:
-		ManagedImage( vk::Device& device, VmaAllocator& allocator, vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usage, vk::ImageAspectFlags aspect_flags );
-		virtual ~ManagedImage();
+		using Ptr = std::unique_ptr<ManagedImage, std::function<void(ManagedImage*)>>;
+		static Ptr Create( vk::Device& device, VmaAllocator& allocator, vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usage, vk::ImageAspectFlags aspect_flags, uint32_t mip_levels = 1 );
 
-		vk::Image& GetImage();
-		vk::ImageView& GetImageView();
-		vk::Extent2D GetExtent2D() const;
-		vk::Format GetFormat() const;
-
-	private:
-		VmaAllocator& mAllocator;
-		VmaAllocation mAllocation;
-		VmaAllocationInfo mAllocationInfo;
-		vk::Extent3D mExtent;
-		vk::Format mFormat;
-		vk::Image mImage;
-		vk::UniqueImageView mImageView;
+		VmaAllocation allocation;
+		VmaAllocationInfo allocation_info;
+		vk::Extent3D extent;
+		vk::Format format;
+		vk::Image image;
+		vk::UniqueImageView image_view;
 	};
 
 	struct ManagedBuffer

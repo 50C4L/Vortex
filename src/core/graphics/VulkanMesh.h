@@ -23,10 +23,9 @@ namespace graphics
 		vk::DeviceAddress vertex_buffer_address;
 	};
 
-	struct GPUDrawPushConstants
+	struct GPUImageBuffers
 	{
-		glm::mat4 world_matrix;
-		vk::DeviceAddress vertex_buffer;
+		ManagedImage::Ptr image_buffer;
 	};
 }
 

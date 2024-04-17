@@ -9,6 +9,7 @@
 #include <graphics/ImageUtilities.h>
 #include <graphics/ManagedVulkanResources.h>
 #include <graphics/VulkanContext.h>
+#include <graphics/VulkanSampler.h>
 #include <graphics/VulkanSwapChain.h>
 #include <graphics/VulkanShader.h>
 #include <graphics/VulkanCommandContext.h>
@@ -110,7 +111,7 @@ Renderer::Init()
 
 	LOG( "Creating render image ..." );
 
-	mRenderImage = std::make_unique<ManagedImage>(
+	mRenderImage = ManagedImage::Create(
 		mContext->logical_device.get(),
 		*mVMA->allocator.get(),
 		vk::Extent3D{ static_cast<uint32_t>( width ), static_cast<uint32_t>( height ), 1 },
@@ -121,7 +122,7 @@ Renderer::Init()
 
 	LOG( "Creating depth image ..." );
 
-	mDepthImage = std::make_unique<ManagedImage>(
+	mDepthImage = ManagedImage::Create(
 		mContext->logical_device.get(),
 		*mVMA->allocator.get(),
 		vk::Extent3D{ static_cast<uint32_t>( width ), static_cast<uint32_t>( height ), 1 },
@@ -156,29 +157,29 @@ Renderer::Render()
 	frame.command_context->Begin();
 
 	// Transition the main render image to a general layout
-	transition_image( cmd, mRenderImage->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral );
+	transition_image( cmd, mRenderImage->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral );
 	cmd.clearColorImage( 
-		mRenderImage->GetImage(),
+		mRenderImage->image,
 		vk::ImageLayout::eGeneral,
 		vk::ClearColorValue{ std::array<float,4>{ 0.0f, 0.0f, 0.0f, 1.0f } },
 		vk::ImageSubresourceRange{ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 } );
 
-	transition_image( cmd, mRenderImage->GetImage(), vk::ImageLayout::eGeneral, vk::ImageLayout::eColorAttachmentOptimal );
-	transition_image( cmd, mDepthImage->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal );
+	transition_image( cmd, mRenderImage->image, vk::ImageLayout::eGeneral, vk::ImageLayout::eColorAttachmentOptimal );
+	transition_image( cmd, mDepthImage->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal );
 
 	// Actual rendering here
 	DrawRenderables( cmd );
 
-	auto render_extent = mRenderImage->GetExtent2D();
+	vk::Extent2D render_extent = { mRenderImage->extent.width, mRenderImage->extent.height };
 
 	// End of rendering
 
 	// Transition the main render image and the current swapchain image to the appropriate layout, so later we can copy the render image to the swapchain image
-	transition_image( cmd, mRenderImage->GetImage(), vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eTransferSrcOptimal );
+	transition_image( cmd, mRenderImage->image, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eTransferSrcOptimal );
 	transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal );
 
 	// Copy the render image to the swapchain image
-	copy_image_to_image( cmd, mRenderImage->GetImage(), mSwapChain->GetImages()[ next_image_index ], render_extent, mSwapChain->GetExtent() );
+	copy_image_to_image( cmd, mRenderImage->image, mSwapChain->GetImages()[ next_image_index ], render_extent, mSwapChain->GetExtent() );
 
 	// Transition the swapchain image to a color optimal layout so we can draw imgui on it
 	transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eColorAttachmentOptimal );
@@ -215,7 +216,7 @@ Renderer::WaitForIdle()
 	mContext->logical_device->waitIdle();
 }
 
-std::shared_ptr<GPUMeshBuffers>
+std::unique_ptr<GPUMeshBuffers>
 Renderer::UploadMesh( std::span<uint32_t> indices, std::span<Vertex> vertices )
 {
 	const size_t vertex_buffer_size = sizeof( Vertex ) * vertices.size();
@@ -258,13 +259,100 @@ Renderer::UploadMesh( std::span<uint32_t> indices, std::span<Vertex> vertices )
 		}
 	);
 
-	return std::make_shared<GPUMeshBuffers>( std::move( new_surface ) );
+	return std::make_unique<GPUMeshBuffers>( std::move( new_surface ) );
 }
+
+template <typename T>
+std::unique_ptr<GPUImageBuffers>
+Renderer::UploadImage(
+	std::span<T> image_data,
+	uint32_t width, uint32_t height,
+	vk::Format format,
+	vk::ImageUsageFlags usage,
+	vk::ImageAspectFlags aspect_flags,
+	uint32_t mip_levels )
+{
+	const size_t image_size = sizeof( T ) * image_data.size();
+
+	auto upload_buffer = ManagedBuffer::Create( *mVMA->allocator.get(), image_size, vk::BufferUsageFlagBits::eTransferSrc, VMA_MEMORY_USAGE_CPU_TO_GPU );
+
+	memcpy( upload_buffer->allocation_info.pMappedData, image_data.data(), image_size );
+
+	GPUImageBuffers image_ret{ 
+		ManagedImage::Create( 
+			mContext->logical_device.get(),
+			*mVMA->allocator.get(),
+			vk::Extent3D{ width, height, 1 },
+			format,
+			usage | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+			aspect_flags,
+			mip_levels
+		)
+	};
+
+	// Copying to the GPU buffer
+	ImmediateSubmit(
+		[&]( vk::CommandBuffer& cmd )
+		{
+			transition_image( cmd, image_ret.image_buffer->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal );
+
+			vk::BufferImageCopy copy{};
+			copy.bufferOffset = 0;
+			copy.bufferRowLength = 0;
+			copy.bufferImageHeight = 0;
+
+			copy.imageSubresource.aspectMask = aspect_flags;
+			copy.imageSubresource.mipLevel = 0;
+			copy.imageSubresource.baseArrayLayer = 0;
+			copy.imageSubresource.layerCount = 1;
+			copy.imageOffset = vk::Offset3D{ 0, 0, 0 };
+			copy.imageExtent = vk::Extent3D{ width, height, 1 };
+
+			cmd.copyBufferToImage( upload_buffer->buffer, image_ret.image_buffer->image, vk::ImageLayout::eTransferDstOptimal, 1, &copy );
+
+			transition_image( cmd, image_ret.image_buffer->image, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal );
+		}
+	);
+
+	return std::make_unique<GPUImageBuffers>( std::move( image_ret ) );
+}
+
+template std::unique_ptr<GPUImageBuffers>
+Renderer::UploadImage<uint32_t>(
+	std::span<uint32_t>,
+	uint32_t, uint32_t,
+	vk::Format,
+	vk::ImageUsageFlags,
+	vk::ImageAspectFlags,
+	uint32_t );
 
 void
 Renderer::SetCamera( std::shared_ptr<AbstractCamera> camera )
 {
 	mCamera = std::move( camera );
+}
+
+std::unique_ptr<VulkanSampler>
+Renderer::CreateSampler( vk::Filter min_filter, vk::Filter mag_filter )
+{
+	vk::SamplerCreateInfo sampler_info{};
+	sampler_info.magFilter = mag_filter;
+	sampler_info.minFilter = min_filter;
+	// sampler_info.mipmapMode = vk::SamplerMipmapMode::eLinear;
+	// sampler_info.addressModeU = vk::SamplerAddressMode::eRepeat;
+	// sampler_info.addressModeV = vk::SamplerAddressMode::eRepeat;
+	// sampler_info.addressModeW = vk::SamplerAddressMode::eRepeat;
+	// sampler_info.mipLodBias = 0.0f;
+	// sampler_info.anisotropyEnable = VK_FALSE;
+	// sampler_info.maxAnisotropy = 1.0f;
+	// sampler_info.compareEnable = VK_FALSE;
+	// sampler_info.compareOp = vk::CompareOp::eAlways;
+	// sampler_info.minLod = 0.0f;
+	// sampler_info.maxLod = 0.0f;
+	// sampler_info.borderColor = vk::BorderColor::eFloatOpaqueBlack;
+	// sampler_info.unnormalizedCoordinates = VK_FALSE;
+
+	return std::make_unique<VulkanSampler>( *mContext->logical_device, sampler_info );
 }
 
 Renderer::Frame&
@@ -343,19 +431,7 @@ Renderer::InitDescriptors()
 	{
 		{ vk::DescriptorType::eStorageImage, 1 }
 	};
-	mGlobalDescriptorAllocator = std::make_unique<DynamicDescriptorAllocator>( *mContext->logical_device, 10, sizes );
-
-	{
-		DescriptorLayoutBuilder layout_builder;
-		layout_builder.AddBinding( 0, vk::DescriptorType::eStorageImage );
-		mRenderImageDescriptorSetLayout = layout_builder.Build( *mContext->logical_device, vk::ShaderStageFlagBits::eCompute );
-	}
-
-	mRenderImageDescriptorSet = mGlobalDescriptorAllocator->Allocate( *mRenderImageDescriptorSetLayout );
-
-	DescriptorWriter writer;
-	writer.WriteImage( 0, vk::DescriptorType::eStorageImage, mRenderImage->GetImageView(), vk::ImageLayout::eGeneral, nullptr );
-	writer.Update( *mContext->logical_device, mRenderImageDescriptorSet.get() );
+	mGlobalDescriptorAllocator = std::make_unique<DynamicDescriptorAllocator>( *mContext->logical_device, DEFAULT_DESCRIPTOR_SET_COUNT, sizes );
 }
 
 void
@@ -396,9 +472,9 @@ Renderer::InitMeshPipeline()
 		.SetCullMode( vk::CullModeFlagBits::eNone, vk::FrontFace::eClockwise )
 		.SetMultisampling()
 		.SetBlendMode( vk::Bool32( VK_TRUE ), vk::BlendFactor::eOne, vk::BlendFactor::eDstAlpha, vk::BlendOp::eAdd )
-		.SetColorAttachmentFormat( mRenderImage->GetFormat() )
+		.SetColorAttachmentFormat( mRenderImage->format )
 		.SetDepthTest( vk::Bool32( VK_TRUE ), vk::Bool32( VK_TRUE ), vk::CompareOp::eGreaterOrEqual )
-		.SetDepthFormat( mDepthImage->GetFormat() )
+		.SetDepthFormat( mDepthImage->format )
 		.Build( *mContext->logical_device );
 
 	return true;
@@ -452,12 +528,12 @@ Renderer::PrepareImGUI()
 void
 Renderer::DrawRenderables( vk::CommandBuffer& cmd )
 {
-	auto color_attachment = create_attachment_info( mRenderImage->GetImageView(), std::nullopt, vk::ImageLayout::eGeneral );
+	auto color_attachment = create_attachment_info( mRenderImage->image_view.get(), std::nullopt, vk::ImageLayout::eGeneral );
 	vk::ClearValue depth_clear_value;
 	depth_clear_value.depthStencil.depth = 0.f;
-	auto depth_attachment = create_attachment_info( mDepthImage->GetImageView(), std::move( depth_clear_value ), vk::ImageLayout::eDepthAttachmentOptimal );
+	auto depth_attachment = create_attachment_info( mDepthImage->image_view.get(), std::move( depth_clear_value ), vk::ImageLayout::eDepthAttachmentOptimal );
 
-	auto render_extent = mRenderImage->GetExtent2D();
+	vk::Extent2D render_extent = { mRenderImage->extent.width, mRenderImage->extent.height };
 	vk::RenderingInfo render_info{};
 	render_info.colorAttachmentCount = 1;
 	render_info.pColorAttachments = &color_attachment;

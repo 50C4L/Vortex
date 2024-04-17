@@ -14,13 +14,15 @@ namespace graphics
 	class VulkanContext;
 	class VulkanSwapChain;
 	class VulkanCommandContext;
+	class VulkanSampler;
 	class DynamicDescriptorAllocator;
 	class Renderable;
 	class ImGUILifetime;
 	struct VMAWrapper;
-	class ManagedImage;
+	struct ManagedImage;
 	struct Vertex;
 	struct GPUMeshBuffers;
+	struct GPUImageBuffers;
 	struct ManagedBuffer;
 	class AbstractCamera;
 
@@ -77,9 +79,23 @@ namespace graphics
 		///
 		/// Immediately upload a mesh to the GPU
 		///
-		std::shared_ptr<GPUMeshBuffers> UploadMesh( std::span<uint32_t> indices, std::span<Vertex> vertices );
+		std::unique_ptr<GPUMeshBuffers> UploadMesh( std::span<uint32_t> indices, std::span<Vertex> vertices );
+
+		///
+		/// Immediately upload an image to the GPU
+		///
+		template <typename T>
+		std::unique_ptr<GPUImageBuffers> UploadImage( 
+			std::span<T> image_data,
+			uint32_t width, uint32_t height,
+			vk::Format format,
+			vk::ImageUsageFlags usage,
+			vk::ImageAspectFlags aspect_flags,
+			uint32_t mip_levels );
 
 		void SetCamera( std::shared_ptr<AbstractCamera> camera );
+
+		std::unique_ptr<VulkanSampler> CreateSampler( vk::Filter min_filter, vk::Filter mag_filter );
 
 	private:
 		Frame& GetCurrentFrame();
@@ -105,8 +121,8 @@ namespace graphics
 		std::unique_ptr<VulkanSwapChain>	mSwapChain;
 
 		std::unique_ptr<VMAWrapper> mVMA;
-		std::unique_ptr<ManagedImage> mRenderImage;
-		std::unique_ptr<ManagedImage> mDepthImage;
+		std::unique_ptr<ManagedImage, std::function<void(ManagedImage*)>> mRenderImage;
+		std::unique_ptr<ManagedImage, std::function<void(ManagedImage*)>> mDepthImage;
 
 		std::unique_ptr<DynamicDescriptorAllocator> 	mGlobalDescriptorAllocator; //< Don't use this for per frame data
 		vk::UniqueDescriptorSet 						mRenderImageDescriptorSet;
