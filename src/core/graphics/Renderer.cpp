@@ -355,6 +355,12 @@ Renderer::CreateSampler( vk::Filter min_filter, vk::Filter mag_filter )
 	return std::make_unique<VulkanSampler>( *mContext->logical_device, sampler_info );
 }
 
+vk::Device&
+Renderer::GetDevice()
+{
+	return *mContext->logical_device;
+}
+
 Renderer::Frame&
 Renderer::GetCurrentFrame()
 {
@@ -395,6 +401,7 @@ Renderer::InitFrameResources()
 {
 	LOG( "Initializing frame resources ..." );
 	{
+		// @TODO move this out to the application level
 		DescriptorLayoutBuilder layout_builder;
 		layout_builder.AddBinding( 0, vk::DescriptorType::eUniformBuffer );
 		mRenderableFixedDescriptorSetLayout = layout_builder.Build( *mContext->logical_device, vk::ShaderStageFlagBits::eVertex );

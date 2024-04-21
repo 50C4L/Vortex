@@ -97,6 +97,8 @@ namespace graphics
 
 		std::unique_ptr<VulkanSampler> CreateSampler( vk::Filter min_filter, vk::Filter mag_filter );
 
+		vk::Device& GetDevice();
+
 	private:
 		Frame& GetCurrentFrame();
 		
