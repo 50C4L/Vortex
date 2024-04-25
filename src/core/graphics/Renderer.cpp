@@ -18,7 +18,7 @@
 #include <graphics/VulkanPipeline.h>
 #include <graphics/VMAWrapper.h>
 #include <graphics/ImGUILifetime.h>
-#include <graphics/Renderable.h>
+#include <graphics/RenderComponent.h>
 #include <graphics/Camera.h>
 
 #include <imgui/imgui_impl_vulkan.h>
@@ -165,7 +165,7 @@ Renderer::Render()
 	transition_image( cmd, mDepthImage->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal );
 
 	// Actual rendering here
-	DrawRenderables( cmd );
+	DrawRenderComponents( cmd );
 
 	vk::Extent2D render_extent = { mRenderImage->extent.width, mRenderImage->extent.height };
 
@@ -197,14 +197,14 @@ Renderer::Render()
 }
 
 void
-Renderer::AddToRenderQueue( std::shared_ptr<Renderable> renderable )
+Renderer::AddToRenderQueue( std::shared_ptr<RenderComponent> RenderComponent )
 {
 	if( mFrames.empty() )
 	{
 		LOG_ERROR( "No frames available, Init() must be called first." );
 		return;
 	}
-	mRenderQueue.push_back( std::move( renderable ) );
+	mRenderQueue.push_back( std::move( RenderComponent ) );
 }
 
 void
@@ -494,7 +494,7 @@ Renderer::PrepareImGUI()
 }
 
 void
-Renderer::DrawRenderables( vk::CommandBuffer& cmd )
+Renderer::DrawRenderComponents( vk::CommandBuffer& cmd )
 {
 	auto color_attachment = create_attachment_info( mRenderImage->image_view.get(), std::nullopt, vk::ImageLayout::eGeneral );
 	vk::ClearValue depth_clear_value;
@@ -511,9 +511,9 @@ Renderer::DrawRenderables( vk::CommandBuffer& cmd )
 
 	cmd.beginRendering( render_info );
 
-	for( auto& renderable : mRenderQueue )
+	for( auto& render_compt : mRenderQueue )
 	{
-		auto& render_pipeline = renderable->GetRenderPipeline();
+		auto& render_pipeline = render_compt->GetRenderPipeline();
 		cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, render_pipeline.pipeline.get() );
 
 		vk::Viewport viewport{};
@@ -540,8 +540,8 @@ Renderer::DrawRenderables( vk::CommandBuffer& cmd )
 			&globl_dscrp,
 			0, nullptr );
 
-		// Renderable uniform
-		auto mesh_dscrp = renderable->GetMeshDescriptor().GetDescriptorSet( GetCurrentFrameIndex() );
+		// RenderComponent uniform
+		auto mesh_dscrp = render_compt->GetMeshDescriptor().GetDescriptorSet( GetCurrentFrameIndex() );
 		cmd.bindDescriptorSets( 
 			vk::PipelineBindPoint::eGraphics,
 			render_pipeline.layout.get(),
@@ -549,11 +549,11 @@ Renderer::DrawRenderables( vk::CommandBuffer& cmd )
 			&mesh_dscrp,
 			0, nullptr );
 
-		const auto* mesh_buffers = renderable->GetMeshBuffer();
+		const auto* mesh_buffers = render_compt->GetMeshBuffer();
 		cmd.bindIndexBuffer( mesh_buffers->index_buffer->buffer, 0, vk::IndexType::eUint32 );
 
-		// @todo: the index should be customizable and defined within the renderable
-		const auto& index_info = renderable->GetDrawIndexInfo();
+		// @todo: the index should be customizable and defined within the render component
+		const auto& index_info = render_compt->GetDrawIndexInfo();
 		cmd.drawIndexed( index_info.index_count, 1, index_info.first_index, index_info.vertex_offset, 0 );
 	}
 

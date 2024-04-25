@@ -1,5 +1,5 @@
-#ifndef _RENDERABLE_H
-#define _RENDERABLE_H
+#ifndef _RenderComponent_H
+#define _RenderComponent_H
 
 #include <memory>
 #include <glm/glm.hpp>
@@ -11,20 +11,20 @@ namespace graphics
 	class UniformDescriptor;
 
 	///
-	/// Renderable class
+	/// RenderComponent class
 	///
-	class Renderable
+	class RenderComponent
 	{
 	public:
 		///
 		/// Constructor
 		///
-		Renderable( RenderPipeline& render_pipeline );
+		RenderComponent( RenderPipeline& render_pipeline );
 
 		///
 		/// Destructor
 		///
-		virtual ~Renderable();
+		virtual ~RenderComponent();
 
 		void SetMeshBuffer( std::shared_ptr<GPUMeshBuffers> mesh_buffer );
 		const GPUMeshBuffers* GetMeshBuffer() const;
@@ -55,4 +55,4 @@ namespace graphics
 	};
 } // namespace graphics
 
-#endif // _RENDERABLE_H
+#endif // _RenderComponent_H

@@ -2,7 +2,7 @@
 
 #include <utility/Logger.h>
 #include <graphics/Renderer.h>
-#include <graphics/Renderable.h>
+#include <graphics/RenderComponent.h>
 #include <graphics/VulkanDescriptor.h>
 #include <graphics/VulkanMesh.h>
 #include <graphics/VulkanPipeline.h>
@@ -27,7 +27,7 @@ namespace
 		glm::vec4 extra[16];
 	};
 
-	struct RenderableData
+	struct RenderComponentData
 	{
 		glm::mat4 model;
 		uint64_t vertex_buffer_address;
@@ -55,7 +55,7 @@ MainScene::OnEnter()
 		graphics::DescriptorLayoutBuilder layout_builder;
 		layout_builder.AddBinding( 0, vk::DescriptorType::eUniformBuffer );
 		mSceneGlobalDataLayout = layout_builder.Build( mRenderer.GetDevice(), vk::ShaderStageFlagBits::eVertex );
-		mRenderableDataLayout = layout_builder.Build( mRenderer.GetDevice(), vk::ShaderStageFlagBits::eVertex );
+		mRenderComponentDataLayout = layout_builder.Build( mRenderer.GetDevice(), vk::ShaderStageFlagBits::eVertex );
 	}
 
 	// Scene global uniform data
@@ -71,7 +71,7 @@ MainScene::OnEnter()
 	// Render pipeline
 	mGeneralPipeline = std::make_unique<graphics::RenderPipeline>();
 	mGeneralPipeline->global_descriptor = mSceneGlobalDescriptor;
-	std::vector<vk::DescriptorSetLayout> descriptor_layouts = { mSceneGlobalDataLayout.get(), mRenderableDataLayout.get() };
+	std::vector<vk::DescriptorSetLayout> descriptor_layouts = { mSceneGlobalDataLayout.get(), mRenderComponentDataLayout.get() };
 	vk::PipelineLayoutCreateInfo pipeline_layout_info{};
 	pipeline_layout_info.setLayoutCount = static_cast<uint32_t>( descriptor_layouts.size() );
 	pipeline_layout_info.pSetLayouts = descriptor_layouts.data();
@@ -111,15 +111,15 @@ MainScene::OnEnter()
 	mCamera->SetPosition( { 0, 0, 2.f } );
 
 	// Renderble
-	mPlayer = std::make_shared<graphics::Renderable>( *mGeneralPipeline );
-	// renderable uniform data
-	auto player_descirptor = std::make_unique<graphics::UniformDescriptor>( mRenderer, mRenderableDataLayout.get() );
-	mRenderablelData.resize( mRenderer.GetFrames().size() );
-	for( size_t i = 0; i < mRenderablelData.size(); ++i )
+	mPlayer = std::make_shared<graphics::RenderComponent>( *mGeneralPipeline );
+	// RenderComponent uniform data
+	auto player_descirptor = std::make_unique<graphics::UniformDescriptor>( mRenderer, mRenderComponentDataLayout.get() );
+	mRenderComponentlData.resize( mRenderer.GetFrames().size() );
+	for( size_t i = 0; i < mRenderComponentlData.size(); ++i )
 	{
-		mRenderablelData[i] = graphics::ManagedBuffer::Create( 
-			*mRenderer.GetMemoryAllocator().allocator.get(), sizeof( RenderableData ), vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU );
-		player_descirptor->WriteBuffer( i, 0, vk::DescriptorType::eUniformBuffer, mRenderablelData[i]->buffer, 0, sizeof( RenderableData ) );
+		mRenderComponentlData[i] = graphics::ManagedBuffer::Create( 
+			*mRenderer.GetMemoryAllocator().allocator.get(), sizeof( RenderComponentData ), vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU );
+		player_descirptor->WriteBuffer( i, 0, vk::DescriptorType::eUniformBuffer, mRenderComponentlData[i]->buffer, 0, sizeof( RenderComponentData ) );
 	}
 	mPlayer->SetMeshDescriptor( std::move( player_descirptor ) );
 
@@ -172,7 +172,7 @@ MainScene::Update()
 
 	// player update
 	mPlayer->Rotate( 0.01f, { 0, 0, 1 } );
-	RenderableData* renderable_data = static_cast<RenderableData*>( mRenderablelData[ current_frame ]->allocation_info.pMappedData );
-	renderable_data->model = mPlayer->GetModelMatrix();
-	renderable_data->vertex_buffer_address = mPlayer->GetMeshBuffer()->vertex_buffer_address;
+	RenderComponentData* RenderComponent_data = static_cast<RenderComponentData*>( mRenderComponentlData[ current_frame ]->allocation_info.pMappedData );
+	RenderComponent_data->model = mPlayer->GetModelMatrix();
+	RenderComponent_data->vertex_buffer_address = mPlayer->GetMeshBuffer()->vertex_buffer_address;
 }

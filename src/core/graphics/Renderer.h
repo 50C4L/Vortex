@@ -16,7 +16,7 @@ namespace graphics
 	class VulkanCommandContext;
 	class VulkanSampler;
 	class DynamicDescriptorAllocator;
-	class Renderable;
+	class RenderComponent;
 	class ImGUILifetime;
 	struct VMAWrapper;
 	struct ManagedImage;
@@ -62,12 +62,12 @@ namespace graphics
 		void Render();
 
 		///
-		/// Add a renderable to the render queue
+		/// Add a RenderComponent to the render queue
 		///
-		/// @param renderable
-		///  The renderable to add
+		/// @param RenderComponent
+		///  The RenderComponent to add
 		///
-		void AddToRenderQueue( std::shared_ptr<Renderable> renderable );
+		void AddToRenderQueue( std::shared_ptr<RenderComponent> RenderComponent );
 
 		///
 		/// Wait for the renderer to be idle
@@ -119,7 +119,7 @@ namespace graphics
 
 		void PrepareImGUI();
 
-		void DrawRenderables( vk::CommandBuffer& cmd );
+		void DrawRenderComponents( vk::CommandBuffer& cmd );
 
 		SDL_Window& mWindow;
 		std::unique_ptr<VulkanContext>		mContext;
@@ -138,7 +138,7 @@ namespace graphics
 		uint64_t							mFrameNumber;
 
 		// The queue shold be clear first when destorying the renderer
-		std::vector<std::shared_ptr<Renderable>> mRenderQueue;
+		std::vector<std::shared_ptr<RenderComponent>> mRenderQueue;
 	};
 }
 

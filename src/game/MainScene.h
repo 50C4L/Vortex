@@ -9,7 +9,7 @@
 
 namespace graphics
 {
-	class Renderable;;
+	class RenderComponent;;
 	class Renderer;
 	class OrthographicCamera;
 	class UniformDescriptor;
@@ -37,10 +37,10 @@ namespace vortex
 		std::vector<std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>>> mSceneGlobalData;
 
 		std::unique_ptr<graphics::RenderPipeline> mGeneralPipeline;
-		vk::UniqueDescriptorSetLayout mRenderableDataLayout;
-		std::vector<std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>>> mRenderablelData;
+		vk::UniqueDescriptorSetLayout mRenderComponentDataLayout;
+		std::vector<std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>>> mRenderComponentlData;
 
-		std::shared_ptr<graphics::Renderable> mPlayer;
+		std::shared_ptr<graphics::RenderComponent> mPlayer;
 		std::shared_ptr<graphics::OrthographicCamera> mCamera;
 	};
 }

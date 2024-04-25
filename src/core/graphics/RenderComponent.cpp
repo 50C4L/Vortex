@@ -1,4 +1,4 @@
-#include "Renderable.h"
+#include "RenderComponent.h"
 
 #include <iostream>
 
@@ -9,67 +9,66 @@
 
 using namespace graphics;
 
-Renderable::Renderable( RenderPipeline& render_pipeline )
+RenderComponent::RenderComponent( RenderPipeline& render_pipeline )
 	: mRenderPipeline( render_pipeline )
 	, mTransformMatrix( 1.0f )
 {
 }
 
-Renderable::~Renderable()
+RenderComponent::~RenderComponent()
 {
-	std::cout << "Renderable::~Renderable" << std::endl;
 }
 
 void
-Renderable::SetMeshBuffer( std::shared_ptr<GPUMeshBuffers> mesh_buffer )
+RenderComponent::SetMeshBuffer( std::shared_ptr<GPUMeshBuffers> mesh_buffer )
 {
 	mMeshBuffer = std::move( mesh_buffer );
 }
 
 const GPUMeshBuffers*
-Renderable::GetMeshBuffer() const
+RenderComponent::GetMeshBuffer() const
 {
 	return mMeshBuffer.get();
 }
 
 void
-Renderable::SetMeshDescriptor( std::unique_ptr<UniformDescriptor> mesh_descriptor )
+RenderComponent::SetMeshDescriptor( std::unique_ptr<UniformDescriptor> mesh_descriptor )
 {
 	mMeshDescriptor = std::move( mesh_descriptor );
 }
 
 const UniformDescriptor&
-Renderable::GetMeshDescriptor() const
+RenderComponent::GetMeshDescriptor() const
 {
 	return *mMeshDescriptor;
 }
 
 const glm::mat4
-Renderable::GetModelMatrix() const
+RenderComponent::GetModelMatrix() const
 {
 	return mTransformMatrix;
 }
 
 void
-Renderable::Rotate( float angle, const glm::vec3& axis )
+RenderComponent::Rotate( float angle, const glm::vec3& axis )
 {
 	mTransformMatrix = glm::rotate( mTransformMatrix, angle, axis );
 }
 
 RenderPipeline&
-Renderable::GetRenderPipeline()
+RenderComponent::GetRenderPipeline()
 {
 	return mRenderPipeline;
 }
 
 void
-Renderable::SetDrawIndexInfo( DrawIndexInfo draw_index_info )
+RenderComponent::SetDrawIndexInfo( DrawIndexInfo draw_index_info )
 {
 	mDrawIndexInfo = std::move( draw_index_info );
 }
 
-const Renderable::DrawIndexInfo&
-Renderable::GetDrawIndexInfo() const
+const RenderComponent::DrawIndexInfo&
+RenderComponent::GetDrawIndexInfo() const
 {
 	return mDrawIndexInfo;
 }
