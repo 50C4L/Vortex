@@ -4,9 +4,12 @@
 #include <vulkan/vulkan.hpp>
 
 #include <vector>
+#include <memory>
 
 namespace graphics
 {
+	class UniformDescriptor;
+
 	class VulkanPipelineBuilder
 	{
 	public:
@@ -37,6 +40,13 @@ namespace graphics
 		vk::Format color_attachment_format;
 
 		std::vector<vk::PipelineShaderStageCreateInfo> shader_stages;
+	};
+
+	struct RenderPipeline
+	{
+		vk::UniquePipeline pipeline;
+		vk::UniquePipelineLayout layout;
+		std::shared_ptr<UniformDescriptor> global_descriptor;
 	};
 }
 

@@ -36,8 +36,6 @@ namespace graphics
 		{
 			std::unique_ptr<VulkanCommandContext> command_context;
 			std::unique_ptr<DynamicDescriptorAllocator> descriptor_allocator;
-			vk::UniqueDescriptorSet renderable_descriptor_set;
-			std::unique_ptr<ManagedBuffer, std::function<void(ManagedBuffer*)>> renderable_uniform_buffer;
 		};
 
 		///
@@ -93,11 +91,18 @@ namespace graphics
 			vk::ImageAspectFlags aspect_flags,
 			uint32_t mip_levels );
 
-		void SetCamera( std::shared_ptr<AbstractCamera> camera );
-
 		std::unique_ptr<VulkanSampler> CreateSampler( vk::Filter min_filter, vk::Filter mag_filter );
 
 		vk::Device& GetDevice();
+
+		std::vector<Frame>& GetFrames();
+
+		VMAWrapper& GetMemoryAllocator();
+
+		vk::Format GetDepthFormat();
+		vk::Format GetColorFormat();
+
+		size_t GetCurrentFrameIndex() const;
 
 	private:
 		Frame& GetCurrentFrame();
@@ -108,8 +113,6 @@ namespace graphics
 
 		void InitFrameResources();
 		void InitDescriptors();
-		void InitPipelines();
-		bool InitMeshPipeline();
 		void InitImGUI();
 
 		void ImmediateSubmit( std::function<void( vk::CommandBuffer& )> work );
@@ -127,22 +130,15 @@ namespace graphics
 		std::unique_ptr<ManagedImage, std::function<void(ManagedImage*)>> mDepthImage;
 
 		std::unique_ptr<DynamicDescriptorAllocator> 	mGlobalDescriptorAllocator; //< Don't use this for per frame data
-		vk::UniqueDescriptorSet 						mRenderImageDescriptorSet;
-		vk::UniqueDescriptorSetLayout					mRenderImageDescriptorSetLayout;
 
 		std::unique_ptr<VulkanCommandContext> mImmidiateCommandContext;
 		std::unique_ptr<ImGUILifetime> mImGUILifetime;
 
-		vk::UniquePipeline mMeshPipeline;
-		vk::UniquePipelineLayout mMeshPipelineLayout;
-
-		std::vector<std::shared_ptr<Renderable>> mRenderQueue;
-		vk::UniqueDescriptorSetLayout mRenderableFixedDescriptorSetLayout;
-
 		std::vector<Frame>					mFrames;
-		int64_t								mFrameNumber;
+		uint64_t							mFrameNumber;
 
-		std::shared_ptr<AbstractCamera> mCamera;
+		// The queue shold be clear first when destorying the renderer
+		std::vector<std::shared_ptr<Renderable>> mRenderQueue;
 	};
 }
 

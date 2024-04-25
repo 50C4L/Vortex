@@ -134,9 +134,6 @@ Renderer::Init()
 	// Init descriptor set layout
 	InitDescriptors();
 
-	// Init pipelines
-	InitPipelines();
-
 	// Init IMGUI
 	InitImGUI();
 
@@ -230,7 +227,6 @@ Renderer::UploadMesh( std::span<uint32_t> indices, std::span<Vertex> vertices )
 	vk::BufferDeviceAddressInfo vertex_buffer_address_info{};
 	vertex_buffer_address_info.buffer = new_surface.vertex_buffer->buffer;
 	new_surface.vertex_buffer_address = mContext->logical_device->getBufferAddress( vertex_buffer_address_info );
-
 
 	// Copying to the staging buffer on CPU
 	auto staging_buffer = ManagedBuffer::Create( *mVMA->allocator.get(), vertex_buffer_size + index_buffer_size, vk::BufferUsageFlagBits::eTransferSrc, VMA_MEMORY_USAGE_CPU_ONLY );
@@ -326,12 +322,6 @@ Renderer::UploadImage<uint32_t>(
 	vk::ImageAspectFlags,
 	uint32_t );
 
-void
-Renderer::SetCamera( std::shared_ptr<AbstractCamera> camera )
-{
-	mCamera = std::move( camera );
-}
-
 std::unique_ptr<VulkanSampler>
 Renderer::CreateSampler( vk::Filter min_filter, vk::Filter mag_filter )
 {
@@ -361,10 +351,40 @@ Renderer::GetDevice()
 	return *mContext->logical_device;
 }
 
+std::vector<Renderer::Frame>&
+Renderer::GetFrames()
+{
+	return mFrames;
+}
+
+VMAWrapper&
+Renderer::GetMemoryAllocator()
+{
+	return *mVMA;
+}
+
 Renderer::Frame&
 Renderer::GetCurrentFrame()
 {
-	return mFrames[ mFrameNumber % MAX_FRAMES_IN_FLIGHT ];
+	return mFrames[ GetCurrentFrameIndex() ];
+}
+
+vk::Format
+Renderer::GetDepthFormat()
+{
+	return mDepthImage->format;
+}
+
+vk::Format
+Renderer::GetColorFormat()
+{
+	return mRenderImage->format;
+}
+
+size_t
+Renderer::GetCurrentFrameIndex() const
+{
+	return mFrameNumber % MAX_FRAMES_IN_FLIGHT;
 }
 
 void
@@ -400,13 +420,6 @@ void
 Renderer::InitFrameResources()
 {
 	LOG( "Initializing frame resources ..." );
-	{
-		// @TODO move this out to the application level
-		DescriptorLayoutBuilder layout_builder;
-		layout_builder.AddBinding( 0, vk::DescriptorType::eUniformBuffer );
-		mRenderableFixedDescriptorSetLayout = layout_builder.Build( *mContext->logical_device, vk::ShaderStageFlagBits::eVertex );
-	}
-
 	for( uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ )
 	{
 		std::vector<DynamicDescriptorAllocator::PoolSizeRatio> frame_pool_ratio =
@@ -419,12 +432,6 @@ Renderer::InitFrameResources()
 		Frame new_frame;
 		new_frame.command_context = std::make_unique<VulkanCommandContext>( *mContext );
 		new_frame.descriptor_allocator = std::make_unique<DynamicDescriptorAllocator>( *mContext->logical_device, DEFAULT_DESCRIPTOR_SET_COUNT, std::move( frame_pool_ratio ) );
-		new_frame.renderable_descriptor_set = new_frame.descriptor_allocator->Allocate( *mRenderableFixedDescriptorSetLayout );
-		new_frame.renderable_uniform_buffer = ManagedBuffer::Create( *mVMA->allocator.get(), sizeof( Renderable::UniformData ), vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU );
-
-		DescriptorWriter writer;
-		writer.WriteBuffer( 0, vk::DescriptorType::eUniformBuffer, new_frame.renderable_uniform_buffer->buffer, 0, sizeof( Renderable::UniformData ) );
-		writer.Update( *mContext->logical_device, new_frame.renderable_descriptor_set.get() );
 
 		mFrames.push_back( std::move( new_frame ) );
 	}
@@ -439,52 +446,6 @@ Renderer::InitDescriptors()
 		{ vk::DescriptorType::eStorageImage, 1 }
 	};
 	mGlobalDescriptorAllocator = std::make_unique<DynamicDescriptorAllocator>( *mContext->logical_device, DEFAULT_DESCRIPTOR_SET_COUNT, sizes );
-}
-
-void
-Renderer::InitPipelines()
-{
-	InitMeshPipeline();
-}
-
-
-bool
-Renderer::InitMeshPipeline()
-{
-	auto vertex_shader = create_shader_module_from_file( *mContext->logical_device, "./src/shaders/compiled/colored_triangle_mesh.vert.spv" );
-	if( !vertex_shader.has_value() )
-	{
-		LOG_ERROR( "Failed to create vertex shader module." );
-		return false;
-	}
-
-	auto fragment_shader = create_shader_module_from_file( *mContext->logical_device, "./src/shaders/compiled/colored_triangle.frag.spv" );
-	if( !fragment_shader.has_value() )
-	{
-		LOG_ERROR( "Failed to create fragment shader module." );
-		return false;
-	}
-
-	vk::PipelineLayoutCreateInfo pipeline_layout_info{};
-	pipeline_layout_info.setLayoutCount = 1;
-	pipeline_layout_info.pSetLayouts = &mRenderableFixedDescriptorSetLayout.get();
-	mMeshPipelineLayout = mContext->logical_device->createPipelineLayoutUnique( pipeline_layout_info );
-
-	VulkanPipelineBuilder pipeline_builder;
-	mMeshPipeline = pipeline_builder
-		.SetPipelineLayout( mMeshPipelineLayout.get() )
-		.SetShaders( vertex_shader.value().get(), fragment_shader.value().get() )
-		.SetInputTopology( vk::PrimitiveTopology::eTriangleList )
-		.SetPolygonMode( vk::PolygonMode::eFill )
-		.SetCullMode( vk::CullModeFlagBits::eNone, vk::FrontFace::eClockwise )
-		.SetMultisampling()
-		.SetBlendMode( vk::Bool32( VK_TRUE ), vk::BlendFactor::eOne, vk::BlendFactor::eDstAlpha, vk::BlendOp::eAdd )
-		.SetColorAttachmentFormat( mRenderImage->format )
-		.SetDepthTest( vk::Bool32( VK_TRUE ), vk::Bool32( VK_TRUE ), vk::CompareOp::eGreaterOrEqual )
-		.SetDepthFormat( mDepthImage->format )
-		.Build( *mContext->logical_device );
-
-	return true;
 }
 
 void
@@ -549,41 +510,51 @@ Renderer::DrawRenderables( vk::CommandBuffer& cmd )
 	render_info.pDepthAttachment = &depth_attachment;
 
 	cmd.beginRendering( render_info );
-	cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, mMeshPipeline.get() );
-
-	vk::Viewport viewport{};
-	viewport.width = static_cast<float>( render_extent.width );
-	viewport.height = static_cast<float>( render_extent.height );
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	viewport.x = 0;
-	viewport.y = 0;
-	cmd.setViewport( 0, viewport );
-
-	vk::Rect2D scissor{};
-	scissor.extent = render_extent;
-	scissor.offset = vk::Offset2D{ 0, 0 };
-	cmd.setScissor( 0, scissor );
-
-	auto projection_view_matrix = mCamera ? mCamera->GetViewProjectionMatrix() : glm::mat4( 1.0f );
 
 	for( auto& renderable : mRenderQueue )
 	{
+		auto& render_pipeline = renderable->GetRenderPipeline();
+		cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, render_pipeline.pipeline.get() );
+
+		vk::Viewport viewport{};
+		viewport.width = static_cast<float>( render_extent.width );
+		viewport.height = static_cast<float>( render_extent.height );
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		viewport.x = 0;
+		viewport.y = 0;
+		cmd.setViewport( 0, viewport );
+
+		vk::Rect2D scissor{};
+		scissor.extent = render_extent;
+		scissor.offset = vk::Offset2D{ 0, 0 };
+		cmd.setScissor( 0, scissor );
+
+		// Pipeline global uniform
+		uint32_t descriptor_index = 0;
+		auto globl_dscrp = render_pipeline.global_descriptor->GetDescriptorSet( GetCurrentFrameIndex() );
+		cmd.bindDescriptorSets( 
+			vk::PipelineBindPoint::eGraphics,
+			render_pipeline.layout.get(),
+			descriptor_index++, 1,
+			&globl_dscrp,
+			0, nullptr );
+
+		// Renderable uniform
+		auto mesh_dscrp = renderable->GetMeshDescriptor().GetDescriptorSet( GetCurrentFrameIndex() );
+		cmd.bindDescriptorSets( 
+			vk::PipelineBindPoint::eGraphics,
+			render_pipeline.layout.get(),
+			descriptor_index++, 1,
+			&mesh_dscrp,
+			0, nullptr );
+
 		const auto* mesh_buffers = renderable->GetMeshBuffer();
-		auto& frame = GetCurrentFrame();
-		auto& descriptor_set = frame.renderable_descriptor_set;
-
-		void* data;
-		vmaMapMemory( *mVMA->allocator, frame.renderable_uniform_buffer->allocation, &data );
-		auto uniform_data = renderable->GetFixedUniformData();
-		uniform_data.project_view_matrix = projection_view_matrix;
-		memcpy( data, &uniform_data, sizeof( Renderable::UniformData ) );
-		vmaUnmapMemory( *mVMA->allocator, frame.renderable_uniform_buffer->allocation );
-
-		cmd.bindDescriptorSets( vk::PipelineBindPoint::eGraphics, mMeshPipelineLayout.get(), 0, 1, &descriptor_set.get(), 0, nullptr );
-
 		cmd.bindIndexBuffer( mesh_buffers->index_buffer->buffer, 0, vk::IndexType::eUint32 );
-		cmd.drawIndexed( 6, 1, 0, 0, 0 );
+
+		// @todo: the index should be customizable and defined within the renderable
+		const auto& index_info = renderable->GetDrawIndexInfo();
+		cmd.drawIndexed( index_info.index_count, 1, index_info.first_index, index_info.vertex_offset, 0 );
 	}
 
 	cmd.endRendering();

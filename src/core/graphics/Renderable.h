@@ -7,6 +7,8 @@
 namespace graphics
 {
 	struct GPUMeshBuffers;
+	struct RenderPipeline;
+	class UniformDescriptor;
 
 	///
 	/// Renderable class
@@ -14,16 +16,10 @@ namespace graphics
 	class Renderable
 	{
 	public:
-		struct UniformData
-		{
-			glm::mat4 model_matrix;
-			glm::mat4 project_view_matrix;
-			uint64_t vertex_buffer_address;
-		};
 		///
 		/// Constructor
 		///
-		Renderable();
+		Renderable( RenderPipeline& render_pipeline );
 
 		///
 		/// Destructor
@@ -32,15 +28,30 @@ namespace graphics
 
 		void SetMeshBuffer( std::shared_ptr<GPUMeshBuffers> mesh_buffer );
 		const GPUMeshBuffers* GetMeshBuffer() const;
+		void SetMeshDescriptor( std::unique_ptr<UniformDescriptor> mesh_descriptor );
+		const UniformDescriptor& GetMeshDescriptor() const;
 
-		const UniformData& GetFixedUniformData() const;
+		const glm::mat4 GetModelMatrix() const;
 
 		void Rotate( float angle, const glm::vec3& axis );
 
-	private:
-		std::shared_ptr<GPUMeshBuffers> mMeshBuffer;
-		UniformData mFixedUniformData;
+		RenderPipeline& GetRenderPipeline();
 
+		struct DrawIndexInfo
+		{
+			uint32_t first_index   = 0;
+			uint32_t index_count   = 0;
+			uint32_t vertex_offset = 0;
+		};
+		void SetDrawIndexInfo( DrawIndexInfo draw_index_info );
+		const DrawIndexInfo& GetDrawIndexInfo() const;
+
+	private:
+		RenderPipeline& mRenderPipeline;
+		glm::mat4 mTransformMatrix;
+		std::shared_ptr<GPUMeshBuffers> mMeshBuffer;
+		std::unique_ptr<UniformDescriptor> mMeshDescriptor;
+		DrawIndexInfo mDrawIndexInfo;
 	};
 } // namespace graphics
 

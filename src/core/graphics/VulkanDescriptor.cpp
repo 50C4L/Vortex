@@ -1,6 +1,10 @@
 #include "VulkanDescriptor.h"
 
+#include <graphics/Renderer.h>
+#include <utility/Logger.h>
+
 using namespace graphics;
+using namespace utility;
 
 namespace
 {
@@ -207,4 +211,45 @@ void
 DescriptorWriter::AddBufferInfo( vk::DescriptorBufferInfo buffer_info )
 {
 	mBufferInfos.push_back( buffer_info );
+}
+
+UniformDescriptor::UniformDescriptor( Renderer& renderer, vk::DescriptorSetLayout layout )
+	: mRenderer( renderer )
+{
+	auto& frames = mRenderer.GetFrames();
+	for( size_t i = 0; i < frames.size(); ++i )
+	{
+		auto descriptor_set = frames[ i ].descriptor_allocator->Allocate( layout );
+		mPerFrameDescriptorSets.emplace( i, std::move( descriptor_set ) );
+	}
+}
+
+UniformDescriptor::~UniformDescriptor()
+{
+}
+
+vk::DescriptorSet
+UniformDescriptor::GetDescriptorSet( size_t current_frame_index ) const
+{
+	auto find = mPerFrameDescriptorSets.find( current_frame_index );
+	if( find == mPerFrameDescriptorSets.end() )
+	{
+		LOG_ERROR( "Descriptor set not found for the current frame index" );
+		throw std::runtime_error( "Descriptor set not found for the current frame index" );
+	}
+	return find->second.get();
+}
+
+void
+UniformDescriptor::WriteBuffer( size_t current_frame_index, uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize offset, vk::DeviceSize range )
+{
+	auto find = mPerFrameDescriptorSets.find( current_frame_index );
+	if( find == mPerFrameDescriptorSets.end() )
+	{
+		LOG_ERROR( "Descriptor set not found for the current frame index" );
+		throw std::runtime_error( "Descriptor set not found for the current frame index" );
+	}
+
+	mWriter.WriteBuffer( binding, type, buffer, offset, range );
+	mWriter.Update( mRenderer.GetDevice(), find->second.get() );
 }

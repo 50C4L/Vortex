@@ -3,6 +3,7 @@
 
 #include <vulkan/vulkan.hpp>
 #include <deque>
+#include <unordered_map>
 
 namespace graphics
 {
@@ -65,6 +66,24 @@ namespace graphics
 		std::vector<vk::WriteDescriptorSet> mWrites;
 		std::deque<vk::DescriptorImageInfo> mImageInfos;
 		std::deque<vk::DescriptorBufferInfo> mBufferInfos;
+	};
+
+	class Renderer;
+
+	class UniformDescriptor
+	{
+	public:
+		UniformDescriptor( Renderer& renderer, vk::DescriptorSetLayout layout );
+		~UniformDescriptor();
+
+		vk::DescriptorSet GetDescriptorSet( size_t current_frame_index ) const;
+
+		void WriteBuffer( size_t current_frame_index, uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize offset, vk::DeviceSize range );
+
+	private:
+		Renderer& mRenderer;
+		DescriptorWriter mWriter;
+		std::unordered_map<size_t, vk::UniqueDescriptorSet> mPerFrameDescriptorSets;
 	};
 }
 

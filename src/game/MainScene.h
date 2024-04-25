@@ -3,6 +3,8 @@
 
 #include "../AbstractScene.h"
 
+#include <vulkan/vulkan.hpp>
+
 #include <memory>
 
 namespace graphics
@@ -10,6 +12,9 @@ namespace graphics
 	class Renderable;;
 	class Renderer;
 	class OrthographicCamera;
+	class UniformDescriptor;
+	struct ManagedBuffer;
+	struct RenderPipeline;
 }
 
 namespace vortex
@@ -27,6 +32,14 @@ namespace vortex
 
 	private:
 		graphics::Renderer& mRenderer;
+		vk::UniqueDescriptorSetLayout mSceneGlobalDataLayout;
+		std::shared_ptr<graphics::UniformDescriptor> mSceneGlobalDescriptor;
+		std::vector<std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>>> mSceneGlobalData;
+
+		std::unique_ptr<graphics::RenderPipeline> mGeneralPipeline;
+		vk::UniqueDescriptorSetLayout mRenderableDataLayout;
+		std::vector<std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>>> mRenderablelData;
+
 		std::shared_ptr<graphics::Renderable> mPlayer;
 		std::shared_ptr<graphics::OrthographicCamera> mCamera;
 	};

@@ -3,12 +3,15 @@
 #include <iostream>
 
 #include <graphics/VulkanMesh.h>
+#include <graphics/VulkanDescriptor.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 using namespace graphics;
 
-Renderable::Renderable()
+Renderable::Renderable( RenderPipeline& render_pipeline )
+	: mRenderPipeline( render_pipeline )
+	, mTransformMatrix( 1.0f )
 {
 }
 
@@ -21,7 +24,6 @@ void
 Renderable::SetMeshBuffer( std::shared_ptr<GPUMeshBuffers> mesh_buffer )
 {
 	mMeshBuffer = std::move( mesh_buffer );
-	mFixedUniformData.vertex_buffer_address = mMeshBuffer->vertex_buffer_address;
 }
 
 const GPUMeshBuffers*
@@ -30,14 +32,44 @@ Renderable::GetMeshBuffer() const
 	return mMeshBuffer.get();
 }
 
-const Renderable::UniformData&
-Renderable::GetFixedUniformData() const
+void
+Renderable::SetMeshDescriptor( std::unique_ptr<UniformDescriptor> mesh_descriptor )
 {
-	return mFixedUniformData;
+	mMeshDescriptor = std::move( mesh_descriptor );
+}
+
+const UniformDescriptor&
+Renderable::GetMeshDescriptor() const
+{
+	return *mMeshDescriptor;
+}
+
+const glm::mat4
+Renderable::GetModelMatrix() const
+{
+	return mTransformMatrix;
 }
 
 void
 Renderable::Rotate( float angle, const glm::vec3& axis )
 {
-	mFixedUniformData.model_matrix = glm::rotate( mFixedUniformData.model_matrix, angle, axis );
+	mTransformMatrix = glm::rotate( mTransformMatrix, angle, axis );
+}
+
+RenderPipeline&
+Renderable::GetRenderPipeline()
+{
+	return mRenderPipeline;
+}
+
+void
+Renderable::SetDrawIndexInfo( DrawIndexInfo draw_index_info )
+{
+	mDrawIndexInfo = std::move( draw_index_info );
+}
+
+const Renderable::DrawIndexInfo&
+Renderable::GetDrawIndexInfo() const
+{
+	return mDrawIndexInfo;
 }
