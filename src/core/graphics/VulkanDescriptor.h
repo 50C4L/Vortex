@@ -79,6 +79,7 @@ namespace graphics
 		vk::DescriptorSet GetDescriptorSet( size_t current_frame_index ) const;
 
 		void WriteBuffer( size_t current_frame_index, uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize offset, vk::DeviceSize range );
+		void WriteImage( uint32_t binding, vk::DescriptorType type, vk::ImageView image_view, vk::ImageLayout layout, vk::Sampler sampler );
 
 	private:
 		Renderer& mRenderer;

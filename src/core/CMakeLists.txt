@@ -65,6 +65,7 @@ add_library(eage_core STATIC
 	./graphics/Camera.cpp
 	./graphics/ManagedVulkanResources.h
 	./graphics/ManagedVulkanResources.cpp
+	./graphics/Material.h
 	./graphics/Renderer.h
 	./graphics/Renderer.cpp
 	./graphics/RenderComponent.h
@@ -78,8 +79,6 @@ add_library(eage_core STATIC
 	./graphics/VulkanMesh.h
 	./graphics/VulkanPipeline.h
 	./graphics/VulkanPipeline.cpp
-	./graphics/VulkanSampler.h
-	./graphics/VulkanSampler.cpp
 	./graphics/VulkanShader.h
 	./graphics/VulkanShader.cpp
 	./graphics/VulkanSwapchain.h

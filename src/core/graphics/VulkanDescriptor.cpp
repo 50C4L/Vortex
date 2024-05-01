@@ -253,3 +253,13 @@ UniformDescriptor::WriteBuffer( size_t current_frame_index, uint32_t binding, vk
 	mWriter.WriteBuffer( binding, type, buffer, offset, range );
 	mWriter.Update( mRenderer.GetDevice(), find->second.get() );
 }
+
+void
+UniformDescriptor::WriteImage( uint32_t binding, vk::DescriptorType type, vk::ImageView image_view, vk::ImageLayout layout, vk::Sampler sampler )
+{
+	for( auto& [_, descriptor_set] : mPerFrameDescriptorSets )
+	{
+		mWriter.WriteImage( binding, type, image_view, layout, sampler );
+		mWriter.Update( mRenderer.GetDevice(), descriptor_set.get() );
+	}
+}

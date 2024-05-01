@@ -9,9 +9,8 @@
 
 using namespace graphics;
 
-RenderComponent::RenderComponent( RenderPipeline& render_pipeline )
-	: mRenderPipeline( render_pipeline )
-	, mTransformMatrix( 1.0f )
+RenderComponent::RenderComponent()
+	: mTransformMatrix( 1.0f )
 {
 }
 
@@ -55,10 +54,16 @@ RenderComponent::Rotate( float angle, const glm::vec3& axis )
 	mTransformMatrix = glm::rotate( mTransformMatrix, angle, axis );
 }
 
-RenderPipeline&
-RenderComponent::GetRenderPipeline()
+void
+RenderComponent::SetMaterial( std::shared_ptr<Material> material )
 {
-	return mRenderPipeline;
+	mMaterial = std::move( material );
+}
+
+Material&
+RenderComponent::GetMaterial()
+{
+	return *mMaterial;
 }
 
 void

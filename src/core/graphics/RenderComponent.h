@@ -7,7 +7,7 @@
 namespace graphics
 {
 	struct GPUMeshBuffers;
-	struct RenderPipeline;
+	struct Material;
 	class UniformDescriptor;
 
 	///
@@ -19,7 +19,7 @@ namespace graphics
 		///
 		/// Constructor
 		///
-		RenderComponent( RenderPipeline& render_pipeline );
+		RenderComponent();
 
 		///
 		/// Destructor
@@ -35,7 +35,8 @@ namespace graphics
 
 		void Rotate( float angle, const glm::vec3& axis );
 
-		RenderPipeline& GetRenderPipeline();
+		void SetMaterial( std::shared_ptr<Material> material );
+		Material& GetMaterial();
 
 		struct DrawIndexInfo
 		{
@@ -47,7 +48,7 @@ namespace graphics
 		const DrawIndexInfo& GetDrawIndexInfo() const;
 
 	private:
-		RenderPipeline& mRenderPipeline;
+		std::shared_ptr<Material> mMaterial;
 		glm::mat4 mTransformMatrix;
 		std::shared_ptr<GPUMeshBuffers> mMeshBuffer;
 		std::unique_ptr<UniformDescriptor> mMeshDescriptor;

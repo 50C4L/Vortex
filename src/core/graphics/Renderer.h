@@ -82,16 +82,16 @@ namespace graphics
 		///
 		/// Immediately upload an image to the GPU
 		///
-		template <typename T>
-		std::unique_ptr<GPUImageBuffers> UploadImage( 
-			std::span<T> image_data,
+		std::unique_ptr<ManagedImage, std::function<void(ManagedImage*)>> UploadImage( 
+			void* data,
+			size_t size,
 			uint32_t width, uint32_t height,
 			vk::Format format,
 			vk::ImageUsageFlags usage,
 			vk::ImageAspectFlags aspect_flags,
 			uint32_t mip_levels );
 
-		std::unique_ptr<VulkanSampler> CreateSampler( vk::Filter min_filter, vk::Filter mag_filter );
+		vk::UniqueSampler CreateSampler( vk::Filter min_filter, vk::Filter mag_filter );
 
 		vk::Device& GetDevice();
 

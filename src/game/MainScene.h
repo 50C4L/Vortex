@@ -7,6 +7,8 @@
 
 #include <memory>
 
+#include "GameMaterials.h"
+
 namespace graphics
 {
 	class RenderComponent;;
@@ -14,7 +16,9 @@ namespace graphics
 	class OrthographicCamera;
 	class UniformDescriptor;
 	struct ManagedBuffer;
+	struct GPUImageBuffers;
 	struct RenderPipeline;
+	class VulkanSampler;
 }
 
 namespace vortex
@@ -36,12 +40,14 @@ namespace vortex
 		std::shared_ptr<graphics::UniformDescriptor> mSceneGlobalDescriptor;
 		std::vector<std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>>> mSceneGlobalData;
 
-		std::unique_ptr<graphics::RenderPipeline> mGeneralPipeline;
 		vk::UniqueDescriptorSetLayout mRenderComponentDataLayout;
 		std::vector<std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>>> mRenderComponentlData;
 
 		std::shared_ptr<graphics::RenderComponent> mPlayer;
 		std::shared_ptr<graphics::OrthographicCamera> mCamera;
+
+		std::unique_ptr<SingleTextureSpriteMaterial> mSpriteMaterial;
+		std::unique_ptr<SingleTextureSpriteMaterial::Resources> mSpriteMaterialResources;
 	};
 }
 

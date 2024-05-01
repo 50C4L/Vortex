@@ -7,9 +7,9 @@
 
 #include <utility/Logger.h>
 #include <graphics/ImageUtilities.h>
+#include <graphics/Material.h>
 #include <graphics/ManagedVulkanResources.h>
 #include <graphics/VulkanContext.h>
-#include <graphics/VulkanSampler.h>
 #include <graphics/VulkanSwapChain.h>
 #include <graphics/VulkanShader.h>
 #include <graphics/VulkanCommandContext.h>
@@ -258,39 +258,35 @@ Renderer::UploadMesh( std::span<uint32_t> indices, std::span<Vertex> vertices )
 	return std::make_unique<GPUMeshBuffers>( std::move( new_surface ) );
 }
 
-template <typename T>
-std::unique_ptr<GPUImageBuffers>
+ManagedImage::Ptr
 Renderer::UploadImage(
-	std::span<T> image_data,
+	void* data,
+	size_t image_size,
 	uint32_t width, uint32_t height,
 	vk::Format format,
 	vk::ImageUsageFlags usage,
 	vk::ImageAspectFlags aspect_flags,
 	uint32_t mip_levels )
 {
-	const size_t image_size = sizeof( T ) * image_data.size();
-
 	auto upload_buffer = ManagedBuffer::Create( *mVMA->allocator.get(), image_size, vk::BufferUsageFlagBits::eTransferSrc, VMA_MEMORY_USAGE_CPU_TO_GPU );
 
-	memcpy( upload_buffer->allocation_info.pMappedData, image_data.data(), image_size );
+	memcpy( upload_buffer->allocation_info.pMappedData, data, image_size );
 
-	GPUImageBuffers image_ret{ 
-		ManagedImage::Create( 
-			mContext->logical_device.get(),
-			*mVMA->allocator.get(),
-			vk::Extent3D{ width, height, 1 },
-			format,
-			usage | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
-			aspect_flags,
-			mip_levels
-		)
-	};
+	auto image = ManagedImage::Create( 
+		mContext->logical_device.get(),
+		*mVMA->allocator.get(),
+		vk::Extent3D{ width, height, 1 },
+		format,
+		usage | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+		aspect_flags,
+		mip_levels
+	);
 
 	// Copying to the GPU buffer
 	ImmediateSubmit(
 		[&]( vk::CommandBuffer& cmd )
 		{
-			transition_image( cmd, image_ret.image_buffer->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal );
+			transition_image( cmd, image->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal );
 
 			vk::BufferImageCopy copy{};
 			copy.bufferOffset = 0;
@@ -304,25 +300,16 @@ Renderer::UploadImage(
 			copy.imageOffset = vk::Offset3D{ 0, 0, 0 };
 			copy.imageExtent = vk::Extent3D{ width, height, 1 };
 
-			cmd.copyBufferToImage( upload_buffer->buffer, image_ret.image_buffer->image, vk::ImageLayout::eTransferDstOptimal, 1, &copy );
+			cmd.copyBufferToImage( upload_buffer->buffer, image->image, vk::ImageLayout::eTransferDstOptimal, 1, &copy );
 
-			transition_image( cmd, image_ret.image_buffer->image, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal );
+			transition_image( cmd, image->image, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal );
 		}
 	);
 
-	return std::make_unique<GPUImageBuffers>( std::move( image_ret ) );
+	return image;
 }
 
-template std::unique_ptr<GPUImageBuffers>
-Renderer::UploadImage<uint32_t>(
-	std::span<uint32_t>,
-	uint32_t, uint32_t,
-	vk::Format,
-	vk::ImageUsageFlags,
-	vk::ImageAspectFlags,
-	uint32_t );
-
-std::unique_ptr<VulkanSampler>
+vk::UniqueSampler
 Renderer::CreateSampler( vk::Filter min_filter, vk::Filter mag_filter )
 {
 	vk::SamplerCreateInfo sampler_info{};
@@ -342,7 +329,7 @@ Renderer::CreateSampler( vk::Filter min_filter, vk::Filter mag_filter )
 	// sampler_info.borderColor = vk::BorderColor::eFloatOpaqueBlack;
 	// sampler_info.unnormalizedCoordinates = VK_FALSE;
 
-	return std::make_unique<VulkanSampler>( *mContext->logical_device, sampler_info );
+	return mContext->logical_device->createSamplerUnique( sampler_info );;
 }
 
 vk::Device&
@@ -513,8 +500,8 @@ Renderer::DrawRenderComponents( vk::CommandBuffer& cmd )
 
 	for( auto& render_compt : mRenderQueue )
 	{
-		auto& render_pipeline = render_compt->GetRenderPipeline();
-		cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, render_pipeline.pipeline.get() );
+		auto& material = render_compt->GetMaterial();
+		cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, material.pipeline->pipeline.get() );
 
 		vk::Viewport viewport{};
 		viewport.width = static_cast<float>( render_extent.width );
@@ -532,10 +519,10 @@ Renderer::DrawRenderComponents( vk::CommandBuffer& cmd )
 
 		// Pipeline global uniform
 		uint32_t descriptor_index = 0;
-		auto globl_dscrp = render_pipeline.global_descriptor->GetDescriptorSet( GetCurrentFrameIndex() );
+		auto globl_dscrp = material.pipeline->global_descriptor->GetDescriptorSet( GetCurrentFrameIndex() );
 		cmd.bindDescriptorSets( 
 			vk::PipelineBindPoint::eGraphics,
-			render_pipeline.layout.get(),
+			material.pipeline->layout.get(),
 			descriptor_index++, 1,
 			&globl_dscrp,
 			0, nullptr );
@@ -544,9 +531,17 @@ Renderer::DrawRenderComponents( vk::CommandBuffer& cmd )
 		auto mesh_dscrp = render_compt->GetMeshDescriptor().GetDescriptorSet( GetCurrentFrameIndex() );
 		cmd.bindDescriptorSets( 
 			vk::PipelineBindPoint::eGraphics,
-			render_pipeline.layout.get(),
+			material.pipeline->layout.get(),
 			descriptor_index++, 1,
 			&mesh_dscrp,
+			0, nullptr );
+
+		auto mat_dscrp = material.descriptor->GetDescriptorSet( GetCurrentFrameIndex() );
+		cmd.bindDescriptorSets( 
+			vk::PipelineBindPoint::eGraphics,
+			material.pipeline->layout.get(),
+			descriptor_index++, 1,
+			&mat_dscrp,
 			0, nullptr );
 
 		const auto* mesh_buffers = render_compt->GetMeshBuffer();

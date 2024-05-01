@@ -10,6 +10,7 @@
 #include <graphics/Camera.h>
 #include <graphics/ManagedVulkanResources.h>
 #include <graphics/VMAWrapper.h>
+#include <graphics/Material.h>
 
 #include "GameConfig.h"
 
@@ -27,6 +28,7 @@ namespace
 		glm::vec4 extra[16];
 	};
 
+	// @TODO: Move this to be handled inside RenderComponent
 	struct RenderComponentData
 	{
 		glm::mat4 model;
@@ -58,52 +60,39 @@ MainScene::OnEnter()
 		mRenderComponentDataLayout = layout_builder.Build( mRenderer.GetDevice(), vk::ShaderStageFlagBits::eVertex );
 	}
 
-	// Scene global uniform data
-	mSceneGlobalDescriptor = std::make_shared<graphics::UniformDescriptor>( mRenderer, mSceneGlobalDataLayout.get() );
+	// Material
+	mSpriteMaterial = std::make_unique<SingleTextureSpriteMaterial>();
+	{
+		graphics::DescriptorLayoutBuilder builder;
+		builder.AddBinding(0, vk::DescriptorType::eCombinedImageSampler );
+		mSpriteMaterial->material_layout = builder.Build( mRenderer.GetDevice(), vk::ShaderStageFlagBits::eFragment );
+	}
+	mSpriteMaterial->build_pipeline( mRenderer, { mSceneGlobalDataLayout.get(), mRenderComponentDataLayout.get() } );
+	mSpriteMaterial->pipeline->global_descriptor = std::make_shared<graphics::UniformDescriptor>( mRenderer, mSceneGlobalDataLayout.get() );
 	mSceneGlobalData.resize( mRenderer.GetFrames().size() );
 	for( size_t i = 0; i < mSceneGlobalData.size(); ++i )
 	{
 		mSceneGlobalData[i] = graphics::ManagedBuffer::Create( 
 			*mRenderer.GetMemoryAllocator().allocator.get(), sizeof( SceneGlobalData ), vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU );
-		mSceneGlobalDescriptor->WriteBuffer( i, 0, vk::DescriptorType::eUniformBuffer, mSceneGlobalData[i]->buffer, 0, sizeof( SceneGlobalData ) );
+		mSpriteMaterial->pipeline->global_descriptor->WriteBuffer( i, 0, vk::DescriptorType::eUniformBuffer, mSceneGlobalData[i]->buffer, 0, sizeof( SceneGlobalData ) );
 	}
 
-	// Render pipeline
-	mGeneralPipeline = std::make_unique<graphics::RenderPipeline>();
-	mGeneralPipeline->global_descriptor = mSceneGlobalDescriptor;
-	std::vector<vk::DescriptorSetLayout> descriptor_layouts = { mSceneGlobalDataLayout.get(), mRenderComponentDataLayout.get() };
-	vk::PipelineLayoutCreateInfo pipeline_layout_info{};
-	pipeline_layout_info.setLayoutCount = static_cast<uint32_t>( descriptor_layouts.size() );
-	pipeline_layout_info.pSetLayouts = descriptor_layouts.data();
-	mGeneralPipeline->layout = mRenderer.GetDevice().createPipelineLayoutUnique( pipeline_layout_info );
-
-	auto vertex_shader = graphics::create_shader_module_from_file( mRenderer.GetDevice(), "./src/shaders/compiled/colored_triangle_mesh.vert.spv" );
-	if( !vertex_shader.has_value() )
-	{
-		LOG_ERROR( "Failed to create vertex shader module." );
-		return;
+	// Texture
+	//checkerboard image
+	uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
+	uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+	std::array<uint32_t, 16 *16 > pixels; //for 16x16 checkerboard texture
+	for (int x = 0; x < 16; x++) {
+		for (int y = 0; y < 16; y++) {
+			pixels[y*16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
+		}
 	}
+	mSpriteMaterialResources = std::make_unique<SingleTextureSpriteMaterial::Resources>();
+	mSpriteMaterialResources->color_texture = mRenderer.UploadImage( 
+		pixels.data(), sizeof( uint32_t ) * pixels.size(), 16, 16, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eSampled, vk::ImageAspectFlagBits::eColor, 1 );
+	mSpriteMaterialResources->color_texture_sampler = mRenderer.CreateSampler( vk::Filter::eNearest, vk::Filter::eNearest );
 
-	auto fragment_shader = graphics::create_shader_module_from_file( mRenderer.GetDevice(), "./src/shaders/compiled/colored_triangle.frag.spv" );
-	if( !fragment_shader.has_value() )
-	{
-		LOG_ERROR( "Failed to create fragment shader module." );
-		return;
-	}
-
-	graphics::VulkanPipelineBuilder pipeline_builder;
-	mGeneralPipeline->pipeline = pipeline_builder
-		.SetPipelineLayout( mGeneralPipeline->layout.get() )
-		.SetShaders( vertex_shader.value().get(), fragment_shader.value().get() )
-		.SetInputTopology( vk::PrimitiveTopology::eTriangleList )
-		.SetPolygonMode( vk::PolygonMode::eFill )
-		.SetCullMode( vk::CullModeFlagBits::eNone, vk::FrontFace::eClockwise )
-		.SetMultisampling()
-		.SetBlendMode( vk::Bool32( VK_TRUE ), vk::BlendFactor::eOne, vk::BlendFactor::eDstAlpha, vk::BlendOp::eAdd )
-		.SetColorAttachmentFormat( mRenderer.GetColorFormat() )
-		.SetDepthTest( vk::Bool32( VK_TRUE ), vk::Bool32( VK_TRUE ), vk::CompareOp::eGreaterOrEqual )
-		.SetDepthFormat( mRenderer.GetDepthFormat() )
-		.Build( mRenderer.GetDevice() );
+	auto material_instance = mSpriteMaterial->Instantiate( mRenderer, *mSpriteMaterialResources );
 
 	float half_width = static_cast<float>( config::DesignResolution::WIDTH ) / 2.f;
 	float half_height = static_cast<float>( config::DesignResolution::HEIGHT ) / 2.f;
@@ -111,7 +100,8 @@ MainScene::OnEnter()
 	mCamera->SetPosition( { 0, 0, 2.f } );
 
 	// Renderble
-	mPlayer = std::make_shared<graphics::RenderComponent>( *mGeneralPipeline );
+	mPlayer = std::make_shared<graphics::RenderComponent>();
+	mPlayer->SetMaterial( std::move( material_instance ) );
 	// RenderComponent uniform data
 	auto player_descirptor = std::make_unique<graphics::UniformDescriptor>( mRenderer, mRenderComponentDataLayout.get() );
 	mRenderComponentlData.resize( mRenderer.GetFrames().size() );
@@ -134,6 +124,15 @@ MainScene::OnEnter()
 	rect_vertices[1].color = { 1, 1, 0, 1 };
 	rect_vertices[2].color = { 1, 0, 1, 1 };
 	rect_vertices[3].color = { 0, 0, 1, 1 };
+
+	rect_vertices[0].uv_x = 1.f;
+	rect_vertices[0].uv_y = 0.f;
+	rect_vertices[1].uv_x = 1.f;
+	rect_vertices[1].uv_y = 1.f;
+	rect_vertices[2].uv_x = 0.f;
+	rect_vertices[2].uv_y = 0.f;
+	rect_vertices[3].uv_x = 0.f;
+	rect_vertices[3].uv_y = 1.f;
 
 	std::vector<uint32_t> rect_indices;
 	rect_indices.resize( 6 );
