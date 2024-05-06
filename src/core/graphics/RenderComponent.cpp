@@ -36,8 +36,8 @@ RenderComponent::SetMeshDescriptor( std::unique_ptr<UniformDescriptor> mesh_desc
 	mMeshDescriptor = std::move( mesh_descriptor );
 }
 
-const UniformDescriptor&
-RenderComponent::GetMeshDescriptor() const
+UniformDescriptor&
+RenderComponent::GetMeshDescriptor()
 {
 	return *mMeshDescriptor;
 }

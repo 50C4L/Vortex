@@ -38,10 +38,10 @@ namespace vortex
 		graphics::Renderer& mRenderer;
 		vk::UniqueDescriptorSetLayout mSceneGlobalDataLayout;
 		std::shared_ptr<graphics::UniformDescriptor> mSceneGlobalDescriptor;
-		std::vector<std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>>> mSceneGlobalData;
+		std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>> mSceneGlobalDataDynamic;
 
 		vk::UniqueDescriptorSetLayout mRenderComponentDataLayout;
-		std::vector<std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>>> mRenderComponentlData;
+		std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>> mRenderComponentlDataDynamic;
 
 		std::shared_ptr<graphics::RenderComponent> mPlayer;
 		std::shared_ptr<graphics::OrthographicCamera> mCamera;

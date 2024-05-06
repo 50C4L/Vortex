@@ -29,7 +29,7 @@ namespace graphics
 		void SetMeshBuffer( std::shared_ptr<GPUMeshBuffers> mesh_buffer );
 		const GPUMeshBuffers* GetMeshBuffer() const;
 		void SetMeshDescriptor( std::unique_ptr<UniformDescriptor> mesh_descriptor );
-		const UniformDescriptor& GetMeshDescriptor() const;
+		UniformDescriptor& GetMeshDescriptor();
 
 		const glm::mat4 GetModelMatrix() const;
 

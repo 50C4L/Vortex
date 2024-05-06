@@ -73,6 +73,15 @@ namespace
 		ImGui_ImplVulkan_RenderDrawData( ImGui::GetDrawData(), cmd );
 		cmd.endRendering();
 	}
+
+	struct SceneGlobalData
+	{
+		glm::mat4 view;
+		glm::mat4 proj;
+		glm::mat4 view_proj;
+		// padding
+		glm::vec4 extra[16];
+	};
 }
 
 
@@ -413,6 +422,7 @@ Renderer::InitFrameResources()
 		{
 			{ vk::DescriptorType::eStorageImage, 3 },
 			{ vk::DescriptorType::eUniformBuffer, 3 },
+			{ vk::DescriptorType::eUniformBufferDynamic, 3 },
 			{ vk::DescriptorType::eStorageBuffer, 3 },
 			{ vk::DescriptorType::eCombinedImageSampler, 4 }
 		};
@@ -519,35 +529,39 @@ Renderer::DrawRenderComponents( vk::CommandBuffer& cmd )
 
 		// Pipeline global uniform
 		uint32_t descriptor_index = 0;
-		auto globl_dscrp = material.pipeline->global_descriptor->GetDescriptorSet( GetCurrentFrameIndex() );
-		cmd.bindDescriptorSets( 
-			vk::PipelineBindPoint::eGraphics,
-			material.pipeline->layout.get(),
-			descriptor_index++, 1,
-			&globl_dscrp,
-			0, nullptr );
+		{
+			auto& dynamic_offsets = material.pipeline->global_descriptor->GetDynamicOffsets( GetCurrentFrameIndex() );
+			cmd.bindDescriptorSets( 
+				vk::PipelineBindPoint::eGraphics,
+				material.pipeline->layout.get(),
+				descriptor_index++, 1,
+				material.pipeline->global_descriptor->GetDescriptorSet( GetCurrentFrameIndex() ),
+				static_cast<uint32_t>( dynamic_offsets.size() ), dynamic_offsets.data() );
+		}
 
 		// RenderComponent uniform
-		auto mesh_dscrp = render_compt->GetMeshDescriptor().GetDescriptorSet( GetCurrentFrameIndex() );
-		cmd.bindDescriptorSets( 
-			vk::PipelineBindPoint::eGraphics,
-			material.pipeline->layout.get(),
-			descriptor_index++, 1,
-			&mesh_dscrp,
-			0, nullptr );
+		{
+			auto& dynamic_offsets = render_compt->GetMeshDescriptor().GetDynamicOffsets( GetCurrentFrameIndex() );
+			cmd.bindDescriptorSets( 
+				vk::PipelineBindPoint::eGraphics,
+				material.pipeline->layout.get(),
+				descriptor_index++, 1,
+				render_compt->GetMeshDescriptor().GetDescriptorSet( GetCurrentFrameIndex() ),
+				static_cast<uint32_t>( dynamic_offsets.size() ), dynamic_offsets.data() );
+		}
+		
+		{
+			auto& dynamic_offsets = material.descriptor->GetDynamicOffsets( GetCurrentFrameIndex() );
+			cmd.bindDescriptorSets( 
+				vk::PipelineBindPoint::eGraphics,
+				material.pipeline->layout.get(),
+				descriptor_index++, 1,
+				material.descriptor->GetDescriptorSet( GetCurrentFrameIndex() ),
+				static_cast<uint32_t>( dynamic_offsets.size() ), dynamic_offsets.data() );
+		}
 
-		auto mat_dscrp = material.descriptor->GetDescriptorSet( GetCurrentFrameIndex() );
-		cmd.bindDescriptorSets( 
-			vk::PipelineBindPoint::eGraphics,
-			material.pipeline->layout.get(),
-			descriptor_index++, 1,
-			&mat_dscrp,
-			0, nullptr );
+		cmd.bindIndexBuffer( render_compt->GetMeshBuffer()->index_buffer->buffer, 0, vk::IndexType::eUint32 );
 
-		const auto* mesh_buffers = render_compt->GetMeshBuffer();
-		cmd.bindIndexBuffer( mesh_buffers->index_buffer->buffer, 0, vk::IndexType::eUint32 );
-
-		// @todo: the index should be customizable and defined within the render component
 		const auto& index_info = render_compt->GetDrawIndexInfo();
 		cmd.drawIndexed( index_info.index_count, 1, index_info.first_index, index_info.vertex_offset, 0 );
 	}

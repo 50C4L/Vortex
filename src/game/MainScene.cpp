@@ -21,20 +21,20 @@ namespace
 {
 	struct SceneGlobalData
 	{
-		glm::mat4 view;
-		glm::mat4 proj;
-		glm::mat4 view_proj;
+		alignas(64) glm::mat4 view;
+		alignas(64) glm::mat4 proj;
+		alignas(64) glm::mat4 view_proj;
 		// padding
-		glm::vec4 extra[16];
+		float extra[16];
 	};
 
 	// @TODO: Move this to be handled inside RenderComponent
 	struct RenderComponentData
 	{
-		glm::mat4 model;
-		uint64_t vertex_buffer_address;
+		alignas(64) glm::mat4 model;
+		alignas(8) uint64_t vertex_buffer_address;
 		// padding
-		glm::vec4 extra[8];
+		float extra[46];
 	};
 }
 
@@ -55,7 +55,7 @@ MainScene::OnEnter()
 	// Descriptor set layout
 	{
 		graphics::DescriptorLayoutBuilder layout_builder;
-		layout_builder.AddBinding( 0, vk::DescriptorType::eUniformBuffer );
+		layout_builder.AddBinding( 0, vk::DescriptorType::eUniformBufferDynamic );
 		mSceneGlobalDataLayout = layout_builder.Build( mRenderer.GetDevice(), vk::ShaderStageFlagBits::eVertex );
 		mRenderComponentDataLayout = layout_builder.Build( mRenderer.GetDevice(), vk::ShaderStageFlagBits::eVertex );
 	}
@@ -69,13 +69,10 @@ MainScene::OnEnter()
 	}
 	mSpriteMaterial->build_pipeline( mRenderer, { mSceneGlobalDataLayout.get(), mRenderComponentDataLayout.get() } );
 	mSpriteMaterial->pipeline->global_descriptor = std::make_shared<graphics::UniformDescriptor>( mRenderer, mSceneGlobalDataLayout.get() );
-	mSceneGlobalData.resize( mRenderer.GetFrames().size() );
-	for( size_t i = 0; i < mSceneGlobalData.size(); ++i )
-	{
-		mSceneGlobalData[i] = graphics::ManagedBuffer::Create( 
-			*mRenderer.GetMemoryAllocator().allocator.get(), sizeof( SceneGlobalData ), vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU );
-		mSpriteMaterial->pipeline->global_descriptor->WriteBuffer( i, 0, vk::DescriptorType::eUniformBuffer, mSceneGlobalData[i]->buffer, 0, sizeof( SceneGlobalData ) );
-	}
+	const auto num_overlapping_frames = mRenderer.GetFrames().size();
+	mSceneGlobalDataDynamic = graphics::ManagedBuffer::Create( 
+		*mRenderer.GetMemoryAllocator().allocator.get(), sizeof( SceneGlobalData ) * num_overlapping_frames, vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU );
+	mSpriteMaterial->pipeline->global_descriptor->WriteDynamicBuffer( 0, vk::DescriptorType::eUniformBufferDynamic, mSceneGlobalDataDynamic->buffer, sizeof( SceneGlobalData ) );
 
 	// Texture
 	//checkerboard image
@@ -104,13 +101,9 @@ MainScene::OnEnter()
 	mPlayer->SetMaterial( std::move( material_instance ) );
 	// RenderComponent uniform data
 	auto player_descirptor = std::make_unique<graphics::UniformDescriptor>( mRenderer, mRenderComponentDataLayout.get() );
-	mRenderComponentlData.resize( mRenderer.GetFrames().size() );
-	for( size_t i = 0; i < mRenderComponentlData.size(); ++i )
-	{
-		mRenderComponentlData[i] = graphics::ManagedBuffer::Create( 
-			*mRenderer.GetMemoryAllocator().allocator.get(), sizeof( RenderComponentData ), vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU );
-		player_descirptor->WriteBuffer( i, 0, vk::DescriptorType::eUniformBuffer, mRenderComponentlData[i]->buffer, 0, sizeof( RenderComponentData ) );
-	}
+	mRenderComponentlDataDynamic = graphics::ManagedBuffer::Create( 
+		*mRenderer.GetMemoryAllocator().allocator.get(), sizeof( RenderComponentData ) * num_overlapping_frames, vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU );
+	player_descirptor->WriteDynamicBuffer( 0, vk::DescriptorType::eUniformBufferDynamic, mRenderComponentlDataDynamic->buffer, sizeof( RenderComponentData ) );
 	mPlayer->SetMeshDescriptor( std::move( player_descirptor ) );
 
 	std::vector<graphics::Vertex> rect_vertices;
@@ -164,14 +157,20 @@ MainScene::Update()
 
 	// Update camera
 	auto current_frame = mRenderer.GetCurrentFrameIndex();
-	SceneGlobalData* scene_global_data = static_cast<SceneGlobalData*>( mSceneGlobalData[ current_frame ]->allocation_info.pMappedData );
-	scene_global_data->view = mCamera->GetViewMatrix();
-	scene_global_data->proj = mCamera->GetProjectionMatrix();
-	scene_global_data->view_proj = scene_global_data->proj * scene_global_data->view;
-
+	{
+		SceneGlobalData scene_global_data;
+		scene_global_data.view = mCamera->GetViewMatrix();
+		scene_global_data.proj = mCamera->GetProjectionMatrix();
+		scene_global_data.view_proj = scene_global_data.proj * scene_global_data.view;
+		mSceneGlobalDataDynamic->Update( &scene_global_data, sizeof( SceneGlobalData ), sizeof( SceneGlobalData ) * current_frame );
+	}
+	
 	// player update
-	mPlayer->Rotate( 0.01f, { 0, 0, 1 } );
-	RenderComponentData* RenderComponent_data = static_cast<RenderComponentData*>( mRenderComponentlData[ current_frame ]->allocation_info.pMappedData );
-	RenderComponent_data->model = mPlayer->GetModelMatrix();
-	RenderComponent_data->vertex_buffer_address = mPlayer->GetMeshBuffer()->vertex_buffer_address;
+	{
+		mPlayer->Rotate( 0.01f, { 0, 0, 1 } );
+		RenderComponentData render_data;
+		render_data.model = mPlayer->GetModelMatrix();
+		render_data.vertex_buffer_address = mPlayer->GetMeshBuffer()->vertex_buffer_address;
+		mRenderComponentlDataDynamic->Update( &render_data, sizeof( RenderComponentData ), sizeof( RenderComponentData ) * current_frame );
+	}
 }

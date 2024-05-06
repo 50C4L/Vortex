@@ -28,9 +28,14 @@ namespace graphics
 		using Ptr = std::unique_ptr<ManagedBuffer, std::function<void(ManagedBuffer*)>>;
 		static Ptr Create( VmaAllocator& allocator, size_t buffer_size, vk::BufferUsageFlags usage, VmaMemoryUsage memory_usage );
 
+		VmaAllocator& allocator;
 		VmaAllocation allocation;
 		VmaAllocationInfo allocation_info;
 		vk::Buffer buffer;
+
+		ManagedBuffer( VmaAllocator& allocator );
+		void* Map();
+		void Update( void* data, size_t size, uint64_t offset = 0 );
 	};
 }
 

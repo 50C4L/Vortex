@@ -96,7 +96,7 @@ ManagedBuffer::Create( VmaAllocator& allocator, size_t buffer_size, vk::BufferUs
 	alloc_info.usage = memory_usage;
 	alloc_info.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
-	Ptr buffer = Ptr( new ManagedBuffer(), [&allocator]( ManagedBuffer* buffer )
+	Ptr buffer = Ptr( new ManagedBuffer( allocator ), [&allocator]( ManagedBuffer* buffer )
 	{
 		vmaDestroyBuffer( allocator, buffer->buffer, buffer->allocation );
 		delete buffer;
@@ -115,4 +115,24 @@ ManagedBuffer::Create( VmaAllocator& allocator, size_t buffer_size, vk::BufferUs
 	}
 
 	return buffer;
+}
+
+ManagedBuffer::ManagedBuffer( VmaAllocator& allocator )
+	: allocator( allocator )
+{
+}
+
+void*
+ManagedBuffer::Map()
+{
+	return allocation_info.pMappedData;
+}
+
+void
+ManagedBuffer::Update( void* data, size_t size, uint64_t offset )
+{
+	void* mapped_data = Map();
+	mapped_data = static_cast<uint8_t*>( mapped_data ) + offset;
+	memcpy( mapped_data, data, size );
+	vmaFlushAllocation( allocator, allocation, offset, size );
 }

@@ -76,15 +76,36 @@ namespace graphics
 		UniformDescriptor( Renderer& renderer, vk::DescriptorSetLayout layout );
 		~UniformDescriptor();
 
-		vk::DescriptorSet GetDescriptorSet( size_t current_frame_index ) const;
+		vk::DescriptorSet* GetDescriptorSet( size_t current_frame_index );
 
+		std::vector<uint32_t>& GetDynamicOffsets( size_t current_frame_index );
+
+		///
+		/// Write buffer to the given frame's descriptor set
+		///
 		void WriteBuffer( size_t current_frame_index, uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize offset, vk::DeviceSize range );
+
+		///
+		/// The providing buffer is assumed to be shared among all frames (e.g it has a size of sizeof( uniform_data ) * num_frames)
+		/// Each frame's descriptor set will be using different section of the buffer
+		///
+		void WriteDynamicBuffer( uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize sub_size );
+
+		///
+		/// Write the image buffer to the all frames' descriptor set
+		/// This is usful for static textures
+		///
 		void WriteImage( uint32_t binding, vk::DescriptorType type, vk::ImageView image_view, vk::ImageLayout layout, vk::Sampler sampler );
 
 	private:
 		Renderer& mRenderer;
 		DescriptorWriter mWriter;
-		std::unordered_map<size_t, vk::UniqueDescriptorSet> mPerFrameDescriptorSets;
+		struct DescriptorState
+		{
+			vk::UniqueDescriptorSet descriptor_set;
+			std::vector<uint32_t> dynamic_offsets;
+		};
+		std::unordered_map<size_t, DescriptorState> mPerFrameDescriptors;
 	};
 }
 
