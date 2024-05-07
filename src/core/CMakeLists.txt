@@ -86,6 +86,9 @@ add_library(eage_core STATIC
 	./graphics/VulkanContext.h
 	./graphics/VulkanContext.cpp
 
+	./assets/ImageLoader.h
+	./assets/ImageLoader.cpp
+
 	./utility/Pointers.h
 	./utility/Logger.h
 

@@ -12,6 +12,8 @@
 #include <graphics/VMAWrapper.h>
 #include <graphics/Material.h>
 
+#include <assets/ImageLoader.h>
+
 #include "GameConfig.h"
 
 using namespace vortex;
@@ -75,18 +77,14 @@ MainScene::OnEnter()
 	mSpriteMaterial->pipeline->global_descriptor->WriteDynamicBuffer( 0, vk::DescriptorType::eUniformBufferDynamic, mSceneGlobalDataDynamic->buffer, sizeof( SceneGlobalData ) );
 
 	// Texture
-	//checkerboard image
-	uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
-	uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
-	std::array<uint32_t, 16 *16 > pixels; //for 16x16 checkerboard texture
-	for (int x = 0; x < 16; x++) {
-		for (int y = 0; y < 16; y++) {
-			pixels[y*16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
-		}
+	{
+		assets::ImageLoader image_loader;
+		auto image = image_loader.LoadImage( "./resources/textures/512_placeholder.png" );
+
+		mSpriteMaterialResources = std::make_unique<SingleTextureSpriteMaterial::Resources>();
+		mSpriteMaterialResources->color_texture = mRenderer.UploadImage( 
+			image.data.data(), sizeof( unsigned char ) * image.data.size(), image.width, image.height, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eSampled, vk::ImageAspectFlagBits::eColor, 1 );
 	}
-	mSpriteMaterialResources = std::make_unique<SingleTextureSpriteMaterial::Resources>();
-	mSpriteMaterialResources->color_texture = mRenderer.UploadImage( 
-		pixels.data(), sizeof( uint32_t ) * pixels.size(), 16, 16, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eSampled, vk::ImageAspectFlagBits::eColor, 1 );
 	mSpriteMaterialResources->color_texture_sampler = mRenderer.CreateSampler( vk::Filter::eNearest, vk::Filter::eNearest );
 
 	auto material_instance = mSpriteMaterial->Instantiate( mRenderer, *mSpriteMaterialResources );
