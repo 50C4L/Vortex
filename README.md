@@ -9,3 +9,4 @@ Thirdparty dependencies (put the headers and libs under ./thirdparty/include & .
  - glm
  - VulkanMemoryAllocator 3.0.1
  - imgui 1.90.4
+ - stb_image
