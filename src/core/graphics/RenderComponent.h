@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <glm/glm.hpp>
+#include <vulkan/vulkan.hpp>
 
 namespace graphics
 {
@@ -26,7 +27,7 @@ namespace graphics
 		///
 		virtual ~RenderComponent();
 
-		void SetMeshBuffer( std::shared_ptr<GPUMeshBuffers> mesh_buffer );
+		void SetMeshBuffer( std::shared_ptr<GPUMeshBuffers> mesh_buffer, uint32_t first_index, uint32_t index_count, uint32_t vertex_offset );
 		const GPUMeshBuffers* GetMeshBuffer() const;
 		void SetMeshDescriptor( std::unique_ptr<UniformDescriptor> mesh_descriptor );
 		UniformDescriptor& GetMeshDescriptor();
@@ -38,21 +39,17 @@ namespace graphics
 		void SetMaterial( std::shared_ptr<Material> material );
 		Material& GetMaterial();
 
-		struct DrawIndexInfo
-		{
-			uint32_t first_index   = 0;
-			uint32_t index_count   = 0;
-			uint32_t vertex_offset = 0;
-		};
-		void SetDrawIndexInfo( DrawIndexInfo draw_index_info );
-		const DrawIndexInfo& GetDrawIndexInfo() const;
+		void Draw( vk::CommandBuffer& cmd );
 
 	private:
 		std::shared_ptr<Material> mMaterial;
 		glm::mat4 mTransformMatrix;
 		std::shared_ptr<GPUMeshBuffers> mMeshBuffer;
 		std::unique_ptr<UniformDescriptor> mMeshDescriptor;
-		DrawIndexInfo mDrawIndexInfo;
+		
+		uint32_t mFirstIndex   = 0;
+		uint32_t mIndexCount   = 0;
+		uint32_t mVertexOffset = 0;
 	};
 } // namespace graphics
 

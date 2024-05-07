@@ -19,9 +19,12 @@ RenderComponent::~RenderComponent()
 }
 
 void
-RenderComponent::SetMeshBuffer( std::shared_ptr<GPUMeshBuffers> mesh_buffer )
+RenderComponent::SetMeshBuffer( std::shared_ptr<GPUMeshBuffers> mesh_buffer, uint32_t first_index, uint32_t index_count, uint32_t vertex_offset )
 {
 	mMeshBuffer = std::move( mesh_buffer );
+	mFirstIndex = first_index;
+	mIndexCount = index_count;
+	mVertexOffset = vertex_offset;
 }
 
 const GPUMeshBuffers*
@@ -67,13 +70,13 @@ RenderComponent::GetMaterial()
 }
 
 void
-RenderComponent::SetDrawIndexInfo( DrawIndexInfo draw_index_info )
+RenderComponent::Draw( vk::CommandBuffer& cmd )
 {
-	mDrawIndexInfo = std::move( draw_index_info );
-}
+	if( !mMeshBuffer )
+	{
+		return;
+	}
 
-const RenderComponent::DrawIndexInfo&
-RenderComponent::GetDrawIndexInfo() const
-{
-	return mDrawIndexInfo;
+	cmd.bindIndexBuffer( mMeshBuffer->index_buffer->buffer, 0, vk::IndexType::eUint32 );
+	cmd.drawIndexed( mIndexCount, 1, mFirstIndex, mVertexOffset, 0 );
 }

@@ -562,8 +562,7 @@ Renderer::DrawRenderComponents( vk::CommandBuffer& cmd )
 
 		cmd.bindIndexBuffer( render_compt->GetMeshBuffer()->index_buffer->buffer, 0, vk::IndexType::eUint32 );
 
-		const auto& index_info = render_compt->GetDrawIndexInfo();
-		cmd.drawIndexed( index_info.index_count, 1, index_info.first_index, index_info.vertex_offset, 0 );
+		render_compt->Draw( cmd );
 	}
 
 	cmd.endRendering();

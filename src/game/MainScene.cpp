@@ -138,8 +138,7 @@ MainScene::OnEnter()
 	rect_indices[5] = 3;
 
 	auto mesh = mRenderer.UploadMesh( rect_indices, rect_vertices );
-	mPlayer->SetMeshBuffer( std::move( mesh ) );
-	mPlayer->SetDrawIndexInfo( { 0, 6, 0 } );
+	mPlayer->SetMeshBuffer( std::move( mesh ), 0, 6, 0 );
 
 	mRenderer.AddToRenderQueue( mPlayer );
 }
