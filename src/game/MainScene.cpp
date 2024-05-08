@@ -79,7 +79,7 @@ MainScene::OnEnter()
 	// Texture
 	{
 		assets::ImageLoader image_loader;
-		auto image = image_loader.LoadImage( "./resources/textures/512_placeholder.png" );
+		auto image = image_loader.LoadImage( "./resources/textures/player_ship.png" );
 
 		mSpriteMaterialResources = std::make_unique<SingleTextureSpriteMaterial::Resources>();
 		mSpriteMaterialResources->color_texture = mRenderer.UploadImage( 
