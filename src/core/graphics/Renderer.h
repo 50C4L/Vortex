@@ -7,6 +7,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include <graphics/RenderComponent.h>
+
 struct SDL_Window;
 
 namespace graphics
@@ -16,7 +18,6 @@ namespace graphics
 	class VulkanCommandContext;
 	class VulkanSampler;
 	class DynamicDescriptorAllocator;
-	class RenderComponent;
 	class ImGUILifetime;
 	struct VMAWrapper;
 	struct ManagedImage;
@@ -67,7 +68,7 @@ namespace graphics
 		/// @param RenderComponent
 		///  The RenderComponent to add
 		///
-		void AddToRenderQueue( std::shared_ptr<RenderComponent> RenderComponent );
+		void AddToRenderQueue( RenderComponent* RenderComponent );
 
 		///
 		/// Wait for the renderer to be idle
@@ -146,7 +147,7 @@ namespace graphics
 		BuiltInDescriptorSetLayouts mBuiltInDescriptorSetLayouts;
 
 		// The queue shold be clear first when destorying the renderer
-		std::vector<std::shared_ptr<RenderComponent>> mRenderQueue;
+		std::vector<RenderComponent*> mRenderQueue;
 	};
 }
 

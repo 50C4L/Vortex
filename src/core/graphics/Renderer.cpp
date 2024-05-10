@@ -18,7 +18,6 @@
 #include <graphics/VulkanPipeline.h>
 #include <graphics/VMAWrapper.h>
 #include <graphics/ImGUILifetime.h>
-#include <graphics/RenderComponent.h>
 #include <graphics/Camera.h>
 
 #include <imgui/imgui_impl_vulkan.h>
@@ -203,17 +202,19 @@ Renderer::Render()
 	Present( next_image_index );
 
 	mFrameNumber++;
+
+	mRenderQueue.clear();
 }
 
 void
-Renderer::AddToRenderQueue( std::shared_ptr<RenderComponent> RenderComponent )
+Renderer::AddToRenderQueue( RenderComponent* render_component )
 {
 	if( mFrames.empty() )
 	{
 		LOG_ERROR( "No frames available, Init() must be called first." );
 		return;
 	}
-	mRenderQueue.push_back( std::move( RenderComponent ) );
+	mRenderQueue.push_back( render_component );
 }
 
 void

@@ -25,7 +25,7 @@ namespace graphics
 
 namespace vortex
 {
-	class Ship;
+	class Player;
 
 	class MainScene : public AbstractScene
 	{
@@ -53,7 +53,7 @@ namespace vortex
 		std::unique_ptr<SingleTextureSpriteMaterial::Resources> mSpriteMaterialResources;
 
 		std::shared_ptr<graphics::GPUMeshBuffers> mQuadMesh;
-		std::unique_ptr<Ship> mShip;
+		std::unique_ptr<Player> mPlayer;
 
 		std::chrono::time_point<std::chrono::high_resolution_clock> mLastUpdateTime;
 	};

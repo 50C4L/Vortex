@@ -15,7 +15,7 @@
 #include <assets/ImageLoader.h>
 
 #include "GameConfig.h"
-#include "Ship.h"
+#include "Player.h"
 
 using namespace vortex;
 using namespace utility;
@@ -63,18 +63,13 @@ MainScene::OnEnter()
 	PrepareMaterials();
 
 	// Game objects
-	mShip = std::make_unique<Ship>( mRenderer );
-	mShip->GetRenderComponent()->SetMeshBuffer( mQuadMesh, 0, 6, 0 );
-	mShip->GetRenderComponent()->SetMaterial( mSpriteMaterial->Instantiate( mRenderer, *mSpriteMaterialResources ) );
+	mPlayer = std::make_unique<Player>( mRenderer );
+	mPlayer->Init( mQuadMesh, mSpriteMaterial->Instantiate( mRenderer, *mSpriteMaterialResources ) );
 
 	float half_width = static_cast<float>( config::DesignResolution::WIDTH ) / 2.f;
 	float half_height = static_cast<float>( config::DesignResolution::HEIGHT ) / 2.f;
 	mCamera = std::make_shared<graphics::OrthographicCamera>( half_width * -1.f, half_width, half_height * -1.f, half_height, 0.1f, 100.0f );
 	mCamera->SetPosition( { 0, 0, 2.f } );
-
-	// Add to render queue
-	// TODO: This should be done every frame to build a render queue (or graph), so here we can decide what to render for this frame
-	mRenderer.AddToRenderQueue( mShip->GetRenderComponent() );
 }
 
 void
@@ -102,7 +97,10 @@ MainScene::Update()
 	}
 	
 	// player update
-	mShip->Update( delta_time_ms.count() );
+	mPlayer->Update();
+
+	// Add to render queue
+	mPlayer->Draw();
 }
 
 void 
