@@ -7,6 +7,7 @@ using namespace assets;
 
 ImageLoader::ImageLoader()
 {
+	stbi_set_flip_vertically_on_load( true );
 }
 
 ImageLoader::~ImageLoader()

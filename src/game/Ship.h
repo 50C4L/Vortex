@@ -1,26 +1,45 @@
-#ifndef _SHIP_H
-#define _SHIP_H
+#ifndef _VORTEX_SHIP_H
+#define _VORTEX_SHIP_H
+
+#include <memory>
+
+#include <vulkan/vulkan.hpp>
+
+namespace graphics
+{
+	class Renderer;
+	class RenderComponent;
+	struct ManagedBuffer;
+	struct Material;
+	class UniformDescriptor;
+}
 
 namespace vortex
 {
+	/// 
+	/// Defines a ship
+	/// A ship has thruster on the rear, can only accelerate forward, and can rotate
+	///
 	class Ship
 	{
 	public:
 		///
 		/// Constructor
 		///
-		Ship();
+		Ship( graphics::Renderer& renderer );
 
 		///
 		/// Destructor
 		///
 		virtual ~Ship();
 
-		///
-		/// Render the ship
-		///
-		void Render();
+		std::shared_ptr<graphics::RenderComponent> GetRenderComponent() const;
+
+		void Update( float delta_time );
+
+	private:
+		std::shared_ptr<graphics::RenderComponent> mRenderComponent;
 	};
 }
 
-#endif // _SHIP_H
+#endif // _VORTEX_SHIP_H

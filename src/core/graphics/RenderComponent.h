@@ -7,7 +7,9 @@
 
 namespace graphics
 {
+	class Renderer;
 	struct GPUMeshBuffers;
+	struct ManagedBuffer;
 	struct Material;
 	class UniformDescriptor;
 
@@ -17,10 +19,18 @@ namespace graphics
 	class RenderComponent
 	{
 	public:
+		struct MeshUniformData
+		{
+			alignas(64) glm::mat4 model;
+			alignas(8) uint64_t vertex_buffer_address;
+			// padding
+			float extra[46];
+		};
+
 		///
 		/// Constructor
 		///
-		RenderComponent();
+		RenderComponent( Renderer& renderer );
 
 		///
 		/// Destructor
@@ -29,7 +39,6 @@ namespace graphics
 
 		void SetMeshBuffer( std::shared_ptr<GPUMeshBuffers> mesh_buffer, uint32_t first_index, uint32_t index_count, uint32_t vertex_offset );
 		const GPUMeshBuffers* GetMeshBuffer() const;
-		void SetMeshDescriptor( std::unique_ptr<UniformDescriptor> mesh_descriptor );
 		UniformDescriptor& GetMeshDescriptor();
 
 		const glm::mat4 GetModelMatrix() const;
@@ -41,10 +50,15 @@ namespace graphics
 
 		void Draw( vk::CommandBuffer& cmd );
 
+		void Update();
+
 	private:
+		Renderer& mRenderer;
 		std::shared_ptr<Material> mMaterial;
 		glm::mat4 mTransformMatrix;
 		std::shared_ptr<GPUMeshBuffers> mMeshBuffer;
+
+		std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>> mMeshUniformDataDynamic;
 		std::unique_ptr<UniformDescriptor> mMeshDescriptor;
 		
 		uint32_t mFirstIndex   = 0;

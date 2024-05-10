@@ -104,6 +104,12 @@ namespace graphics
 
 		size_t GetCurrentFrameIndex() const;
 
+		struct BuiltInDescriptorSetLayouts
+		{
+			vk::UniqueDescriptorSetLayout render_component;
+		};
+		BuiltInDescriptorSetLayouts& GetBuiltInDescriptorSetLayouts();
+
 	private:
 		Frame& GetCurrentFrame();
 		
@@ -136,6 +142,8 @@ namespace graphics
 
 		std::vector<Frame>					mFrames;
 		uint64_t							mFrameNumber;
+
+		BuiltInDescriptorSetLayouts mBuiltInDescriptorSetLayouts;
 
 		// The queue shold be clear first when destorying the renderer
 		std::vector<std::shared_ptr<RenderComponent>> mRenderQueue;

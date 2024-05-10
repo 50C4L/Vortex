@@ -19,6 +19,8 @@ add_executable(Vortex
 	./src/game/GameMaterials.cpp
 	./src/game/MainScene.h
 	./src/game/MainScene.cpp
+	./src/game/Ship.h
+	./src/game/Ship.cpp
 )
 
 target_link_libraries(Vortex PRIVATE

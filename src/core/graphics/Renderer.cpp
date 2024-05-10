@@ -383,6 +383,12 @@ Renderer::GetCurrentFrameIndex() const
 	return mFrameNumber % MAX_FRAMES_IN_FLIGHT;
 }
 
+Renderer::BuiltInDescriptorSetLayouts&
+Renderer::GetBuiltInDescriptorSetLayouts()
+{
+	return mBuiltInDescriptorSetLayouts;
+}
+
 void
 Renderer::Submit()
 {
@@ -443,6 +449,12 @@ Renderer::InitDescriptors()
 		{ vk::DescriptorType::eStorageImage, 1 }
 	};
 	mGlobalDescriptorAllocator = std::make_unique<DynamicDescriptorAllocator>( *mContext->logical_device, DEFAULT_DESCRIPTOR_SET_COUNT, sizes );
+
+	{
+		DescriptorLayoutBuilder layout_builder;
+		layout_builder.AddBinding( 0, vk::DescriptorType::eUniformBufferDynamic );
+		mBuiltInDescriptorSetLayouts.render_component = layout_builder.Build( mContext->logical_device.get(), vk::ShaderStageFlagBits::eVertex );
+	}
 }
 
 void
