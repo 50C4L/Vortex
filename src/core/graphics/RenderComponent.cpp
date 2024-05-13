@@ -63,7 +63,7 @@ RenderComponent::GetModelMatrix() const
 void
 RenderComponent::Rotate( float angle, const glm::vec3& axis )
 {
-	mTransformMatrix = glm::rotate( mTransformMatrix, angle, axis );
+	mTransformMatrix = glm::rotate( mTransformMatrix, glm::radians( angle ), axis );
 }
 
 void

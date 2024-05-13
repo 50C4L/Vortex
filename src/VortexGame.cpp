@@ -8,6 +8,7 @@
 #include <utility/Pointers.h>
 #include <utility/Logger.h>
 #include <graphics/Renderer.h>
+#include <events/InputController.h>
 #include <imgui/imgui_impl_sdl2.h>
 
 #include "SceneController.h"
@@ -15,6 +16,7 @@
 #include "game/GameConfig.h"
 
 using namespace vortex;
+using namespace vortex::config;
 
 VortexGame::VortexGame()
 {
@@ -41,6 +43,11 @@ VortexGame::Run()
 			}
 
 			ImGui_ImplSDL2_ProcessEvent( &event );
+
+			if( event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
+			{
+				mInputController->Handle( event );
+			}
 		}
 
 		mSceneController->Update();
@@ -83,9 +90,16 @@ VortexGame::Init()
 		return false;
 	}
 
+	// Initialize InputController
+	std::unordered_map<SDL_Keycode, uint64_t> keycode_to_event = {
+		{ SDLK_a,  static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_LEFT ) },
+		{ SDLK_d, static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_RIGHT ) },
+	};
+	mInputController = std::make_unique<events::InputController>( std::move( keycode_to_event ) );
+
 	// Initialize SceneController
 	mSceneController = std::make_unique<SceneController>();
-	mSceneController->AddScene( static_cast<int>( config::SceneID::MAIN_SCENE ), std::make_unique<MainScene>( *mRenderer ) );
+	mSceneController->AddScene( static_cast<int>( config::SceneID::MAIN_SCENE ), std::make_unique<MainScene>( *mRenderer, *mInputController ) );
 	mSceneController->ChangeScene( static_cast<int>( config::SceneID::MAIN_SCENE ) );
 
 	return true;

@@ -89,6 +89,9 @@ add_library(eage_core STATIC
 	./assets/ImageLoader.h
 	./assets/ImageLoader.cpp
 
+	./events/InputController.h
+	./events/InputController.cpp
+
 	./utility/Pointers.h
 	./utility/Logger.h
 

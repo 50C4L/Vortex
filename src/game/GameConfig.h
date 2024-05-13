@@ -16,6 +16,13 @@ namespace vortex
 			WIDTH = 1920,
 			HEIGHT = 1080
 		};
+
+		enum class GameEvents : uint64_t
+		{
+			PLAYER_ROTATE_LEFT = 0,
+			PLAYER_ROTATE_RIGHT,
+			PLAYER_ROTATE_STOP,
+		};
 	}
 }
 

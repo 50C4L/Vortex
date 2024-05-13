@@ -11,6 +11,7 @@
 #include <graphics/ManagedVulkanResources.h>
 #include <graphics/VMAWrapper.h>
 #include <graphics/Material.h>
+#include <events/InputController.h>
 
 #include <assets/ImageLoader.h>
 
@@ -41,8 +42,9 @@ namespace
 	};
 }
 
-MainScene::MainScene( graphics::Renderer& renderer )
+MainScene::MainScene( graphics::Renderer& renderer, events::InputController& input_controller )
 	: mRenderer( renderer )
+	, mInputController( input_controller )
 	, mLastUpdateTime( std::chrono::high_resolution_clock::now() )
 {
 }
@@ -63,7 +65,7 @@ MainScene::OnEnter()
 	PrepareMaterials();
 
 	// Game objects
-	mPlayer = std::make_unique<Player>( mRenderer );
+	mPlayer = std::make_unique<Player>( mRenderer, mInputController );
 	mPlayer->Init( mQuadMesh, mSpriteMaterial->Instantiate( mRenderer, *mSpriteMaterialResources ) );
 
 	float half_width = static_cast<float>( config::DesignResolution::WIDTH ) / 2.f;

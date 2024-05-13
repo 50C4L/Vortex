@@ -3,6 +3,8 @@
 
 #include <memory>
 
+#include <events/InputController.h>
+
 namespace graphics
 {
 	class Renderer;
@@ -14,10 +16,10 @@ namespace vortex
 {
 	class Ship;
 
-	class Player
+	class Player : public events::InputController::Observer
 	{
 	public:
-		Player( graphics::Renderer& renderer );
+		Player( graphics::Renderer& renderer, events::InputController& input_controller );
 		virtual ~Player();
 
 		void Init( std::shared_ptr<graphics::GPUMeshBuffers> mesh_buffer, std::shared_ptr<graphics::Material> material );
@@ -26,9 +28,20 @@ namespace vortex
 
 		void Draw();
 
+		virtual void OnInputEvent( uint64_t event_id, bool on ) override;
+
 	private:
+		void StopRotation();
+
 		graphics::Renderer& mRenderer;
+		events::InputController& mInputController;
 		std::unique_ptr<Ship> mShip;
+
+		struct RotateState
+		{
+			bool left = false;
+			bool right = false;
+		} mRotateState;
 	};
 }
 

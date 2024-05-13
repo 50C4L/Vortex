@@ -23,6 +23,11 @@ namespace graphics
 	class VulkanSampler;
 }
 
+namespace events
+{
+	class InputController;
+}
+
 namespace vortex
 {
 	class Player;
@@ -30,7 +35,7 @@ namespace vortex
 	class MainScene : public AbstractScene
 	{
 	public:
-		MainScene( graphics::Renderer& renderer );
+		MainScene( graphics::Renderer& renderer, events::InputController& input_controller );
 		virtual ~MainScene();
 
 		virtual void OnEnter() override;
@@ -43,6 +48,7 @@ namespace vortex
 
 	private:
 		graphics::Renderer& mRenderer;
+		events::InputController& mInputController;
 		vk::UniqueDescriptorSetLayout mSceneGlobalDataLayout;
 		std::shared_ptr<graphics::UniformDescriptor> mSceneGlobalDescriptor;
 		std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>> mSceneGlobalDataDynamic;

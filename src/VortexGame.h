@@ -10,6 +10,11 @@ namespace graphics
 	class Renderer;
 }
 
+namespace events
+{
+	class InputController;
+}
+
 namespace vortex
 {
 	class SceneController;
@@ -28,6 +33,7 @@ namespace vortex
 		std::shared_ptr<SDL_Window> mWindow;
 		std::unique_ptr<graphics::Renderer> mRenderer;
 		std::unique_ptr<SceneController> mSceneController;
+		std::unique_ptr<events::InputController> mInputController;
 	};
 }
 

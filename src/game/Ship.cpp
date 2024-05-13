@@ -29,3 +29,9 @@ Ship::Update( float delta_time )
 {
 	mRenderComponent->Update();
 }
+
+void
+Ship::Rotate( float angle )
+{
+	mRenderComponent->Rotate( angle, glm::vec3( 0.0f, 0.0f, 1.0f ) );
+}
