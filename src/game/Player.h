@@ -2,6 +2,7 @@
 #define _VORTEX_PLAYER_H
 
 #include <memory>
+#include <chrono>
 
 #include <events/InputController.h>
 
@@ -42,6 +43,8 @@ namespace vortex
 			bool left = false;
 			bool right = false;
 		} mRotateState;
+
+		std::chrono::time_point<std::chrono::high_resolution_clock> mLastUpdateTime;
 	};
 }
 

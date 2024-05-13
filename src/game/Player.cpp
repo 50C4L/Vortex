@@ -9,6 +9,12 @@
 using namespace vortex;
 using namespace vortex::config;
 
+namespace
+{
+	// speeds - per second
+	const float ROTATION_SPEED = 100.0f;
+}
+
 Player::Player( graphics::Renderer& renderer, events::InputController& input_controller )
 	: mRenderer( renderer )
 	, mInputController( input_controller )
@@ -32,16 +38,24 @@ Player::Init( std::shared_ptr<graphics::GPUMeshBuffers> mesh_buffer, std::shared
 void
 Player::Update()
 {
+	std::chrono::time_point<std::chrono::high_resolution_clock> current_time = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<float, std::milli> delta_time_ms = current_time - mLastUpdateTime;
+	mLastUpdateTime = current_time;
+
 	if( mRotateState.left )
 	{
-		mShip->Rotate( 1.f );
+		mShip->SetRotateSpeed( ROTATION_SPEED );
 	}
 	else if( mRotateState.right )
 	{
-		mShip->Rotate( -1.f );
+		mShip->SetRotateSpeed( -1.f * ROTATION_SPEED );
+	}
+	else
+	{
+		mShip->SetRotateSpeed( 0.f );
 	}
 
-	mShip->Update( 0.0f );
+	mShip->Update( delta_time_ms.count());
 }
 
 void

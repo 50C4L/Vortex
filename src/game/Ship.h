@@ -37,10 +37,11 @@ namespace vortex
 
 		void Update( float delta_time );
 
-		void Rotate( float angle );
+		void SetRotateSpeed( float angle );
 
 	private:
 		std::shared_ptr<graphics::RenderComponent> mRenderComponent;
+		float mRotateSpeed;
 	};
 }
 
