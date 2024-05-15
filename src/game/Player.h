@@ -44,7 +44,7 @@ namespace vortex
 			bool right = false;
 		} mRotateState;
 
-		std::chrono::time_point<std::chrono::high_resolution_clock> mLastUpdateTime;
+		std::chrono::time_point<std::chrono::steady_clock> mLastUpdateTime;
 	};
 }
 

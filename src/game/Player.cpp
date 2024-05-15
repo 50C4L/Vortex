@@ -12,7 +12,9 @@ using namespace vortex::config;
 namespace
 {
 	// speeds - per second
-	const float ROTATION_SPEED = 100.0f;
+	const float ROTATION_SPEED = 200.0f;
+	const float THRUST_ACCELERATION = 100.0f;
+	const float MAX_THRUST_SPEED = 200.f;
 }
 
 Player::Player( graphics::Renderer& renderer, events::InputController& input_controller )
@@ -22,6 +24,7 @@ Player::Player( graphics::Renderer& renderer, events::InputController& input_con
 {
 	mInputController.Subscribe( static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_LEFT ), this );
 	mInputController.Subscribe( static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_RIGHT ), this );
+	mInputController.Subscribe( static_cast<uint64_t>( GameEvents::PLAYER_THRUST ), this );
 }
 
 Player::~Player()
@@ -33,12 +36,15 @@ Player::Init( std::shared_ptr<graphics::GPUMeshBuffers> mesh_buffer, std::shared
 {
 	mShip->GetRenderComponent()->SetMeshBuffer( std::move( mesh_buffer ), 0, 6, 0 );
 	mShip->GetRenderComponent()->SetMaterial( std::move( material ) );
+
+	mShip->SetThrustAcceleration( THRUST_ACCELERATION );
+	mShip->SetMaxThrustSpeed( MAX_THRUST_SPEED );
 }
 
 void
 Player::Update()
 {
-	std::chrono::time_point<std::chrono::high_resolution_clock> current_time = std::chrono::high_resolution_clock::now();
+	std::chrono::time_point<std::chrono::steady_clock> current_time = std::chrono::steady_clock::now();
 	std::chrono::duration<float, std::milli> delta_time_ms = current_time - mLastUpdateTime;
 	mLastUpdateTime = current_time;
 
@@ -93,6 +99,9 @@ Player::OnInputEvent( uint64_t event_id, bool on )
 		{
 			mRotateState.right = on;
 		}
+		break;
+	case GameEvents::PLAYER_THRUST:
+		mShip->Thrust( on );
 		break;
 	default:
 		break;

@@ -43,7 +43,8 @@ namespace graphics
 
 		const glm::mat4 GetModelMatrix() const;
 
-		void Rotate( float angle, const glm::vec3& axis );
+		glm::mat4 Rotate( float angle, const glm::vec3& axis, bool local );
+		void Translate( const glm::vec3& translation );
 
 		void SetMaterial( std::shared_ptr<Material> material );
 		Material& GetMaterial();
@@ -55,7 +56,9 @@ namespace graphics
 	private:
 		Renderer& mRenderer;
 		std::shared_ptr<Material> mMaterial;
-		glm::mat4 mTransformMatrix;
+		glm::mat4 mModelMatrix;
+		glm::mat4 mTranslateMatrix;
+		glm::mat4 mRotationMatrix;
 		std::shared_ptr<GPUMeshBuffers> mMeshBuffer;
 
 		std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>> mMeshUniformDataDynamic;

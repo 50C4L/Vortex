@@ -4,6 +4,7 @@
 #include <memory>
 
 #include <vulkan/vulkan.hpp>
+#include <glm/glm.hpp>
 
 namespace graphics
 {
@@ -38,10 +39,20 @@ namespace vortex
 		void Update( float delta_time );
 
 		void SetRotateSpeed( float angle );
+		void SetMaxThrustSpeed( float speed );
+		void SetThrustAcceleration( float acceleration );
+
+		void Thrust( bool on );
 
 	private:
 		std::shared_ptr<graphics::RenderComponent> mRenderComponent;
 		float mRotateSpeed;
+		float mMaxThrustSpeed;
+		float mThrustAcceleration;
+		glm::vec3 mVelocity;
+		glm::vec3 mForwardDir;
+		bool mIsThrustOn;
+		glm::vec3 mPosition;
 	};
 }
 

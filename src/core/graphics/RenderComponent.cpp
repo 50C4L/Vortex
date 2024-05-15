@@ -15,7 +15,9 @@ using namespace graphics;
 
 RenderComponent::RenderComponent( Renderer& renderer )
 	: mRenderer( renderer )
-	, mTransformMatrix( 1.0f )
+	, mModelMatrix( 1.0f )
+	, mTranslateMatrix( 1.0f )
+	, mRotationMatrix( 1.0f )
 {
 	const auto num_overlapping_frames = mRenderer.GetFrames().size();
 	mMeshUniformDataDynamic = ManagedBuffer::Create( 
@@ -57,13 +59,30 @@ RenderComponent::GetMeshDescriptor()
 const glm::mat4
 RenderComponent::GetModelMatrix() const
 {
-	return mTransformMatrix;
+	return mModelMatrix;
+}
+
+glm::mat4
+RenderComponent::Rotate( float angle, const glm::vec3& axis, bool local )
+{
+	// https://stackoverflow.com/questions/21923482/rotate-and-translate-object-in-local-and-global-orientation-using-glm
+	mRotationMatrix = glm::rotate( mRotationMatrix, glm::radians( angle ), axis );
+	if( local )
+	{
+		mModelMatrix = mModelMatrix * mRotationMatrix;
+	}
+	else
+	{
+		mModelMatrix = mRotationMatrix * mModelMatrix;
+	}
+	return mRotationMatrix;
 }
 
 void
-RenderComponent::Rotate( float angle, const glm::vec3& axis )
+RenderComponent::Translate( const glm::vec3& translation )
 {
-	mTransformMatrix = glm::rotate( mTransformMatrix, glm::radians( angle ), axis );
+	mTranslateMatrix = glm::translate( mTranslateMatrix, translation );
+	mModelMatrix = mTranslateMatrix * mModelMatrix;
 }
 
 void
@@ -101,7 +120,10 @@ RenderComponent::Update()
 	auto current_frame = mRenderer.GetCurrentFrameIndex();
 
 	MeshUniformData data;
-	data.model = mTransformMatrix;
+	data.model = mModelMatrix;
 	data.vertex_buffer_address = mMeshBuffer->vertex_buffer_address;
 	mMeshUniformDataDynamic->Update( &data, sizeof( MeshUniformData ), sizeof( MeshUniformData ) * current_frame );
+
+	mRotationMatrix = glm::mat4( 1.0f );
+	mTranslateMatrix = glm::mat4( 1.0f );
 }

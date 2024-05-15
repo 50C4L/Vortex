@@ -83,7 +83,7 @@ MainScene::OnExit()
 void
 MainScene::Update()
 {
-	std::chrono::time_point<std::chrono::high_resolution_clock> current_time = std::chrono::high_resolution_clock::now();
+	std::chrono::time_point<std::chrono::steady_clock> current_time = std::chrono::steady_clock::now();
 	std::chrono::duration<float, std::milli> delta_time_ms = current_time - mLastUpdateTime;
 	mLastUpdateTime = current_time;
 	// player input

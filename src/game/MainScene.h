@@ -61,7 +61,7 @@ namespace vortex
 		std::shared_ptr<graphics::GPUMeshBuffers> mQuadMesh;
 		std::unique_ptr<Player> mPlayer;
 
-		std::chrono::time_point<std::chrono::high_resolution_clock> mLastUpdateTime;
+		std::chrono::time_point<std::chrono::steady_clock> mLastUpdateTime;
 	};
 }
 

@@ -92,8 +92,9 @@ VortexGame::Init()
 
 	// Initialize InputController
 	std::unordered_map<SDL_Keycode, uint64_t> keycode_to_event = {
-		{ SDLK_a,  static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_LEFT ) },
+		{ SDLK_a, static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_LEFT ) },
 		{ SDLK_d, static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_RIGHT ) },
+		{ SDLK_w, static_cast<uint64_t>( GameEvents::PLAYER_THRUST ) }
 	};
 	mInputController = std::make_unique<events::InputController>( std::move( keycode_to_event ) );
 

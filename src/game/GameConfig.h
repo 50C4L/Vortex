@@ -21,7 +21,7 @@ namespace vortex
 		{
 			PLAYER_ROTATE_LEFT = 0,
 			PLAYER_ROTATE_RIGHT,
-			PLAYER_ROTATE_STOP,
+			PLAYER_THRUST,
 		};
 	}
 }
