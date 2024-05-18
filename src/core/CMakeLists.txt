@@ -92,9 +92,11 @@ add_library(eage_core STATIC
 	./events/InputController.h
 	./events/InputController.cpp
 
+	./audio/AudioMixer.h
+	./audio/AudioMixer.cpp
+
 	./utility/Pointers.h
 	./utility/Logger.h
-
 )
 
 add_definitions(-DGLM_FORCE_DEPTH_ZERO_TO_ONE)

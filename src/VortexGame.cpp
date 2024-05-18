@@ -10,6 +10,7 @@
 #include <graphics/Renderer.h>
 #include <events/InputController.h>
 #include <imgui/imgui_impl_sdl2.h>
+#include <audio/AudioMixer.h>
 
 #include "SceneController.h"
 #include "game/MainScene.h"
@@ -72,8 +73,8 @@ VortexGame::Init()
 
 	mWindow = utility::make_resource( 
 		SDL_CreateWindow, SDL_DestroyWindow,
-		"Vortex Game", 
-		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
+		"Vortex Game",
+		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		static_cast<int>( config::DesignResolution::WIDTH ), static_cast<int>( config::DesignResolution::HEIGHT ),
 		SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN );
 	if( !mWindow )
@@ -89,6 +90,9 @@ VortexGame::Init()
 		std::cerr << "Failed to initialize Renderer" << std::endl;
 		return false;
 	}
+
+	// Initialize AudioMixer
+	mAudioMixer = std::make_unique<audio::AudioMixer>();
 
 	// Initialize InputController
 	std::unordered_map<SDL_Keycode, uint64_t> keycode_to_event = {

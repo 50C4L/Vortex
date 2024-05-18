@@ -15,6 +15,11 @@ namespace events
 	class InputController;
 }
 
+namespace audio
+{
+	class AudioMixer;
+}
+
 namespace vortex
 {
 	class SceneController;
@@ -34,6 +39,7 @@ namespace vortex
 		std::unique_ptr<graphics::Renderer> mRenderer;
 		std::unique_ptr<SceneController> mSceneController;
 		std::unique_ptr<events::InputController> mInputController;
+		std::unique_ptr<audio::AudioMixer> mAudioMixer;
 	};
 }
 

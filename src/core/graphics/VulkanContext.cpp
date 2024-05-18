@@ -398,11 +398,6 @@ namespace
 			LOG_ERROR( "Vulkan 1.3 features are not supported!" );
 		}
 
-		// if( buffer_device_address_features.bufferDeviceAddress == VK_FALSE )
-		// {
-		// 	LOG_ERROR( "Vulkan bufferDeviceAddress  features are not supported!" );
-		// }
-
 		vk::DeviceCreateInfo device_create_info(
 			vk::DeviceCreateFlags(),
 			static_cast<uint32_t>( queue_create_infos.size() ),
