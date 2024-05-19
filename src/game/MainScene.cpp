@@ -12,7 +12,7 @@
 #include <graphics/VMAWrapper.h>
 #include <graphics/Material.h>
 #include <events/InputController.h>
-
+#include <audio/AudioMixer.h>
 #include <assets/ImageLoader.h>
 
 #include "GameConfig.h"
@@ -42,9 +42,10 @@ namespace
 	};
 }
 
-MainScene::MainScene( graphics::Renderer& renderer, events::InputController& input_controller )
+MainScene::MainScene( graphics::Renderer& renderer, events::InputController& input_controller, audio::AudioMixer& audio_mixer )
 	: mRenderer( renderer )
 	, mInputController( input_controller )
+	, mAudioMixer( audio_mixer )
 	, mLastUpdateTime( std::chrono::high_resolution_clock::now() )
 {
 }
@@ -66,7 +67,9 @@ MainScene::OnEnter()
 
 	// Game objects
 	mPlayer = std::make_unique<Player>( mRenderer, mInputController );
-	mPlayer->Init( mQuadMesh, mSpriteMaterial->Instantiate( mRenderer, *mSpriteMaterialResources ) );
+	mPlayer->Init( mQuadMesh,
+				   mSpriteMaterial->Instantiate( mRenderer, *mSpriteMaterialResources ),
+				   std::make_unique<audio::SoundInstance>( mAudioMixer.CreateSound( "./resources/sounds/thruster.mp3" ) ) );
 
 	float half_width = static_cast<float>( config::DesignResolution::WIDTH ) / 2.f;
 	float half_height = static_cast<float>( config::DesignResolution::HEIGHT ) / 2.f;

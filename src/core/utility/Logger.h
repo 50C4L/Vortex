@@ -37,7 +37,7 @@ namespace utility
 		DEBUG	= 1,
 		INFO	= 2,
 		WARNING = 3,
-		ERROR	= 4
+		EAGE_ERROR	= 4
 	};
 	
 	const size_t LOG_PREFIX_LENGTH = 128;
@@ -45,17 +45,17 @@ namespace utility
 	// Uncolored text prefix for severity levels
 	const std::unordered_map<LOG_LEVEL, std::string> uncolored
 	{
-		{ LOG_LEVEL::ERROR, " [ERROR] " },
-		{ LOG_LEVEL::WARNING, " [WARNING] " },
-		{ LOG_LEVEL::INFO, " [INFO] " },
-		{ LOG_LEVEL::DEBUG, " [DEBUG] " },
-		{ LOG_LEVEL::TRACE, " [TRACE] " },
+		{ LOG_LEVEL::EAGE_ERROR, " [ERROR] " },
+		{ LOG_LEVEL::WARNING,    " [WARNING] " },
+		{ LOG_LEVEL::INFO,       " [INFO] " },
+		{ LOG_LEVEL::DEBUG,      " [DEBUG] " },
+		{ LOG_LEVEL::TRACE,      " [TRACE] " },
 	};
 	
 	// Colored text prefix for severity levels
 	const std::unordered_map<LOG_LEVEL, std::string> colored
 	{
-		{ LOG_LEVEL::ERROR, " \x1b[31;1m[ERROR]\x1b[0m " },
+		{ LOG_LEVEL::EAGE_ERROR, " \x1b[31;1m[ERROR]\x1b[0m " },
 		{ LOG_LEVEL::WARNING, " \x1b[33;1m[WARN]\x1b[0m " },
 		{ LOG_LEVEL::INFO, " \x1b[32;1m[INFO]\x1b[0m " },
 		{ LOG_LEVEL::DEBUG, " \x1b[34;1m[DEBUG]\x1b[0m " },
@@ -235,7 +235,7 @@ namespace utility
 	
 	inline void LOG_ERROR( const std::string& message )
 	{
-		GetLogger().Log( message, LOG_LEVEL::ERROR );
+		GetLogger().Log( message, LOG_LEVEL::EAGE_ERROR );
 	}
 }
 

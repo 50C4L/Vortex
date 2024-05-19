@@ -13,6 +13,11 @@ namespace graphics
 	struct Material;
 }
 
+namespace audio
+{
+	class SoundInstance;
+}
+
 namespace vortex
 {
 	class Ship;
@@ -23,7 +28,9 @@ namespace vortex
 		Player( graphics::Renderer& renderer, events::InputController& input_controller );
 		virtual ~Player();
 
-		void Init( std::shared_ptr<graphics::GPUMeshBuffers> mesh_buffer, std::shared_ptr<graphics::Material> material );
+		void Init( std::shared_ptr<graphics::GPUMeshBuffers> mesh_buffer,
+				   std::shared_ptr<graphics::Material> material,
+				   std::unique_ptr<audio::SoundInstance> engine_sound );
 
 		void Update();
 
@@ -37,6 +44,7 @@ namespace vortex
 		graphics::Renderer& mRenderer;
 		events::InputController& mInputController;
 		std::unique_ptr<Ship> mShip;
+		std::unique_ptr<audio::SoundInstance> mEngineSound;
 
 		struct RotateState
 		{

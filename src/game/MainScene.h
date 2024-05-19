@@ -28,6 +28,11 @@ namespace events
 	class InputController;
 }
 
+namespace audio
+{
+	class AudioMixer;
+}
+
 namespace vortex
 {
 	class Player;
@@ -35,7 +40,7 @@ namespace vortex
 	class MainScene : public AbstractScene
 	{
 	public:
-		MainScene( graphics::Renderer& renderer, events::InputController& input_controller );
+		MainScene( graphics::Renderer& renderer, events::InputController& input_controller, audio::AudioMixer& audio_mixer );
 		virtual ~MainScene();
 
 		virtual void OnEnter() override;
@@ -49,6 +54,7 @@ namespace vortex
 	private:
 		graphics::Renderer& mRenderer;
 		events::InputController& mInputController;
+		audio::AudioMixer& mAudioMixer;
 		vk::UniqueDescriptorSetLayout mSceneGlobalDataLayout;
 		std::shared_ptr<graphics::UniformDescriptor> mSceneGlobalDescriptor;
 		std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>> mSceneGlobalDataDynamic;

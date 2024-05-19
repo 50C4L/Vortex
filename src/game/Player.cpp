@@ -2,6 +2,7 @@
 
 #include <graphics/RenderComponent.h>
 #include <graphics/Renderer.h>
+#include <audio/AudioMixer.h>
 
 #include "Ship.h"
 #include "GameConfig.h"
@@ -32,13 +33,17 @@ Player::~Player()
 }
 
 void
-Player::Init( std::shared_ptr<graphics::GPUMeshBuffers> mesh_buffer, std::shared_ptr<graphics::Material> material )
+Player::Init( std::shared_ptr<graphics::GPUMeshBuffers> mesh_buffer,
+			  std::shared_ptr<graphics::Material> material,
+			  std::unique_ptr<audio::SoundInstance> engine_sound )
 {
 	mShip->GetRenderComponent()->SetMeshBuffer( std::move( mesh_buffer ), 0, 6, 0 );
 	mShip->GetRenderComponent()->SetMaterial( std::move( material ) );
 
 	mShip->SetThrustAcceleration( THRUST_ACCELERATION );
 	mShip->SetMaxThrustSpeed( MAX_THRUST_SPEED );
+
+	mEngineSound = std::move( engine_sound );
 }
 
 void
@@ -102,6 +107,14 @@ Player::OnInputEvent( uint64_t event_id, bool on )
 		break;
 	case GameEvents::PLAYER_THRUST:
 		mShip->Thrust( on );
+		if( on )
+		{
+			mEngineSound->Play();
+		}
+		else
+		{
+			mEngineSound->Stop();
+		}
 		break;
 	default:
 		break;
