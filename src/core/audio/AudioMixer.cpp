@@ -18,10 +18,15 @@ SoundInstance::SoundInstance( ma_engine& engine, const std::string sound_path )
 			ma_sound_uninit( sound ); 
 		} );
 
-	result = ma_sound_init_from_file( 
-		&mEngine, sound_path.c_str(), 
-		MA_RESOURCE_MANAGER_DATA_SOURCE_FLAG_DECODE | MA_RESOURCE_MANAGER_DATA_SOURCE_FLAG_ASYNC, 
-		NULL, NULL, 
+	ma_sound_config config = ma_sound_config_init_2( &mEngine );
+	config.pFilePath = sound_path.c_str();
+	config.flags = MA_RESOURCE_MANAGER_DATA_SOURCE_FLAG_DECODE | MA_RESOURCE_MANAGER_DATA_SOURCE_FLAG_ASYNC;
+	config.isLooping = MA_TRUE;
+	config.pInitialAttachment = NULL;
+	config.pDoneFence = NULL;
+
+	result = ma_sound_init_ex( 
+		&mEngine, &config,
 		mSound.get() );
 
 	if( result != MA_SUCCESS )
