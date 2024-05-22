@@ -88,6 +88,8 @@ add_library(eage_core STATIC
 
 	./assets/ImageLoader.h
 	./assets/ImageLoader.cpp
+	./assets/TextureAtlas.h
+	./assets/TextureAtlas.cpp
 
 	./events/InputController.h
 	./events/InputController.cpp
@@ -95,8 +97,10 @@ add_library(eage_core STATIC
 	./audio/AudioMixer.h
 	./audio/AudioMixer.cpp
 
+	./utility/Filesystem.h
 	./utility/Pointers.h
 	./utility/Logger.h
+	./utility/JsonParser.h
 )
 
 add_definitions(-DGLM_FORCE_DEPTH_ZERO_TO_ONE)

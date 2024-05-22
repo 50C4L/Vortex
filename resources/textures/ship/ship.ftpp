@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "version": "0.6.7"
+  },
+  "savePath": "E:\\Repos\\Projects\\Vortex\\resources\\textures\\ship",
+  "images": [
+    {
+      "name": "player_ship.png",
+      "path": "E:/Repos/Projects/Vortex/resources/textures/ship/player_ship.png",
+      "folder": ""
+    },
+    {
+      "name": "ship_thrust_fx.png",
+      "path": "E:/Repos/Projects/Vortex/resources/textures/ship/ship_thrust_fx.png",
+      "folder": ""
+    }
+  ],
+  "folders": [],
+  "packOptions": {
+    "textureName": "ship_texatlas",
+    "textureFormat": "png",
+    "removeFileExtension": false,
+    "prependFolderName": true,
+    "base64Export": false,
+    "tinify": false,
+    "tinifyKey": "",
+    "scale": 1,
+    "filter": "none",
+    "exporter": "JSON (array)",
+    "fileName": "pack-result",
+    "savePath": "E:\\Repos\\Projects\\Vortex\\resources\\textures\\ship",
+    "width": 2048,
+    "height": 2048,
+    "fixedSize": false,
+    "powerOfTwo": true,
+    "padding": 0,
+    "extrude": 0,
+    "allowRotation": false,
+    "allowTrim": true,
+    "trimMode": "trim",
+    "alphaThreshold": "0",
+    "detectIdentical": true,
+    "packer": "MaxRectsBin",
+    "packerMethod": "BestShortSideFit"
+  }
+}

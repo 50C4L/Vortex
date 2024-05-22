@@ -14,6 +14,7 @@
 #include <events/InputController.h>
 #include <audio/AudioMixer.h>
 #include <assets/ImageLoader.h>
+#include <assets/TextureAtlas.h>
 
 #include "GameConfig.h"
 #include "Player.h"
@@ -172,7 +173,9 @@ MainScene::PrepareMaterials()
 	// Texture
 	{
 		assets::ImageLoader image_loader;
-		auto image = image_loader.LoadImage( "./resources/textures/player_ship.png" );
+		auto image = image_loader.LoadImage( "./resources/textures/ship/ship_texatlas.png" );
+
+		assets::TextureAtlas texture_atlas( "./resources/textures/ship/ship_texatlas.json" );
 
 		mSpriteMaterialResources = std::make_unique<SingleTextureSpriteMaterial::Resources>();
 		mSpriteMaterialResources->color_texture = mRenderer.UploadImage( 
