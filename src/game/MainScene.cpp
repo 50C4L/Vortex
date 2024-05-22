@@ -112,6 +112,9 @@ MainScene::Update()
 void 
 MainScene::PrepareMeshes()
 {
+	assets::TextureAtlas texture_atlas( "./resources/textures/ship/ship_texatlas.json" );
+	const auto& ship_tex = texture_atlas.GetSubTexture( "player_ship.png" );
+
 	std::vector<graphics::Vertex> rect_vertices;
 	rect_vertices.resize( 4 );
 	rect_vertices[0].position = {  25, -25, 0 };
@@ -124,14 +127,14 @@ MainScene::PrepareMeshes()
 	rect_vertices[2].color = { 1, 0, 1, 1 };
 	rect_vertices[3].color = { 0, 0, 1, 1 };
 
-	rect_vertices[0].uv_x = 1.f;
-	rect_vertices[0].uv_y = 0.f;
-	rect_vertices[1].uv_x = 1.f;
-	rect_vertices[1].uv_y = 1.f;
-	rect_vertices[2].uv_x = 0.f;
-	rect_vertices[2].uv_y = 0.f;
-	rect_vertices[3].uv_x = 0.f;
-	rect_vertices[3].uv_y = 1.f;
+	rect_vertices[0].uv_x = ship_tex.uv_max.x;
+	rect_vertices[0].uv_y = ship_tex.uv_min.y;
+	rect_vertices[1].uv_x = ship_tex.uv_max.x;
+	rect_vertices[1].uv_y = ship_tex.uv_max.y;
+	rect_vertices[2].uv_x = ship_tex.uv_min.x;
+	rect_vertices[2].uv_y = ship_tex.uv_min.y;
+	rect_vertices[3].uv_x = ship_tex.uv_min.x;
+	rect_vertices[3].uv_y = ship_tex.uv_max.y;
 
 	std::vector<uint32_t> rect_indices;
 	rect_indices.resize( 6 );
@@ -174,8 +177,6 @@ MainScene::PrepareMaterials()
 	{
 		assets::ImageLoader image_loader;
 		auto image = image_loader.LoadImage( "./resources/textures/ship/ship_texatlas.png" );
-
-		assets::TextureAtlas texture_atlas( "./resources/textures/ship/ship_texatlas.json" );
 
 		mSpriteMaterialResources = std::make_unique<SingleTextureSpriteMaterial::Resources>();
 		mSpriteMaterialResources->color_texture = mRenderer.UploadImage( 
