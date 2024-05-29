@@ -6,6 +6,8 @@
 
 #include <events/InputController.h>
 
+#include "GameMaterials.h"
+
 namespace graphics
 {
 	class Renderer;
@@ -28,8 +30,8 @@ namespace vortex
 		Player( graphics::Renderer& renderer, events::InputController& input_controller );
 		virtual ~Player();
 
-		void Init( std::shared_ptr<graphics::GPUMeshBuffers> mesh_buffer,
-				   std::shared_ptr<graphics::Material> material,
+		void Init( SingleTextureSpriteMaterial& material,
+				   SingleTextureSpriteMaterial::Resources& resources,
 				   std::unique_ptr<audio::SoundInstance> engine_sound );
 
 		void Update();

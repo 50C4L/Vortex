@@ -33,12 +33,12 @@ Player::~Player()
 }
 
 void
-Player::Init( std::shared_ptr<graphics::GPUMeshBuffers> mesh_buffer,
-			  std::shared_ptr<graphics::Material> material,
+Player::Init( SingleTextureSpriteMaterial& material,
+			  SingleTextureSpriteMaterial::Resources& resources,
 			  std::unique_ptr<audio::SoundInstance> engine_sound )
 {
-	mShip->GetRenderComponent()->SetMeshBuffer( std::move( mesh_buffer ), 0, 6, 0 );
-	mShip->GetRenderComponent()->SetMaterial( std::move( material ) );
+	mShip->SetBodyMaterial( material.Instantiate( mRenderer, resources ) );
+	mShip->SetThrustMaterial( material.Instantiate( mRenderer, resources ) );
 
 	mShip->SetThrustAcceleration( THRUST_ACCELERATION );
 	mShip->SetMaxThrustSpeed( MAX_THRUST_SPEED );
@@ -72,7 +72,7 @@ Player::Update()
 void
 Player::Draw()
 {
-	mRenderer.AddToRenderQueue( mShip->GetRenderComponent().get() );
+	mShip->Draw();
 }
 
 void

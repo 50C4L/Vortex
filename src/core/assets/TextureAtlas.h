@@ -21,6 +21,11 @@ namespace assets
 		};
 		const SubTexture& GetSubTexture( const std::string& name ) const;
 
+		///
+		/// Flip the UV coordinates of all subtextures in the atlas vertically.
+		///
+		void Flip();
+
 	private:
 		SubTexture mDefaultSubTexture;
 		std::unordered_map<std::string, SubTexture> mSubTextures;

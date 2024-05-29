@@ -64,7 +64,6 @@ namespace vortex
 		std::unique_ptr<SingleTextureSpriteMaterial> mSpriteMaterial;
 		std::unique_ptr<SingleTextureSpriteMaterial::Resources> mSpriteMaterialResources;
 
-		std::shared_ptr<graphics::GPUMeshBuffers> mQuadMesh;
 		std::unique_ptr<Player> mPlayer;
 
 		std::chrono::time_point<std::chrono::steady_clock> mLastUpdateTime;

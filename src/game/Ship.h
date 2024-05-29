@@ -6,13 +6,12 @@
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 
+#include <graphics/Material.h>
+
 namespace graphics
 {
 	class Renderer;
 	class RenderComponent;
-	struct ManagedBuffer;
-	struct Material;
-	class UniformDescriptor;
 }
 
 namespace vortex
@@ -34,9 +33,10 @@ namespace vortex
 		///
 		virtual ~Ship();
 
-		std::shared_ptr<graphics::RenderComponent> GetRenderComponent() const;
-
+		void SetBodyMaterial( std::unique_ptr<graphics::Material> material );
+		void SetThrustMaterial( std::unique_ptr<graphics::Material> material );
 		void Update( float delta_time );
+		void Draw();
 
 		void SetRotateSpeed( float angle );
 		void SetMaxThrustSpeed( float speed );
@@ -45,7 +45,9 @@ namespace vortex
 		void Thrust( bool on );
 
 	private:
-		std::shared_ptr<graphics::RenderComponent> mRenderComponent;
+		void Translate( glm::vec3 translation );
+
+		graphics::Renderer& mRenderer;
 		float mRotateSpeed;
 		float mMaxThrustSpeed;
 		float mThrustAcceleration;
@@ -53,6 +55,11 @@ namespace vortex
 		glm::vec3 mForwardDir;
 		bool mIsThrustOn;
 		glm::vec3 mPosition;
+
+		// Render components
+		size_t mShipBodyRCIndex = -1;
+		size_t mThrustRCIndex = -1;
+		std::vector<std::unique_ptr<graphics::RenderComponent>> mRenderComponents;
 	};
 }
 

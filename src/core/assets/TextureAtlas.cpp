@@ -63,3 +63,28 @@ TextureAtlas::GetSubTexture( const std::string& name ) const
 	}
 	return it->second;
 }
+
+void
+TextureAtlas::Flip()
+{
+	for( auto& sub_texture : mSubTextures )
+	{
+		float temp_y = sub_texture.second.uv_min.y;
+		sub_texture.second.uv_min.y = 1.0f - sub_texture.second.uv_max.y;
+		sub_texture.second.uv_max.y = 1.0f - temp_y;
+	}
+}
+
+void
+TextureAtlas::Flip( const std::string& name )
+{
+	auto it = mSubTextures.find( name );
+	if( it == mSubTextures.end() )
+	{
+		LOG_ERROR( "SubTexture not found: " + name );
+		return;
+	}
+	float temp_y = it->second.uv_min.y;
+	it->second.uv_min.y = 1.0f - it->second.uv_max.y;
+	it->second.uv_max.y = 1.0f - temp_y;
+}

@@ -68,8 +68,7 @@ MainScene::OnEnter()
 
 	// Game objects
 	mPlayer = std::make_unique<Player>( mRenderer, mInputController );
-	mPlayer->Init( mQuadMesh,
-				   mSpriteMaterial->Instantiate( mRenderer, *mSpriteMaterialResources ),
+	mPlayer->Init( *mSpriteMaterial, *mSpriteMaterialResources,
 				   std::make_unique<audio::SoundInstance>( mAudioMixer.CreateSound( "./resources/sounds/thruster.mp3" ) ) );
 
 	float half_width = static_cast<float>( config::DesignResolution::WIDTH ) / 2.f;
@@ -112,41 +111,6 @@ MainScene::Update()
 void 
 MainScene::PrepareMeshes()
 {
-	assets::TextureAtlas texture_atlas( "./resources/textures/ship/ship_texatlas.json" );
-	const auto& ship_tex = texture_atlas.GetSubTexture( "player_ship.png" );
-
-	std::vector<graphics::Vertex> rect_vertices;
-	rect_vertices.resize( 4 );
-	rect_vertices[0].position = {  25, -25, 0 };
-	rect_vertices[1].position = {  25,  25, 0 };
-	rect_vertices[2].position = { -25, -25, 0 };
-	rect_vertices[3].position = { -25,  25, 0 };
-
-	rect_vertices[0].color = { 1, 0, 0, 1 };
-	rect_vertices[1].color = { 1, 1, 0, 1 };
-	rect_vertices[2].color = { 1, 0, 1, 1 };
-	rect_vertices[3].color = { 0, 0, 1, 1 };
-
-	rect_vertices[0].uv_x = ship_tex.uv_max.x;
-	rect_vertices[0].uv_y = ship_tex.uv_min.y;
-	rect_vertices[1].uv_x = ship_tex.uv_max.x;
-	rect_vertices[1].uv_y = ship_tex.uv_max.y;
-	rect_vertices[2].uv_x = ship_tex.uv_min.x;
-	rect_vertices[2].uv_y = ship_tex.uv_min.y;
-	rect_vertices[3].uv_x = ship_tex.uv_min.x;
-	rect_vertices[3].uv_y = ship_tex.uv_max.y;
-
-	std::vector<uint32_t> rect_indices;
-	rect_indices.resize( 6 );
-	rect_indices[0] = 0;
-	rect_indices[1] = 1;
-	rect_indices[2] = 2;
-
-	rect_indices[3] = 2;
-	rect_indices[4] = 1;
-	rect_indices[5] = 3;
-
-	mQuadMesh = mRenderer.UploadMesh( rect_indices, rect_vertices );
 }
 
 void

@@ -3,11 +3,11 @@
 
 #include <memory>
 
+#include <graphics/VulkanPipeline.h>
+#include <graphics/VulkanDescriptor.h>
+
 namespace graphics
 {
-	struct RenderPipeline;
-	class UniformDescriptor;
-
 	// Represents a material instance
 	struct Material
 	{
