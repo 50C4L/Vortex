@@ -2,6 +2,7 @@
 
 #include <assets/TextureAtlas.h>
 
+#include <graphics/BuiltInMeshes.h>
 #include <graphics/Renderer.h>
 #include <graphics/RenderComponent.h>
 #include <graphics/VulkanDescriptor.h>
@@ -38,55 +39,32 @@ Ship::Ship( graphics::Renderer& renderer )
 	const auto& ship_tex = texture_atlas.GetSubTexture( "player_ship.png" );
 
 	// Create the ship body
-	std::vector<graphics::Vertex> rect_vertices;
-	rect_vertices.resize( 4 );
-	rect_vertices[0].position = {  25, -25, 0 };
-	rect_vertices[1].position = {  25,  25, 0 };
-	rect_vertices[2].position = { -25, -25, 0 };
-	rect_vertices[3].position = { -25,  25, 0 };
+	auto rect = graphics::made_rect_vertices( { 0, 0, 0 }, 50, 50 );
 
-	rect_vertices[0].color = { 1, 1, 1, 1 };
-	rect_vertices[1].color = { 1, 1, 1, 1 };
-	rect_vertices[2].color = { 1, 1, 1, 1 };
-	rect_vertices[3].color = { 1, 1, 1, 1 };
+	rect.vertices[0].uv_x = ship_tex.uv_max.x;
+	rect.vertices[0].uv_y = ship_tex.uv_min.y;
+	rect.vertices[1].uv_x = ship_tex.uv_max.x;
+	rect.vertices[1].uv_y = ship_tex.uv_max.y;
+	rect.vertices[2].uv_x = ship_tex.uv_min.x;
+	rect.vertices[2].uv_y = ship_tex.uv_min.y;
+	rect.vertices[3].uv_x = ship_tex.uv_min.x;
+	rect.vertices[3].uv_y = ship_tex.uv_max.y;
 
-	rect_vertices[0].uv_x = ship_tex.uv_max.x;
-	rect_vertices[0].uv_y = ship_tex.uv_min.y;
-	rect_vertices[1].uv_x = ship_tex.uv_max.x;
-	rect_vertices[1].uv_y = ship_tex.uv_max.y;
-	rect_vertices[2].uv_x = ship_tex.uv_min.x;
-	rect_vertices[2].uv_y = ship_tex.uv_min.y;
-	rect_vertices[3].uv_x = ship_tex.uv_min.x;
-	rect_vertices[3].uv_y = ship_tex.uv_max.y;
-
-	std::vector<uint32_t> rect_indices;
-	rect_indices.resize( 6 );
-	rect_indices[0] = 0;
-	rect_indices[1] = 1;
-	rect_indices[2] = 2;
-
-	rect_indices[3] = 2;
-	rect_indices[4] = 1;
-	rect_indices[5] = 3;
-
-	mRenderComponents[mShipBodyRCIndex]->SetMeshBuffer( std::move( mRenderer.UploadMesh( rect_indices, rect_vertices ) ), 0, 6, 0 );
+	mRenderComponents[mShipBodyRCIndex]->SetMeshBuffer( std::move( mRenderer.UploadMesh( rect.indices, rect.vertices ) ), 0, 6, 0 );
 
 	// Create the thrust
 	const auto& thrust_tex = texture_atlas.GetSubTexture( "ship_thrust_fx.png" );
-	rect_vertices[0].position -= glm::vec3( 0, 25, 0 );
-	rect_vertices[1].position -= glm::vec3( 0, 25, 0 );
-	rect_vertices[2].position -= glm::vec3( 0, 25, 0 );
-	rect_vertices[3].position -= glm::vec3( 0, 25, 0 );
-	rect_vertices[0].uv_x = thrust_tex.uv_max.x;
-	rect_vertices[0].uv_y = thrust_tex.uv_min.y;
-	rect_vertices[1].uv_x = thrust_tex.uv_max.x;
-	rect_vertices[1].uv_y = thrust_tex.uv_max.y;
-	rect_vertices[2].uv_x = thrust_tex.uv_min.x;
-	rect_vertices[2].uv_y = thrust_tex.uv_min.y;
-	rect_vertices[3].uv_x = thrust_tex.uv_min.x;
-	rect_vertices[3].uv_y = thrust_tex.uv_max.y;
+	rect = graphics::made_rect_vertices( { 0, -30.f, 0 }, 10, 10 );
+	rect.vertices[0].uv_x = thrust_tex.uv_max.x;
+	rect.vertices[0].uv_y = thrust_tex.uv_min.y;
+	rect.vertices[1].uv_x = thrust_tex.uv_max.x;
+	rect.vertices[1].uv_y = thrust_tex.uv_max.y;
+	rect.vertices[2].uv_x = thrust_tex.uv_min.x;
+	rect.vertices[2].uv_y = thrust_tex.uv_min.y;
+	rect.vertices[3].uv_x = thrust_tex.uv_min.x;
+	rect.vertices[3].uv_y = thrust_tex.uv_max.y;
 
-	mRenderComponents[mThrustRCIndex]->SetMeshBuffer( mRenderer.UploadMesh( rect_indices, rect_vertices ), 0, 6, 0 );
+	mRenderComponents[mThrustRCIndex]->SetMeshBuffer( mRenderer.UploadMesh( rect.indices, rect.vertices ), 0, 6, 0 );
 }
 
 Ship::~Ship()
