@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include <graphics/BuiltInUniforms.h>
 #include <graphics/Renderer.h>
 #include <graphics/VulkanMesh.h>
 #include <graphics/VulkanDescriptor.h>
@@ -98,18 +99,6 @@ RenderComponent::GetMaterial()
 }
 
 void
-RenderComponent::Draw( vk::CommandBuffer& cmd )
-{
-	if( !mMeshBuffer )
-	{
-		return;
-	}
-
-	cmd.bindIndexBuffer( mMeshBuffer->index_buffer->buffer, 0, vk::IndexType::eUint32 );
-	cmd.drawIndexed( mIndexCount, 1, mFirstIndex, mVertexOffset, 0 );
-}
-
-void
 RenderComponent::Update()
 {
 	if( !mMeshBuffer )
@@ -126,4 +115,17 @@ RenderComponent::Update()
 
 	mRotationMatrix = glm::mat4( 1.0f );
 	mTranslateMatrix = glm::mat4( 1.0f );
+}
+
+RenderInfo
+RenderComponent::CreateRenderInfo()
+{
+	RenderInfo render_info;
+	render_info.material        = mMaterial.get();
+	render_info.mesh_buffer     = mMeshBuffer.get();
+	render_info.mesh_descriptor = mMeshDescriptor.get();
+	render_info.first_index     = mFirstIndex;
+	render_info.index_count     = mIndexCount;
+	render_info.vertex_offset   = mVertexOffset;
+	return render_info;
 }

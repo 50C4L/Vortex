@@ -173,7 +173,7 @@ Renderer::Render()
 	transition_image( cmd, mDepthImage->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal );
 
 	// Actual rendering here
-	DrawRenderComponents( cmd );
+	DrawRenderQueue( cmd );
 
 	vk::Extent2D render_extent = { mRenderImage->extent.width, mRenderImage->extent.height };
 
@@ -207,14 +207,14 @@ Renderer::Render()
 }
 
 void
-Renderer::AddToRenderQueue( RenderComponent* render_component )
+Renderer::AddToRenderQueue( RenderInfo render_info )
 {
 	if( mFrames.empty() )
 	{
 		LOG_ERROR( "No frames available, Init() must be called first." );
 		return;
 	}
-	mRenderQueue.push_back( render_component );
+	mRenderQueue.push_back( std::move( render_info ) );
 }
 
 void
@@ -504,7 +504,7 @@ Renderer::PrepareImGUI()
 }
 
 void
-Renderer::DrawRenderComponents( vk::CommandBuffer& cmd )
+Renderer::DrawRenderQueue( vk::CommandBuffer& cmd )
 {
 	auto color_attachment = create_attachment_info( mRenderImage->image_view.get(), std::nullopt, vk::ImageLayout::eGeneral );
 	vk::ClearValue depth_clear_value;
@@ -521,10 +521,9 @@ Renderer::DrawRenderComponents( vk::CommandBuffer& cmd )
 
 	cmd.beginRendering( render_info );
 
-	for( auto& render_compt : mRenderQueue )
+	for( auto& render_info : mRenderQueue )
 	{
-		auto& material = render_compt->GetMaterial();
-		cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, material.pipeline->pipeline.get() );
+		cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, render_info.material->pipeline->pipeline.get() );
 
 		vk::Viewport viewport{};
 		viewport.width = static_cast<float>( render_extent.width );
@@ -543,39 +542,38 @@ Renderer::DrawRenderComponents( vk::CommandBuffer& cmd )
 		// Pipeline global uniform
 		uint32_t descriptor_index = 0;
 		{
-			auto& dynamic_offsets = material.pipeline->global_descriptor->GetDynamicOffsets( GetCurrentFrameIndex() );
+			auto& dynamic_offsets = render_info.material->pipeline->global_descriptor->GetDynamicOffsets( GetCurrentFrameIndex() );
 			cmd.bindDescriptorSets( 
 				vk::PipelineBindPoint::eGraphics,
-				material.pipeline->layout.get(),
+				render_info.material->pipeline->layout.get(),
 				descriptor_index++, 1,
-				material.pipeline->global_descriptor->GetDescriptorSet( GetCurrentFrameIndex() ),
+				render_info.material->pipeline->global_descriptor->GetDescriptorSet( GetCurrentFrameIndex() ),
 				static_cast<uint32_t>( dynamic_offsets.size() ), dynamic_offsets.data() );
 		}
 
 		// RenderComponent uniform
 		{
-			auto& dynamic_offsets = render_compt->GetMeshDescriptor().GetDynamicOffsets( GetCurrentFrameIndex() );
+			auto& dynamic_offsets = render_info.mesh_descriptor->GetDynamicOffsets( GetCurrentFrameIndex() );
 			cmd.bindDescriptorSets( 
 				vk::PipelineBindPoint::eGraphics,
-				material.pipeline->layout.get(),
+				render_info.material->pipeline->layout.get(),
 				descriptor_index++, 1,
-				render_compt->GetMeshDescriptor().GetDescriptorSet( GetCurrentFrameIndex() ),
+				render_info.mesh_descriptor->GetDescriptorSet( GetCurrentFrameIndex() ),
 				static_cast<uint32_t>( dynamic_offsets.size() ), dynamic_offsets.data() );
 		}
 		
 		{
-			auto& dynamic_offsets = material.descriptor->GetDynamicOffsets( GetCurrentFrameIndex() );
+			auto& dynamic_offsets = render_info.material->descriptor->GetDynamicOffsets( GetCurrentFrameIndex() );
 			cmd.bindDescriptorSets( 
 				vk::PipelineBindPoint::eGraphics,
-				material.pipeline->layout.get(),
+				render_info.material->pipeline->layout.get(),
 				descriptor_index++, 1,
-				material.descriptor->GetDescriptorSet( GetCurrentFrameIndex() ),
+				render_info.material->descriptor->GetDescriptorSet( GetCurrentFrameIndex() ),
 				static_cast<uint32_t>( dynamic_offsets.size() ), dynamic_offsets.data() );
 		}
 
-		cmd.bindIndexBuffer( render_compt->GetMeshBuffer()->index_buffer->buffer, 0, vk::IndexType::eUint32 );
-
-		render_compt->Draw( cmd );
+		cmd.bindIndexBuffer( render_info.mesh_buffer->index_buffer->buffer, 0, vk::IndexType::eUint32 );
+		cmd.drawIndexed( render_info.index_count, 1, render_info.first_index, render_info.vertex_offset, 0 );
 	}
 
 	cmd.endRendering();

@@ -118,7 +118,7 @@ Ship::Draw()
 {
 	for( auto& rc : mRenderComponents )
 	{
-		mRenderer.AddToRenderQueue( rc.get() );
+		mRenderer.AddToRenderQueue( rc->CreateRenderInfo() );
 	}
 }
 

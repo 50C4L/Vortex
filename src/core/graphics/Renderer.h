@@ -7,7 +7,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include <graphics/RenderComponent.h>
+#include <graphics/RenderInfo.h>
 
 struct SDL_Window;
 
@@ -63,12 +63,12 @@ namespace graphics
 		void Render();
 
 		///
-		/// Add a RenderComponent to the render queue
+		/// Add a RenderInfo to the render queue
 		///
-		/// @param RenderComponent
-		///  The RenderComponent to add
+		/// @param RenderInfo
+		///  The RenderInfo to add
 		///
-		void AddToRenderQueue( RenderComponent* RenderComponent );
+		void AddToRenderQueue( RenderInfo render_info );
 
 		///
 		/// Wait for the renderer to be idle
@@ -126,7 +126,7 @@ namespace graphics
 
 		void PrepareImGUI();
 
-		void DrawRenderComponents( vk::CommandBuffer& cmd );
+		void DrawRenderQueue( vk::CommandBuffer& cmd );
 
 		SDL_Window& mWindow;
 		std::unique_ptr<VulkanContext>		mContext;
@@ -147,7 +147,7 @@ namespace graphics
 		BuiltInDescriptorSetLayouts mBuiltInDescriptorSetLayouts;
 
 		// The queue shold be clear first when destorying the renderer
-		std::vector<RenderComponent*> mRenderQueue;
+		std::vector<RenderInfo> mRenderQueue;
 	};
 }
 

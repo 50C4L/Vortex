@@ -5,6 +5,8 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
 
+#include <graphics/RenderInfo.h>
+
 namespace graphics
 {
 	class Renderer;
@@ -19,14 +21,6 @@ namespace graphics
 	class RenderComponent
 	{
 	public:
-		struct MeshUniformData
-		{
-			alignas(64) glm::mat4 model;
-			alignas(8) uint64_t vertex_buffer_address;
-			// padding
-			float extra[46];
-		};
-
 		///
 		/// Constructor
 		///
@@ -49,9 +43,9 @@ namespace graphics
 		void SetMaterial( std::shared_ptr<Material> material );
 		Material& GetMaterial();
 
-		void Draw( vk::CommandBuffer& cmd );
-
 		void Update();
+
+		RenderInfo CreateRenderInfo();
 
 	private:
 		Renderer& mRenderer;
