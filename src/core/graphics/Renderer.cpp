@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include <utility/Logger.h>
+#include <graphics/BuiltInUniforms.h>
 #include <graphics/ImageUtilities.h>
 #include <graphics/Material.h>
 #include <graphics/ManagedVulkanResources.h>
@@ -521,6 +522,7 @@ Renderer::DrawRenderQueue( vk::CommandBuffer& cmd )
 
 	cmd.beginRendering( render_info );
 
+	size_t current_frame = GetCurrentFrameIndex();
 	for( auto& render_info : mRenderQueue )
 	{
 		cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, render_info.material->pipeline->pipeline.get() );
@@ -539,36 +541,44 @@ Renderer::DrawRenderQueue( vk::CommandBuffer& cmd )
 		scissor.offset = vk::Offset2D{ 0, 0 };
 		cmd.setScissor( 0, scissor );
 
+		// Update model matrix
+		
+		MeshUniformData data;
+		data.model = render_info.model_matrix;
+		data.vertex_buffer_address = render_info.mesh_buffer->vertex_buffer_address;
+		render_info.mesh_uniform_data_dynamic->Update( &data, sizeof( MeshUniformData ), sizeof( MeshUniformData ) * current_frame );
+
 		// Pipeline global uniform
 		uint32_t descriptor_index = 0;
 		{
-			auto& dynamic_offsets = render_info.material->pipeline->global_descriptor->GetDynamicOffsets( GetCurrentFrameIndex() );
+			auto& dynamic_offsets = render_info.material->pipeline->global_descriptor->GetDynamicOffsets( current_frame );
 			cmd.bindDescriptorSets( 
 				vk::PipelineBindPoint::eGraphics,
 				render_info.material->pipeline->layout.get(),
 				descriptor_index++, 1,
-				render_info.material->pipeline->global_descriptor->GetDescriptorSet( GetCurrentFrameIndex() ),
+				render_info.material->pipeline->global_descriptor->GetDescriptorSet( current_frame ),
 				static_cast<uint32_t>( dynamic_offsets.size() ), dynamic_offsets.data() );
 		}
 
 		// RenderComponent uniform
 		{
-			auto& dynamic_offsets = render_info.mesh_descriptor->GetDynamicOffsets( GetCurrentFrameIndex() );
+			auto& dynamic_offsets = render_info.mesh_descriptor->GetDynamicOffsets( current_frame );
 			cmd.bindDescriptorSets( 
 				vk::PipelineBindPoint::eGraphics,
 				render_info.material->pipeline->layout.get(),
 				descriptor_index++, 1,
-				render_info.mesh_descriptor->GetDescriptorSet( GetCurrentFrameIndex() ),
+				render_info.mesh_descriptor->GetDescriptorSet( current_frame ),
 				static_cast<uint32_t>( dynamic_offsets.size() ), dynamic_offsets.data() );
 		}
 		
+		// Material uniform
 		{
-			auto& dynamic_offsets = render_info.material->descriptor->GetDynamicOffsets( GetCurrentFrameIndex() );
+			auto& dynamic_offsets = render_info.material->descriptor->GetDynamicOffsets( current_frame );
 			cmd.bindDescriptorSets( 
 				vk::PipelineBindPoint::eGraphics,
 				render_info.material->pipeline->layout.get(),
 				descriptor_index++, 1,
-				render_info.material->descriptor->GetDescriptorSet( GetCurrentFrameIndex() ),
+				render_info.material->descriptor->GetDescriptorSet( current_frame ),
 				static_cast<uint32_t>( dynamic_offsets.size() ), dynamic_offsets.data() );
 		}
 

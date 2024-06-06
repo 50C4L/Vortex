@@ -31,19 +31,18 @@ namespace graphics
 		///
 		virtual ~RenderComponent();
 
-		void SetMeshBuffer( std::shared_ptr<GPUMeshBuffers> mesh_buffer, uint32_t first_index, uint32_t index_count, uint32_t vertex_offset );
-		const GPUMeshBuffers* GetMeshBuffer() const;
-		UniformDescriptor& GetMeshDescriptor();
+		void SetMeshBuffer( std::shared_ptr<GPUMeshBuffers> mesh_buffer,
+							uint32_t first_index,
+							uint32_t index_count,
+							uint32_t vertex_offset );
 
 		const glm::mat4 GetModelMatrix() const;
+		const glm::mat4& GetTranslateMatrix() const;
 
 		glm::mat4 Rotate( float angle, const glm::vec3& axis, bool local );
 		void Translate( const glm::vec3& translation );
 
 		void SetMaterial( std::shared_ptr<Material> material );
-		Material& GetMaterial();
-
-		void Update();
 
 		RenderInfo CreateRenderInfo();
 
@@ -53,6 +52,7 @@ namespace graphics
 		glm::mat4 mModelMatrix;
 		glm::mat4 mTranslateMatrix;
 		glm::mat4 mRotationMatrix;
+		glm::mat4 mTransformMatrix;
 		std::shared_ptr<GPUMeshBuffers> mMeshBuffer;
 
 		std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>> mMeshUniformDataDynamic;

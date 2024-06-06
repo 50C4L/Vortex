@@ -106,11 +106,6 @@ Ship::Update( float delta_time )
 		rotate_mat = glm::inverse( rotate_mat );
 		mForwardDir = glm::vec3( glm::vec4( mForwardDir, 0.0f ) * rotate_mat);
 	}
-	
-	for( auto& rc : mRenderComponents )
-	{
-		rc->Update();
-	}
 }
 
 void

@@ -2,6 +2,7 @@
 #define _EAGE_RENDER_INFO_H_
 
 #include <stdint.h>
+#include <glm/glm.hpp>
 
 namespace graphics
 {
@@ -9,15 +10,18 @@ namespace graphics
 	struct Material;
 	class UniformDescriptor;
 	struct MeshUniformData;
+	struct ManagedBuffer;
 
 	struct RenderInfo
 	{
 		Material*          material;
 		GPUMeshBuffers*    mesh_buffer;
 		UniformDescriptor* mesh_descriptor;
+		ManagedBuffer*     mesh_uniform_data_dynamic;
 		uint32_t           first_index;
 		uint32_t           index_count;
 		uint32_t           vertex_offset;
+		glm::mat4          model_matrix;
 	};
 }
 

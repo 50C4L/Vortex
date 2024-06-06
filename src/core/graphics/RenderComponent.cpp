@@ -19,6 +19,7 @@ RenderComponent::RenderComponent( Renderer& renderer )
 	, mModelMatrix( 1.0f )
 	, mTranslateMatrix( 1.0f )
 	, mRotationMatrix( 1.0f )
+	, mTransformMatrix( 1.0f )
 {
 	const auto num_overlapping_frames = mRenderer.GetFrames().size();
 	mMeshUniformDataDynamic = ManagedBuffer::Create( 
@@ -45,22 +46,16 @@ RenderComponent::SetMeshBuffer( std::shared_ptr<GPUMeshBuffers> mesh_buffer, uin
 	mVertexOffset = vertex_offset;
 }
 
-const GPUMeshBuffers*
-RenderComponent::GetMeshBuffer() const
-{
-	return mMeshBuffer.get();
-}
-
-UniformDescriptor&
-RenderComponent::GetMeshDescriptor()
-{
-	return *mMeshDescriptor;
-}
-
 const glm::mat4
 RenderComponent::GetModelMatrix() const
 {
 	return mModelMatrix;
+}
+
+const glm::mat4&
+RenderComponent::GetTranslateMatrix() const
+{
+	return mTranslateMatrix;
 }
 
 glm::mat4
@@ -92,40 +87,16 @@ RenderComponent::SetMaterial( std::shared_ptr<Material> material )
 	mMaterial = std::move( material );
 }
 
-Material&
-RenderComponent::GetMaterial()
-{
-	return *mMaterial;
-}
-
-void
-RenderComponent::Update()
-{
-	if( !mMeshBuffer )
-	{
-		return;
-	}
-
-	auto current_frame = mRenderer.GetCurrentFrameIndex();
-
-	MeshUniformData data;
-	data.model = mModelMatrix;
-	data.vertex_buffer_address = mMeshBuffer->vertex_buffer_address;
-	mMeshUniformDataDynamic->Update( &data, sizeof( MeshUniformData ), sizeof( MeshUniformData ) * current_frame );
-
-	mRotationMatrix = glm::mat4( 1.0f );
-	mTranslateMatrix = glm::mat4( 1.0f );
-}
-
 RenderInfo
 RenderComponent::CreateRenderInfo()
 {
 	RenderInfo render_info;
-	render_info.material        = mMaterial.get();
-	render_info.mesh_buffer     = mMeshBuffer.get();
-	render_info.mesh_descriptor = mMeshDescriptor.get();
-	render_info.first_index     = mFirstIndex;
-	render_info.index_count     = mIndexCount;
-	render_info.vertex_offset   = mVertexOffset;
+	render_info.material                  = mMaterial.get();
+	render_info.mesh_buffer               = mMeshBuffer.get();
+	render_info.mesh_descriptor           = mMeshDescriptor.get();
+	render_info.mesh_uniform_data_dynamic = mMeshUniformDataDynamic.get();
+	render_info.first_index               = mFirstIndex;
+	render_info.index_count               = mIndexCount;
+	render_info.vertex_offset             = mVertexOffset;
 	return render_info;
 }
