@@ -36,11 +36,11 @@ namespace graphics
 							uint32_t index_count,
 							uint32_t vertex_offset );
 
-		const glm::mat4 GetModelMatrix() const;
-		const glm::mat4& GetTranslateMatrix() const;
+		const glm::mat4& GetTransformMatrix() const;
 
 		glm::mat4 Rotate( float angle, const glm::vec3& axis, bool local );
 		void Translate( const glm::vec3& translation );
+		void Transform( const glm::mat4& transform );
 
 		void SetMaterial( std::shared_ptr<Material> material );
 
@@ -49,7 +49,6 @@ namespace graphics
 	private:
 		Renderer& mRenderer;
 		std::shared_ptr<Material> mMaterial;
-		glm::mat4 mModelMatrix;
 		glm::mat4 mTranslateMatrix;
 		glm::mat4 mRotationMatrix;
 		glm::mat4 mTransformMatrix;

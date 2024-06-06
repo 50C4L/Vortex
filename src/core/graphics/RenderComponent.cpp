@@ -16,7 +16,6 @@ using namespace graphics;
 
 RenderComponent::RenderComponent( Renderer& renderer )
 	: mRenderer( renderer )
-	, mModelMatrix( 1.0f )
 	, mTranslateMatrix( 1.0f )
 	, mRotationMatrix( 1.0f )
 	, mTransformMatrix( 1.0f )
@@ -46,30 +45,24 @@ RenderComponent::SetMeshBuffer( std::shared_ptr<GPUMeshBuffers> mesh_buffer, uin
 	mVertexOffset = vertex_offset;
 }
 
-const glm::mat4
-RenderComponent::GetModelMatrix() const
-{
-	return mModelMatrix;
-}
-
 const glm::mat4&
-RenderComponent::GetTranslateMatrix() const
+RenderComponent::GetTransformMatrix() const
 {
-	return mTranslateMatrix;
+	return mTransformMatrix;
 }
 
 glm::mat4
 RenderComponent::Rotate( float angle, const glm::vec3& axis, bool local )
 {
 	// https://stackoverflow.com/questions/21923482/rotate-and-translate-object-in-local-and-global-orientation-using-glm
-	mRotationMatrix = glm::rotate( mRotationMatrix, glm::radians( angle ), axis );
+	mRotationMatrix = glm::rotate( glm::mat4{ 1.0 }, glm::radians( angle ), axis );
 	if( local )
 	{
-		mModelMatrix = mModelMatrix * mRotationMatrix;
+		mTransformMatrix = mTransformMatrix * mRotationMatrix;
 	}
 	else
 	{
-		mModelMatrix = mRotationMatrix * mModelMatrix;
+		mTransformMatrix = mRotationMatrix * mTransformMatrix;
 	}
 	return mRotationMatrix;
 }
@@ -77,8 +70,14 @@ RenderComponent::Rotate( float angle, const glm::vec3& axis, bool local )
 void
 RenderComponent::Translate( const glm::vec3& translation )
 {
-	mTranslateMatrix = glm::translate( mTranslateMatrix, translation );
-	mModelMatrix = mTranslateMatrix * mModelMatrix;
+	mTranslateMatrix = glm::translate( glm::mat4{ 1.0 }, translation );
+	mTransformMatrix = mTranslateMatrix * mTransformMatrix;
+}
+
+void
+RenderComponent::Transform( const glm::mat4& transform )
+{
+	mTransformMatrix = transform;
 }
 
 void
@@ -98,5 +97,6 @@ RenderComponent::CreateRenderInfo()
 	render_info.first_index               = mFirstIndex;
 	render_info.index_count               = mIndexCount;
 	render_info.vertex_offset             = mVertexOffset;
+	render_info.model_matrix              = mTransformMatrix;
 	return render_info;
 }

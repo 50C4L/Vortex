@@ -86,6 +86,7 @@ Ship::SetThrustMaterial( std::unique_ptr<graphics::Material> material )
 void
 Ship::Update( float delta_time )
 {
+	// Update the body first
 	if( mIsThrustOn )
 	{
 		mVelocity += mForwardDir * ( mThrustAcceleration * ( delta_time / 1000.0f ) );
@@ -96,9 +97,12 @@ Ship::Update( float delta_time )
 	}
 
 	auto new_pos = mPosition + mVelocity * ( delta_time / 1000.0f );
-	Translate( new_pos - mPosition );
-	mPosition = new_pos;
-
+	if( mPosition != new_pos )
+	{
+		mRenderComponents[mShipBodyRCIndex]->Translate( new_pos - mPosition );
+		mPosition = new_pos;
+	}
+	
 	if( mRotateSpeed != 0.f )
 	{
 		float rotation = mRotateSpeed / 1000.f * delta_time;
@@ -106,6 +110,10 @@ Ship::Update( float delta_time )
 		rotate_mat = glm::inverse( rotate_mat );
 		mForwardDir = glm::vec3( glm::vec4( mForwardDir, 0.0f ) * rotate_mat);
 	}
+
+	// Attachment will be using the body's transform matrix
+	// @todo: this should really be a scene graph, where attachments are children of the parent (body)
+	mRenderComponents[mThrustRCIndex]->Transform( mRenderComponents[mShipBodyRCIndex]->GetTransformMatrix() );
 }
 
 void
@@ -139,13 +147,4 @@ void
 Ship::Thrust( bool on )
 {
 	mIsThrustOn = on;
-}
-
-void
-Ship::Translate( glm::vec3 translation )
-{
-	for( auto& rc : mRenderComponents )
-	{
-		rc->Translate( std::move( translation ) );
-	}
 }

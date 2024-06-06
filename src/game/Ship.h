@@ -45,8 +45,6 @@ namespace vortex
 		void Thrust( bool on );
 
 	private:
-		void Translate( glm::vec3 translation );
-
 		graphics::Renderer& mRenderer;
 		float mRotateSpeed;
 		float mMaxThrustSpeed;
