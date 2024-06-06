@@ -119,9 +119,13 @@ Ship::Update( float delta_time )
 void
 Ship::Draw()
 {
+	if( mIsThrustOn )
+	{
+		mRenderer.AddToRenderQueue( mRenderComponents[mThrustRCIndex]->CreateRenderInfo() );
+	}
 	for( auto& rc : mRenderComponents )
 	{
-		mRenderer.AddToRenderQueue( rc->CreateRenderInfo() );
+		mRenderer.AddToRenderQueue( mRenderComponents[mShipBodyRCIndex]->CreateRenderInfo() );
 	}
 }
 
