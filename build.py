@@ -2,6 +2,7 @@ import os
 import subprocess
 
 # Compile core shaders
+# @todo: This should be an optional step configurable via a command line argument
 current_dir = os.path.dirname(os.path.realpath(__file__))
 compile_shader_script_path = current_dir + "/src/core/graphics/script/compile_shader.py"
 core_shader_dir = current_dir + "/src/core/graphics/shaders"

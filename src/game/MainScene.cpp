@@ -11,6 +11,7 @@
 #include <graphics/ManagedVulkanResources.h>
 #include <graphics/VMAWrapper.h>
 #include <graphics/Material.h>
+#include <imgui/imgui.h>
 #include <events/InputController.h>
 #include <audio/AudioMixer.h>
 #include <assets/ImageLoader.h>
@@ -59,6 +60,9 @@ void
 MainScene::OnEnter()
 {
 	LOG( "MainScene::OnEnter" );
+
+	// Set the ImGUI render function
+	mRenderer.SetImGUIRenderFunction( [&](){ DrawDebugGUI(); } );
 
 	// Prepare meshes
 	PrepareMeshes();
@@ -147,4 +151,16 @@ MainScene::PrepareMaterials()
 			image.data.data(), sizeof( unsigned char ) * image.data.size(), image.width, image.height, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eSampled, vk::ImageAspectFlagBits::eColor, 1 );
 	}
 	mSpriteMaterialResources->color_texture_sampler = mRenderer.CreateSampler( vk::Filter::eNearest, vk::Filter::eNearest );
+}
+
+void
+MainScene::DrawDebugGUI()
+{
+	ImGuiStyle * style = &ImGui::GetStyle();
+
+	style->WindowBorderSize = 0.0f;
+
+	ImGui::Begin( "FPS Counter", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings );
+	ImGui::Text( "FPS: %.1f", ImGui::GetIO().Framerate );
+	ImGui::End();
 }

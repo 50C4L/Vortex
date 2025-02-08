@@ -52,6 +52,8 @@ namespace vortex
 		void PrepareMaterials();
 
 	private:
+		void DrawDebugGUI();
+
 		graphics::Renderer& mRenderer;
 		events::InputController& mInputController;
 		audio::AudioMixer& mAudioMixer;

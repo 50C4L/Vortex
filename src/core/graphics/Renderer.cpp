@@ -392,6 +392,12 @@ Renderer::GetBuiltInDescriptorSetLayouts()
 }
 
 void
+Renderer::SetImGUIRenderFunction( std::function<void()> render_function )
+{
+	mImGUIRenderFunction = std::move( render_function );
+}
+
+void
 Renderer::Submit()
 {
 	auto& frame = GetCurrentFrame();
@@ -500,7 +506,10 @@ Renderer::PrepareImGUI()
 	ImGui_ImplSDL2_NewFrame();
 	ImGui::NewFrame();
 	// @TODO: Actual setup of the GUI should be passed in as a callback
-	ImGui::ShowDemoWindow();
+	if( mImGUIRenderFunction )
+	{
+		mImGUIRenderFunction();
+	}
 	ImGui::Render();
 }
 

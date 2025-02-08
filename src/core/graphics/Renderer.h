@@ -111,6 +111,12 @@ namespace graphics
 		};
 		BuiltInDescriptorSetLayouts& GetBuiltInDescriptorSetLayouts();
 
+		///
+		/// Set the ImGUI render function, should use for debugging rendering or editor GUI rendering
+		/// Gameplay GUI should be rendered with `RenderComponent`
+		///
+		void SetImGUIRenderFunction( std::function<void()> render_function );
+
 	private:
 		Frame& GetCurrentFrame();
 		
@@ -140,6 +146,7 @@ namespace graphics
 
 		std::unique_ptr<VulkanCommandContext> mImmidiateCommandContext;
 		std::unique_ptr<ImGUILifetime> mImGUILifetime;
+		std::function<void()> mImGUIRenderFunction;
 
 		std::vector<Frame>					mFrames;
 		uint64_t							mFrameNumber;
