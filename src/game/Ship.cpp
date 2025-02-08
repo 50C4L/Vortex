@@ -123,10 +123,8 @@ Ship::Draw()
 	{
 		mRenderer.AddToRenderQueue( mRenderComponents[mThrustRCIndex]->CreateRenderInfo() );
 	}
-	for( auto& rc : mRenderComponents )
-	{
-		mRenderer.AddToRenderQueue( mRenderComponents[mShipBodyRCIndex]->CreateRenderInfo() );
-	}
+
+	mRenderer.AddToRenderQueue( mRenderComponents[mShipBodyRCIndex]->CreateRenderInfo() );
 }
 
 void
