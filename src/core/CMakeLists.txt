@@ -110,4 +110,5 @@ target_include_directories(eage_core PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(eage_core PUBLIC
 	imgui
 	VulkanMemoryAllocator.lib
+	box2
 )
