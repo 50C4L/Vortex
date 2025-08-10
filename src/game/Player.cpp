@@ -3,12 +3,16 @@
 #include <graphics/RenderComponent.h>
 #include <graphics/Renderer.h>
 #include <audio/AudioMixer.h>
+#include <ecs/components/Basics.h>
 
 #include "Ship.h"
 #include "GameConfig.h"
+#include "components/ShipStateComponents.h"
+#include "systems/ShipControlSystem.h"
 
 using namespace vortex;
 using namespace vortex::config;
+using namespace eage::ecs;
 
 namespace
 {
@@ -18,11 +22,21 @@ namespace
 	const float MAX_THRUST_SPEED = 200.f;
 }
 
-Player::Player( graphics::Renderer& renderer, events::InputController& input_controller )
+Player::Player( graphics::Renderer& renderer, events::InputController& input_controller, ECSRegistry& ecs_registry )
 	: mRenderer( renderer )
 	, mInputController( input_controller )
+	, mEcsRegistry( ecs_registry )
 	, mShip( std::make_unique<Ship>( renderer ) )
 {
+	// Init ship componments
+	mShipEntity = mEcsRegistry.CreateEntity();
+	mEcsRegistry.AddComponent<eage::ecs::TransformComponent>( mShipEntity, TransformComponent{ { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f, 1.f }, { 1.f, 1.f, 1.f } } );
+	mEcsRegistry.AddComponent<eage::ecs::VelocityComponent>( mShipEntity, eage::ecs::VelocityComponent{ { 0.f, 0.f, 0.f } } );
+	mEcsRegistry.AddComponent<components::ShipStateComponent>( mShipEntity, components::ShipStateComponent{ false } );
+
+	// Init ship coontrol system
+	mShipControlSystem = std::make_unique<ShipControlSystem>( mEcsRegistry, mShipEntity );
+
 	mInputController.Subscribe( static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_LEFT ), this );
 	mInputController.Subscribe( static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_RIGHT ), this );
 	mInputController.Subscribe( static_cast<uint64_t>( GameEvents::PLAYER_THRUST ), this );
@@ -37,11 +51,9 @@ Player::Init( SingleTextureSpriteMaterial& material,
 			  SingleTextureSpriteMaterial::Resources& resources,
 			  std::unique_ptr<audio::SoundInstance> engine_sound )
 {
+	// @todo: Is this a good way to pass in resources?
 	mShip->SetBodyMaterial( material.Instantiate( mRenderer, resources ) );
 	mShip->SetThrustMaterial( material.Instantiate( mRenderer, resources ) );
-
-	mShip->SetThrustAcceleration( THRUST_ACCELERATION );
-	mShip->SetMaxThrustSpeed( MAX_THRUST_SPEED );
 
 	mEngineSound = std::move( engine_sound );
 }
@@ -55,24 +67,27 @@ Player::Update()
 
 	if( mRotateState.left )
 	{
-		mShip->SetRotateSpeed( ROTATION_SPEED );
+		mShipControlSystem->Rotate( ROTATION_SPEED );
 	}
 	else if( mRotateState.right )
 	{
-		mShip->SetRotateSpeed( -1.f * ROTATION_SPEED );
+		mShipControlSystem->Rotate( -1.f * ROTATION_SPEED );
 	}
 	else
 	{
-		mShip->SetRotateSpeed( 0.f );
+		mShipControlSystem->Rotate( 0.f );
 	}
 
-	mShip->Update( delta_time_ms.count());
+	mShipControlSystem->Update( delta_time_ms.count() );
+	auto& transform = mEcsRegistry.GetComponent<eage::ecs::TransformComponent>( mShipEntity );
+	mShip->Update( transform.ToMatrix() );
 }
 
 void
 Player::Draw()
 {
-	mShip->Draw();
+	auto& ship_state = mEcsRegistry.GetComponent<components::ShipStateComponent>( mShipEntity );
+	mShip->Draw( ship_state.is_thrust_on );
 }
 
 void
@@ -106,7 +121,6 @@ Player::OnInputEvent( uint64_t event_id, bool on )
 		}
 		break;
 	case GameEvents::PLAYER_THRUST:
-		mShip->Thrust( on );
 		if( on )
 		{
 			mEngineSound->Play();
@@ -115,6 +129,12 @@ Player::OnInputEvent( uint64_t event_id, bool on )
 		{
 			mEngineSound->Stop();
 		}
+
+		{
+			
+			mShipControlSystem->Thrust( on );
+		}
+
 		break;
 	default:
 		break;

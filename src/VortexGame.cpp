@@ -11,6 +11,7 @@
 #include <events/InputController.h>
 #include <imgui/imgui_impl_sdl2.h>
 #include <audio/AudioMixer.h>
+#include <ecs/ECS.h>
 
 #include "SceneController.h"
 #include "game/MainScene.h"
@@ -102,9 +103,12 @@ VortexGame::Init()
 	};
 	mInputController = std::make_unique<events::InputController>( std::move( keycode_to_event ) );
 
+	// Initialize ECSRegistry
+	mECSRegistry = std::make_unique<eage::ecs::ECSRegistry>();
+
 	// Initialize SceneController
 	mSceneController = std::make_unique<SceneController>();
-	mSceneController->AddScene( static_cast<int>( config::SceneID::MAIN_SCENE ), std::make_unique<MainScene>( *mRenderer, *mInputController, *mAudioMixer ) );
+	mSceneController->AddScene( static_cast<int>( config::SceneID::MAIN_SCENE ), std::make_unique<MainScene>( *mRenderer, *mInputController, *mAudioMixer, *mECSRegistry ) );
 	mSceneController->ChangeScene( static_cast<int>( config::SceneID::MAIN_SCENE ) );
 
 	return true;

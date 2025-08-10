@@ -23,6 +23,8 @@ add_executable(Vortex
 	./src/game/Ship.cpp
 	./src/game/Player.h
 	./src/game/Player.cpp
+	./src/game/systems/ShipControlSystem.h
+	./src/game/systems/ShipControlSystem.cpp
 )
 
 target_link_libraries(Vortex PRIVATE

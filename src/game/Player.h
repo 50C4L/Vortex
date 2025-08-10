@@ -5,6 +5,7 @@
 #include <chrono>
 
 #include <events/InputController.h>
+#include <ecs/ECS.h>
 
 #include "GameMaterials.h"
 
@@ -23,11 +24,12 @@ namespace audio
 namespace vortex
 {
 	class Ship;
+	class ShipControlSystem;
 
 	class Player : public events::InputController::Observer
 	{
 	public:
-		Player( graphics::Renderer& renderer, events::InputController& input_controller );
+		Player( graphics::Renderer& renderer, events::InputController& input_controller, eage::ecs::ECSRegistry& ecs_registry );
 		virtual ~Player();
 
 		void Init( SingleTextureSpriteMaterial& material,
@@ -45,7 +47,10 @@ namespace vortex
 
 		graphics::Renderer& mRenderer;
 		events::InputController& mInputController;
+		eage::ecs::ECSRegistry& mEcsRegistry;
+		eage::ecs::Entity mShipEntity;
 		std::unique_ptr<Ship> mShip;
+		std::unique_ptr<ShipControlSystem> mShipControlSystem;
 		std::unique_ptr<audio::SoundInstance> mEngineSound;
 
 		struct RotateState

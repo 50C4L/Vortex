@@ -24,7 +24,6 @@ Ship::Ship( graphics::Renderer& renderer )
 	, mThrustAcceleration( 0.f )
 	, mVelocity( { 0.f } )
 	, mForwardDir( { 0.f, 1.f, 0.f } )
-	, mIsThrustOn( false )
 	, mPosition( { 0.f } )
 {
 	for( size_t i = 0; i < 2; ++i )
@@ -84,69 +83,19 @@ Ship::SetThrustMaterial( std::unique_ptr<graphics::Material> material )
 }
 
 void
-Ship::Update( float delta_time )
+Ship::Update( glm::mat4 transform )
 {
-	// Update the body first
-	if( mIsThrustOn )
-	{
-		mVelocity += mForwardDir * ( mThrustAcceleration * ( delta_time / 1000.0f ) );
-		if( glm::length( mVelocity ) > mMaxThrustSpeed )
-		{
-			mVelocity = mForwardDir * mMaxThrustSpeed;
-		}
-	}
-
-	auto new_pos = mPosition + mVelocity * ( delta_time / 1000.0f );
-	if( mPosition != new_pos )
-	{
-		mRenderComponents[mShipBodyRCIndex]->Translate( new_pos - mPosition );
-		mPosition = new_pos;
-	}
-	
-	if( mRotateSpeed != 0.f )
-	{
-		float rotation = mRotateSpeed / 1000.f * delta_time;
-		auto rotate_mat = mRenderComponents[mShipBodyRCIndex]->Rotate( rotation, glm::vec3( 0.0f, 0.0f, 1.0f ), true );
-		rotate_mat = glm::inverse( rotate_mat );
-		mForwardDir = glm::vec3( glm::vec4( mForwardDir, 0.0f ) * rotate_mat);
-	}
-
-	// Attachment will be using the body's transform matrix
-	// @todo: this should really be a scene graph, where attachments are children of the parent (body)
-	mRenderComponents[mThrustRCIndex]->Transform( mRenderComponents[mShipBodyRCIndex]->GetTransformMatrix() );
+	mRenderComponents[mShipBodyRCIndex]->Transform( transform );
+	mRenderComponents[mThrustRCIndex]->Transform( transform );
 }
 
 void
-Ship::Draw()
+Ship::Draw( bool is_thrust_on )
 {
-	if( mIsThrustOn )
+	if( is_thrust_on )
 	{
 		mRenderer.AddToRenderQueue( mRenderComponents[mThrustRCIndex]->CreateRenderInfo() );
 	}
 
 	mRenderer.AddToRenderQueue( mRenderComponents[mShipBodyRCIndex]->CreateRenderInfo() );
-}
-
-void
-Ship::SetRotateSpeed( float angle )
-{
-	mRotateSpeed = angle;
-}
-
-void
-Ship::SetMaxThrustSpeed( float speed )
-{
-	mMaxThrustSpeed = speed;
-}
-
-void
-Ship::SetThrustAcceleration( float acceleration )
-{
-	mThrustAcceleration = acceleration;
-}
-
-void
-Ship::Thrust( bool on )
-{
-	mIsThrustOn = on;
 }

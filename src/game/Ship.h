@@ -35,8 +35,8 @@ namespace vortex
 
 		void SetBodyMaterial( std::unique_ptr<graphics::Material> material );
 		void SetThrustMaterial( std::unique_ptr<graphics::Material> material );
-		void Update( float delta_time );
-		void Draw();
+		void Update( glm::mat4 transform );
+		void Draw( bool is_thrust_on );
 
 		void SetRotateSpeed( float angle );
 		void SetMaxThrustSpeed( float speed );
@@ -51,7 +51,6 @@ namespace vortex
 		float mThrustAcceleration;
 		glm::vec3 mVelocity;
 		glm::vec3 mForwardDir;
-		bool mIsThrustOn;
 		glm::vec3 mPosition;
 
 		// Render components

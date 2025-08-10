@@ -44,10 +44,11 @@ namespace
 	};
 }
 
-MainScene::MainScene( graphics::Renderer& renderer, events::InputController& input_controller, audio::AudioMixer& audio_mixer )
+MainScene::MainScene( graphics::Renderer& renderer, events::InputController& input_controller, audio::AudioMixer& audio_mixer, eage::ecs::ECSRegistry& ecs_registry )
 	: mRenderer( renderer )
 	, mInputController( input_controller )
 	, mAudioMixer( audio_mixer )
+	, mECSRegistry( ecs_registry )
 	, mLastUpdateTime( std::chrono::high_resolution_clock::now() )
 {
 }
@@ -71,7 +72,7 @@ MainScene::OnEnter()
 	PrepareMaterials();
 
 	// Game objects
-	mPlayer = std::make_unique<Player>( mRenderer, mInputController );
+	mPlayer = std::make_unique<Player>( mRenderer, mInputController, mECSRegistry );
 	mPlayer->Init( *mSpriteMaterial, *mSpriteMaterialResources,
 				   std::make_unique<audio::SoundInstance>( mAudioMixer.CreateSound( "./resources/sounds/thruster.mp3" ) ) );
 
