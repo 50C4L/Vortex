@@ -26,9 +26,10 @@ public:
 	}
 
 	template<typename T>
-	void AddComponent(Entity e, const T& component = T{})
+	void AddComponent(Entity e, T&& component )
 	{
-		GetComponentMap<T>()[e] = component;
+		auto& map = GetComponentMap<T>();
+		map.emplace( e, std::move(component) );
 	}
 
 	template<typename T>
@@ -55,8 +56,9 @@ public:
 	std::unordered_map<Entity, T>& GetComponentMap() 
 	{
 		auto type = std::type_index(typeid(T));
-		if (components.find(type) == components.end()) {
-			components[type] = std::unordered_map<Entity, T>();
+		if( components.find(type) == components.end() )
+		{
+			components.emplace( type, std::unordered_map<Entity, T>{} ); // Use emplace to avoid copying
 		}
 		return std::any_cast<std::unordered_map<Entity, T>&>(components[type]);
 	}

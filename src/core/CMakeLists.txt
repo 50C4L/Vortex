@@ -98,8 +98,11 @@ add_library(eage_core STATIC
 	./audio/AudioMixer.cpp
 
 	./ecs/ECS.h
-	./ecs/ECS.cpp
+	./ecs/ResourceManager.h
 	./ecs/components/Basics.h
+	./ecs/components/Render.h
+	./ecs/systems/RenderSystem.h
+	./ecs/systems/RenderSystem.cpp
 
 	./utility/Filesystem.h
 	./utility/Pointers.h

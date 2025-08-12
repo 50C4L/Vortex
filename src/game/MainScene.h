@@ -36,6 +36,7 @@ namespace audio
 namespace eage::ecs
 {
 	class ECSRegistry;
+	class RenderSystem;
 }
 
 namespace vortex
@@ -45,7 +46,9 @@ namespace vortex
 	class MainScene : public AbstractScene
 	{
 	public:
-		MainScene( graphics::Renderer& renderer, events::InputController& input_controller, audio::AudioMixer& audio_mixer, eage::ecs::ECSRegistry& ecs_registry );
+		MainScene( graphics::Renderer& renderer, events::InputController& input_controller, 
+				   audio::AudioMixer& audio_mixer, eage::ecs::ECSRegistry& ecs_registry,
+				   eage::ecs::RenderSystem& render_system );
 		virtual ~MainScene();
 
 		virtual void OnEnter() override;
@@ -63,6 +66,7 @@ namespace vortex
 		events::InputController& mInputController;
 		audio::AudioMixer& mAudioMixer;
 		eage::ecs::ECSRegistry& mECSRegistry;
+		eage::ecs::RenderSystem& mRenderSystem;
 
 		vk::UniqueDescriptorSetLayout mSceneGlobalDataLayout;
 		std::shared_ptr<graphics::UniformDescriptor> mSceneGlobalDescriptor;

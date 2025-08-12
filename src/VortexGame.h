@@ -23,6 +23,7 @@ namespace audio
 namespace eage::ecs
 {
 	class ECSRegistry;
+	class RenderSystem;
 }
 
 namespace vortex
@@ -46,6 +47,7 @@ namespace vortex
 		std::unique_ptr<events::InputController> mInputController;
 		std::unique_ptr<audio::AudioMixer> mAudioMixer;
 		std::unique_ptr<eage::ecs::ECSRegistry> mECSRegistry;
+		std::unique_ptr<eage::ecs::RenderSystem> mRenderSystem;
 	};
 }
 

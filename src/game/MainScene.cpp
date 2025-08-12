@@ -44,11 +44,13 @@ namespace
 	};
 }
 
-MainScene::MainScene( graphics::Renderer& renderer, events::InputController& input_controller, audio::AudioMixer& audio_mixer, eage::ecs::ECSRegistry& ecs_registry )
+MainScene::MainScene( graphics::Renderer& renderer, events::InputController& input_controller, audio::AudioMixer& audio_mixer,
+					  eage::ecs::ECSRegistry& ecs_registry, eage::ecs::RenderSystem& render_system )
 	: mRenderer( renderer )
 	, mInputController( input_controller )
 	, mAudioMixer( audio_mixer )
 	, mECSRegistry( ecs_registry )
+	, mRenderSystem( render_system )
 	, mLastUpdateTime( std::chrono::high_resolution_clock::now() )
 {
 }
