@@ -3,7 +3,7 @@
 #include <graphics/Renderer.h>
 #include <utility/Logger.h>
 
-using namespace graphics;
+using namespace eage::graphics;
 using namespace utility;
 
 namespace

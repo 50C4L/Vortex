@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <glm/glm.hpp>
 
-namespace graphics
+namespace eage::graphics
 {
 	struct GPUMeshBuffers;
 	struct Material;

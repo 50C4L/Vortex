@@ -17,7 +17,7 @@
 using namespace vortex;
 using namespace utility;
 
-Ship::Ship( graphics::Renderer& renderer )
+Ship::Ship( eage::graphics::Renderer& renderer )
 	: mRenderer( renderer )
 	, mRotateSpeed( 0.f )
 	, mMaxThrustSpeed( 0.f )
@@ -28,7 +28,7 @@ Ship::Ship( graphics::Renderer& renderer )
 {
 	for( size_t i = 0; i < 2; ++i )
 	{
-		mRenderComponents.push_back( std::make_unique<graphics::RenderComponent>( mRenderer ) );
+		mRenderComponents.push_back( std::make_unique<eage::graphics::RenderComponent>( mRenderer ) );
 	}
 	mShipBodyRCIndex = 0;
 	mThrustRCIndex = 1;
@@ -38,7 +38,7 @@ Ship::Ship( graphics::Renderer& renderer )
 	const auto& ship_tex = texture_atlas.GetSubTexture( "player_ship.png" );
 
 	// Create the ship body
-	auto rect = graphics::made_rect_vertices( { 0, 0, 0 }, 50, 50 );
+	auto rect = eage::graphics::made_rect_vertices( { 0, 0, 0 }, 50, 50 );
 
 	rect.vertices[0].uv_x = ship_tex.uv_max.x;
 	rect.vertices[0].uv_y = ship_tex.uv_min.y;
@@ -53,7 +53,7 @@ Ship::Ship( graphics::Renderer& renderer )
 
 	// Create the thrust
 	const auto& thrust_tex = texture_atlas.GetSubTexture( "ship_thrust_fx.png" );
-	rect = graphics::made_rect_vertices( { 0, -30.f, 0 }, 10, 10 );
+	rect = eage::graphics::made_rect_vertices( { 0, -30.f, 0 }, 10, 10 );
 	rect.vertices[0].uv_x = thrust_tex.uv_max.x;
 	rect.vertices[0].uv_y = thrust_tex.uv_min.y;
 	rect.vertices[1].uv_x = thrust_tex.uv_max.x;
@@ -71,13 +71,13 @@ Ship::~Ship()
 }
 
 void
-Ship::SetBodyMaterial( std::unique_ptr<graphics::Material> material )
+Ship::SetBodyMaterial( std::unique_ptr<eage::graphics::Material> material )
 {
 	mRenderComponents[mShipBodyRCIndex]->SetMaterial( std::move( material ) );
 }
 
 void
-Ship::SetThrustMaterial( std::unique_ptr<graphics::Material> material )
+Ship::SetThrustMaterial( std::unique_ptr<eage::graphics::Material> material )
 {
 	mRenderComponents[mThrustRCIndex]->SetMaterial( std::move( material ) );
 }

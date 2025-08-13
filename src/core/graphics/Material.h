@@ -6,7 +6,7 @@
 #include <graphics/VulkanPipeline.h>
 #include <graphics/VulkanDescriptor.h>
 
-namespace graphics
+namespace eage::graphics
 {
 	// Represents a material instance
 	struct Material

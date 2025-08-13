@@ -7,7 +7,7 @@
 
 #include <graphics/RenderInfo.h>
 
-namespace graphics
+namespace eage::graphics
 {
 	class Renderer;
 	struct GPUMeshBuffers;
@@ -54,13 +54,13 @@ namespace graphics
 		glm::mat4 mTransformMatrix;
 		std::shared_ptr<GPUMeshBuffers> mMeshBuffer;
 
-		std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>> mMeshUniformDataDynamic;
+		std::unique_ptr<eage::graphics::ManagedBuffer, std::function<void(eage::graphics::ManagedBuffer*)>> mMeshUniformDataDynamic;
 		std::unique_ptr<UniformDescriptor> mMeshDescriptor;
 		
 		uint32_t mFirstIndex   = 0;
 		uint32_t mIndexCount   = 0;
 		uint32_t mVertexOffset = 0;
 	};
-} // namespace graphics
+} // namespace eage::graphics
 
 #endif // _RenderComponent_H

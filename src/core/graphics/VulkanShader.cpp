@@ -2,10 +2,10 @@
 
 #include <fstream>
 
-using namespace graphics;
+using namespace eage::graphics;
 
 std::optional<vk::UniqueShaderModule> 
-graphics::create_shader_module_from_file( vk::Device& device, const std::string& spv_file_path )
+eage::graphics::create_shader_module_from_file( vk::Device& device, const std::string& spv_file_path )
 {
 	std::ifstream file( spv_file_path, std::ios::ate | std::ios::binary );
 

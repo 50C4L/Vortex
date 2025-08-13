@@ -6,7 +6,7 @@
 
 struct SDL_Window;
 
-namespace graphics
+namespace eage::graphics
 {
 	class VulkanDebugMessenger;
 
@@ -38,7 +38,7 @@ namespace graphics
 		vk::Queue								graphics_queue;
 		vk::Queue								present_queue;
 	};
-} // namespace graphics
+} // namespace eage::graphics
 
 
 #endif // _EAGE_VULKAN_CONTEXT_H

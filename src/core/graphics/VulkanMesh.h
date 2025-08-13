@@ -5,7 +5,7 @@
 
 #include <graphics/ManagedVulkanResources.h>
 
-namespace graphics
+namespace eage::graphics
 {
 	struct Vertex
 	{
@@ -21,6 +21,10 @@ namespace graphics
 		ManagedBuffer::Ptr index_buffer;
 		ManagedBuffer::Ptr vertex_buffer;
 		vk::DeviceAddress vertex_buffer_address;
+
+		uint32_t first_index = 0;
+		uint32_t index_count = 0;
+		uint32_t vertex_offset = 0;
 	};
 
 	struct GPUImageBuffers

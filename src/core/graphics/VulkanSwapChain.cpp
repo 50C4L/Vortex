@@ -4,7 +4,7 @@
 // #include "VulkanBuffers.h"
 // #include "VulkanTools.h"
 
-using namespace graphics;
+using namespace eage::graphics;
 
 namespace
 {

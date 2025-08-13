@@ -8,7 +8,7 @@
 
 #include <graphics/VulkanContext.h>
 
-using namespace graphics;
+using namespace eage::graphics;
 using namespace utility;
 
 ImGUILifetime::ImGUILifetime( VulkanContext& context )

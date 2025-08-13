@@ -3,7 +3,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-namespace graphics
+namespace eage::graphics
 {
 	void transition_image( vk::CommandBuffer& cmd_buffer, vk::Image image, vk::ImageLayout current_layout, vk::ImageLayout new_layout );
 

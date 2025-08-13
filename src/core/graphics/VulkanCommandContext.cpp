@@ -2,7 +2,7 @@
 
 #include "VulkanContext.h"
 
-using namespace graphics;
+using namespace eage::graphics;
 
 VulkanCommandContext::VulkanCommandContext( VulkanContext& context )
 	: mContext( context )

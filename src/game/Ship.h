@@ -8,7 +8,7 @@
 
 #include <graphics/Material.h>
 
-namespace graphics
+namespace eage::graphics
 {
 	class Renderer;
 	class RenderComponent;
@@ -26,15 +26,15 @@ namespace vortex
 		///
 		/// Constructor
 		///
-		Ship( graphics::Renderer& renderer );
+		Ship( eage::graphics::Renderer& renderer );
 
 		///
 		/// Destructor
 		///
 		virtual ~Ship();
 
-		void SetBodyMaterial( std::unique_ptr<graphics::Material> material );
-		void SetThrustMaterial( std::unique_ptr<graphics::Material> material );
+		void SetBodyMaterial( std::unique_ptr<eage::graphics::Material> material );
+		void SetThrustMaterial( std::unique_ptr<eage::graphics::Material> material );
 		void Update( glm::mat4 transform );
 		void Draw( bool is_thrust_on );
 
@@ -45,7 +45,7 @@ namespace vortex
 		void Thrust( bool on );
 
 	private:
-		graphics::Renderer& mRenderer;
+		eage::graphics::Renderer& mRenderer;
 		float mRotateSpeed;
 		float mMaxThrustSpeed;
 		float mThrustAcceleration;
@@ -56,7 +56,7 @@ namespace vortex
 		// Render components
 		size_t mShipBodyRCIndex = -1;
 		size_t mThrustRCIndex = -1;
-		std::vector<std::unique_ptr<graphics::RenderComponent>> mRenderComponents;
+		std::vector<std::unique_ptr<eage::graphics::RenderComponent>> mRenderComponents;
 	};
 }
 

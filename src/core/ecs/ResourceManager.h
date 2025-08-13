@@ -36,12 +36,12 @@ namespace eage::ecs
 		}
 
 		// Store an existing resource
-		ResourceID Store(std::shared_ptr<T> resource)
+		ResourceID Store(std::unique_ptr<T> resource)
 		{
 			if (!resource) return INVALID_ID;
 			
 			ResourceID id = mNextID++;
-			mResources[id] = resource;
+			mResources[id] = std::move( resource );
 			mReferenceCounts[id] = 1;
 			return id;
 		}

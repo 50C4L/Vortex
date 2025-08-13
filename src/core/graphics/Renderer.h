@@ -3,7 +3,6 @@
 
 #include <memory>
 #include <vector>
-#include <span>
 
 #include <vulkan/vulkan.hpp>
 
@@ -11,7 +10,7 @@
 
 struct SDL_Window;
 
-namespace graphics
+namespace eage::graphics
 {
 	class VulkanContext;
 	class VulkanSwapChain;
@@ -78,7 +77,7 @@ namespace graphics
 		///
 		/// Immediately upload a mesh to the GPU
 		///
-		std::unique_ptr<GPUMeshBuffers> UploadMesh( std::span<uint32_t> indices, std::span<Vertex> vertices );
+		std::unique_ptr<GPUMeshBuffers> UploadMesh( const std::vector<uint32_t>& indices, const std::vector<Vertex>& vertices );
 
 		///
 		/// Immediately upload an image to the GPU

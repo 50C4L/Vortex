@@ -6,7 +6,7 @@
 #include <memory>
 #include <functional>
 
-namespace graphics
+namespace eage::graphics
 {
 	class VulkanContext;
 

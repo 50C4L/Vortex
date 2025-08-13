@@ -4,7 +4,7 @@
 #include <vulkan/vulkan.hpp>
 #include <optional>
 
-namespace graphics
+namespace eage::graphics
 {
 	std::optional<vk::UniqueShaderModule> create_shader_module_from_file( vk::Device& device, const std::string& spv_file_path );
 }

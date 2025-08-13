@@ -1,9 +1,14 @@
 #include "Player.h"
 
+#include <graphics/BuiltInMeshes.h>
 #include <graphics/RenderComponent.h>
 #include <graphics/Renderer.h>
+
 #include <audio/AudioMixer.h>
 #include <ecs/components/Basics.h>
+#include <ecs/components/Render.h>
+#include <ecs/systems/RenderSystem.h>
+#include <assets/TextureAtlas.h>
 
 #include "Ship.h"
 #include "GameConfig.h"
@@ -22,10 +27,12 @@ namespace
 	const float MAX_THRUST_SPEED = 200.f;
 }
 
-Player::Player( graphics::Renderer& renderer, events::InputController& input_controller, ECSRegistry& ecs_registry )
+Player::Player( eage::graphics::Renderer& renderer, events::InputController& input_controller, ECSRegistry& ecs_registry, 
+				RenderSystem& render_system )
 	: mRenderer( renderer )
 	, mInputController( input_controller )
 	, mEcsRegistry( ecs_registry )
+	, mRenderSystem( render_system )
 	, mShip( std::make_unique<Ship>( renderer ) )
 {
 	// Init ship componments
@@ -51,7 +58,40 @@ Player::Init( SingleTextureSpriteMaterial& material,
 			  SingleTextureSpriteMaterial::Resources& resources,
 			  std::unique_ptr<audio::SoundInstance> engine_sound )
 {
-	// @todo: Is this a good way to pass in resources?
+	assets::TextureAtlas texture_atlas( "./resources/textures/ship/ship_texatlas.json" );
+	texture_atlas.Flip();
+	const auto& ship_tex = texture_atlas.GetSubTexture( "player_ship.png" ); 
+
+	auto rect = eage::graphics::made_rect_vertices( { 0, 0, 0 }, 50, 50 );
+	rect.vertices[0].uv_x = ship_tex.uv_max.x;
+	rect.vertices[0].uv_y = ship_tex.uv_min.y;
+	rect.vertices[1].uv_x = ship_tex.uv_max.x;
+	rect.vertices[1].uv_y = ship_tex.uv_max.y;
+	rect.vertices[2].uv_x = ship_tex.uv_min.x;
+	rect.vertices[2].uv_y = ship_tex.uv_min.y;
+	rect.vertices[3].uv_x = ship_tex.uv_min.x;
+	rect.vertices[3].uv_y = ship_tex.uv_max.y;
+
+	// @todo: This should be done outside
+	auto ship_mesh_id = mRenderSystem.CreateMeshBuffer( rect.indices, rect.vertices, 0, 6, 0 );
+
+	// Create the thrust
+	const auto& thrust_tex = texture_atlas.GetSubTexture( "ship_thrust_fx.png" );
+	rect = eage::graphics::made_rect_vertices( { 0, -30.f, 0 }, 10, 10 );
+	rect.vertices[0].uv_x = thrust_tex.uv_max.x;
+	rect.vertices[0].uv_y = thrust_tex.uv_min.y;
+	rect.vertices[1].uv_x = thrust_tex.uv_max.x;
+	rect.vertices[1].uv_y = thrust_tex.uv_max.y;
+	rect.vertices[2].uv_x = thrust_tex.uv_min.x;
+	rect.vertices[2].uv_y = thrust_tex.uv_min.y;
+	rect.vertices[3].uv_x = thrust_tex.uv_min.x;
+	rect.vertices[3].uv_y = thrust_tex.uv_max.y;
+
+	auto thrust_mesh_id = mRenderSystem.CreateMeshBuffer( rect.indices, rect.vertices, 0, 6, 0 );
+
+	mEcsRegistry.AddComponent<RenderComponent>( mShipEntity, RenderComponent{ ship_mesh_id, INVALID_ID, INVALID_ID, INVALID_ID } );
+
+	// @todo: Is this a good way to pass in resources? NO!
 	mShip->SetBodyMaterial( material.Instantiate( mRenderer, resources ) );
 	mShip->SetThrustMaterial( material.Instantiate( mRenderer, resources ) );
 

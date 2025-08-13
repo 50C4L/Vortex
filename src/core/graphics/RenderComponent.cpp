@@ -12,7 +12,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-using namespace graphics;
+using namespace eage::graphics;
 
 RenderComponent::RenderComponent( Renderer& renderer )
 	: mRenderer( renderer )
@@ -28,7 +28,7 @@ RenderComponent::RenderComponent( Renderer& renderer )
 		VMA_MEMORY_USAGE_CPU_TO_GPU 
 	);
 
-	mMeshDescriptor = std::make_unique<graphics::UniformDescriptor>( mRenderer, mRenderer.GetBuiltInDescriptorSetLayouts().render_component.get() );
+	mMeshDescriptor = std::make_unique<eage::graphics::UniformDescriptor>( mRenderer, mRenderer.GetBuiltInDescriptorSetLayouts().render_component.get() );
 	mMeshDescriptor->WriteDynamicBuffer( 0, vk::DescriptorType::eUniformBufferDynamic, mMeshUniformDataDynamic->buffer, sizeof( MeshUniformData ) );
 }
 

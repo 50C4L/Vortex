@@ -9,7 +9,7 @@
 #include <graphics/ManagedVulkanResources.h>
 #include <graphics/VulkanDescriptor.h>
 
-namespace graphics
+namespace eage::graphics
 {
 	class Renderer;
 }
@@ -19,11 +19,12 @@ namespace eage::ecs
 	class RenderSystem
 	{
 	public:
-		RenderSystem( graphics::Renderer& renderer, eage::ecs::ECSRegistry& ecs_registry );
+		RenderSystem( eage::graphics::Renderer& renderer, eage::ecs::ECSRegistry& ecs_registry );
 		~RenderSystem();
 
 		// Resource creation methods
-		ResourceID CreateMeshBuffer(/* mesh data parameters */);
+		ResourceID CreateMeshBuffer( const std::vector<uint32_t>& indices, const std::vector<eage::graphics::Vertex>& vertices,
+									 uint32_t first_index, uint32_t index_count, uint32_t vertex_offset );
 		ResourceID CreateMaterial(/* material parameters */);
 		ResourceID CreateUniformBuffer(/* uniform data */);
 		ResourceID CreateDescriptorSet(/* descriptor parameters */);
@@ -35,16 +36,16 @@ namespace eage::ecs
 		void OnEntityDestroyed(eage::ecs::Entity entity);
 
 	private:
-		graphics::RenderInfo CreateRenderInfo( eage::ecs::Entity entity );
+		eage::graphics::RenderInfo CreateRenderInfo( eage::ecs::Entity entity );
 		
-		graphics::Renderer& mRenderer;
+		eage::graphics::Renderer& mRenderer;
 		eage::ecs::ECSRegistry& mECSRegistry;
 
 		// Resource managers
-		ResourceManager<graphics::GPUMeshBuffers> mMeshBuffers;
-		ResourceManager<graphics::Material> mMaterials;
-		ResourceManager<graphics::ManagedBuffer> mUniformBuffers;
-		ResourceManager<graphics::UniformDescriptor> mDescriptorSets;
+		ResourceManager<eage::graphics::GPUMeshBuffers> mMeshBuffers;
+		ResourceManager<eage::graphics::Material> mMaterials;
+		ResourceManager<eage::graphics::ManagedBuffer> mUniformBuffers;
+		ResourceManager<eage::graphics::UniformDescriptor> mDescriptorSets;
 	};
 }
 

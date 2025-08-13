@@ -5,7 +5,7 @@
 
 struct SDL_Window;
 
-namespace graphics
+namespace eage::graphics
 {
 	class Renderer;
 }
@@ -42,7 +42,7 @@ namespace vortex
 
 	private:
 		std::shared_ptr<SDL_Window> mWindow;
-		std::unique_ptr<graphics::Renderer> mRenderer;
+		std::unique_ptr<eage::graphics::Renderer> mRenderer;
 		std::unique_ptr<SceneController> mSceneController;
 		std::unique_ptr<events::InputController> mInputController;
 		std::unique_ptr<audio::AudioMixer> mAudioMixer;

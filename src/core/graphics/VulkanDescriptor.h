@@ -5,7 +5,7 @@
 #include <deque>
 #include <unordered_map>
 
-namespace graphics
+namespace eage::graphics
 {
 	class DescriptorLayoutBuilder
 	{

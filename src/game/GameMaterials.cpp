@@ -12,9 +12,9 @@ using namespace vortex;
 using namespace utility;
 
 void 
-SingleTextureSpriteMaterial::build_pipeline( graphics::Renderer& renderer, const std::vector<vk::DescriptorSetLayout>& descriptor_set_layouts )
+SingleTextureSpriteMaterial::build_pipeline( eage::graphics::Renderer& renderer, const std::vector<vk::DescriptorSetLayout>& descriptor_set_layouts )
 {
-	this->pipeline = std::make_shared<graphics::RenderPipeline>();
+	this->pipeline = std::make_shared<eage::graphics::RenderPipeline>();
 
 	std::vector<vk::DescriptorSetLayout> temp_layouts = descriptor_set_layouts;
 	temp_layouts.push_back( this->material_layout.get() );
@@ -23,21 +23,21 @@ SingleTextureSpriteMaterial::build_pipeline( graphics::Renderer& renderer, const
 	pipeline_layout_info.pSetLayouts = temp_layouts.data();
 	this->pipeline->layout = renderer.GetDevice().createPipelineLayoutUnique( pipeline_layout_info );
 
-	auto vertex_shader = graphics::create_shader_module_from_file( renderer.GetDevice(), "./src/shaders/compiled/colored_triangle_mesh.vert.spv" );
+	auto vertex_shader = eage::graphics::create_shader_module_from_file( renderer.GetDevice(), "./src/shaders/compiled/colored_triangle_mesh.vert.spv" );
 	if( !vertex_shader.has_value() )
 	{
 		LOG_ERROR( "Failed to create vertex shader module." );
 		return;
 	}
 
-	auto fragment_shader = graphics::create_shader_module_from_file( renderer.GetDevice(), "./src/shaders/compiled/colored_triangle.frag.spv" );
+	auto fragment_shader = eage::graphics::create_shader_module_from_file( renderer.GetDevice(), "./src/shaders/compiled/colored_triangle.frag.spv" );
 	if( !fragment_shader.has_value() )
 	{
 		LOG_ERROR( "Failed to create fragment shader module." );
 		return;
 	}
 
-	graphics::VulkanPipelineBuilder pipeline_builder;
+	eage::graphics::VulkanPipelineBuilder pipeline_builder;
 	this->pipeline->pipeline = pipeline_builder
 		.SetPipelineLayout( this->pipeline->layout.get() )
 		.SetShaders( vertex_shader.value().get(), fragment_shader.value().get() )
@@ -52,13 +52,13 @@ SingleTextureSpriteMaterial::build_pipeline( graphics::Renderer& renderer, const
 		.Build( renderer.GetDevice() );
 }
 
-std::unique_ptr<graphics::Material>
-SingleTextureSpriteMaterial::Instantiate( graphics::Renderer& renderer, const Resources& resources )
+std::unique_ptr<eage::graphics::Material>
+SingleTextureSpriteMaterial::Instantiate( eage::graphics::Renderer& renderer, const Resources& resources )
 {
-	auto material = std::make_unique<graphics::Material>();
+	auto material = std::make_unique<eage::graphics::Material>();
 
 	material->pipeline = this->pipeline;
-	material->descriptor = std::make_unique<graphics::UniformDescriptor>( renderer, this->material_layout.get() );
+	material->descriptor = std::make_unique<eage::graphics::UniformDescriptor>( renderer, this->material_layout.get() );
 	material->descriptor->WriteImage(
 		0, 
 		vk::DescriptorType::eCombinedImageSampler,

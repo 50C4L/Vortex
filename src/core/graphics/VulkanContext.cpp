@@ -7,7 +7,7 @@
 
 #include <utility/Logger.h>
 
-using namespace graphics;
+using namespace eage::graphics;
 using namespace utility;
 
 namespace
@@ -196,7 +196,7 @@ namespace
 	}
 }
 
-namespace graphics
+namespace eage::graphics
 {
 	// Simple wrapper for the vulkan debug messenger
 	class VulkanDebugMessenger

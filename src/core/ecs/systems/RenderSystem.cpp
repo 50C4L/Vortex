@@ -11,7 +11,7 @@
 
 using namespace eage::ecs;
 
-RenderSystem::RenderSystem( graphics::Renderer& renderer, ECSRegistry& ecs_registry )
+RenderSystem::RenderSystem( eage::graphics::Renderer& renderer, ECSRegistry& ecs_registry )
 	: mRenderer(renderer)
 	, mECSRegistry(ecs_registry)
 {
@@ -22,9 +22,15 @@ RenderSystem::~RenderSystem()
 }
 
 ResourceID
-RenderSystem::CreateMeshBuffer(/* mesh data parameters */)
+RenderSystem::CreateMeshBuffer( const std::vector<uint32_t>& indices, const std::vector<eage::graphics::Vertex>& vertices, 
+								uint32_t first_index, uint32_t index_count, uint32_t vertex_offset )
 {
-	return INVALID_ID;
+	auto mesh = mRenderer.UploadMesh( indices, vertices );
+	mesh->first_index = first_index;
+	mesh->index_count = index_count;
+	mesh->vertex_offset = vertex_offset;
+
+	return mMeshBuffers.Store( std::move(mesh) );
 }
 
 ResourceID
@@ -75,7 +81,7 @@ void RenderSystem::Render()
 	*/
 }
 
-graphics::RenderInfo RenderSystem::CreateRenderInfo(Entity entity)
+eage::graphics::RenderInfo RenderSystem::CreateRenderInfo(Entity entity)
 {
 	auto& render = mECSRegistry.GetComponent<RenderComponent>(entity);
 	auto& transform = mECSRegistry.GetComponent<TransformComponent>(entity);
@@ -83,7 +89,7 @@ graphics::RenderInfo RenderSystem::CreateRenderInfo(Entity entity)
 	// Update uniform buffer with transform matrix
 	// Return RenderInfo similar to old implementation
 	
-	graphics::RenderInfo info{};
+	eage::graphics::RenderInfo info{};
 	// Fill info with data from render component
 	return info;
 }

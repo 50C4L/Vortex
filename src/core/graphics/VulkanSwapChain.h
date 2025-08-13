@@ -6,7 +6,7 @@
 
 struct GLFWwindow;
 
-namespace graphics
+namespace eage::graphics
 {
 	// class VMAManagedImage;
 	class VulkanContext;

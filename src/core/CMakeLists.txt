@@ -57,6 +57,8 @@ endif (WIN32)
 
 # CORE
 add_library(eage_core STATIC
+	./graphics/BuiltInMeshes.h
+	./graphics/BuiltInMeshes.cpp
 	./graphics/ImageUtilities.h
 	./graphics/ImageUtilities.cpp
 	./graphics/ImGUILifetime.h

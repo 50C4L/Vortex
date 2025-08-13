@@ -24,7 +24,7 @@
 #include <imgui/imgui_impl_vulkan.h>
 #include <imgui/imgui_impl_sdl2.h>
 
-using namespace graphics;
+using namespace eage::graphics;
 using namespace utility;
 
 namespace
@@ -225,7 +225,7 @@ Renderer::WaitForIdle()
 }
 
 std::unique_ptr<GPUMeshBuffers>
-Renderer::UploadMesh( std::span<uint32_t> indices, std::span<Vertex> vertices )
+Renderer::UploadMesh( const std::vector<uint32_t>& indices, const std::vector<Vertex>& vertices )
 {
 	const size_t vertex_buffer_size = sizeof( Vertex ) * vertices.size();
 	const size_t index_buffer_size = sizeof( uint32_t ) * indices.size();

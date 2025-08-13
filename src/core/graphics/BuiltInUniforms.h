@@ -3,7 +3,7 @@
 
 #include <glm/glm.hpp>
 
-namespace graphics
+namespace eage::graphics
 {
 	struct MeshUniformData
 	{

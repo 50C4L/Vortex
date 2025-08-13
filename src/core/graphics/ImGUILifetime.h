@@ -5,7 +5,7 @@
 
 struct SDL_Window;
 
-namespace graphics
+namespace eage::graphics
 {
 	class VulkanContext;
 

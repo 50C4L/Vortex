@@ -2,7 +2,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-using namespace graphics;
+using namespace eage::graphics;
 
 OrthographicCamera::OrthographicCamera( float left, float right, float bottom, float top, float near, float far )
 	: mPosition( 0.0f, 0.0f, 1.0f )

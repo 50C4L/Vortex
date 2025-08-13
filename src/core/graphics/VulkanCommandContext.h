@@ -3,7 +3,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-namespace graphics
+namespace eage::graphics
 {
 	class VulkanContext;
 
@@ -76,6 +76,6 @@ namespace graphics
 
 		VulkanContext& 			mContext;		//< The vulkan context
 	};
-} // namespace graphics
+} // namespace eage::graphics
 
 #endif // _VULKAN_COMMAND_CONTEXT_H

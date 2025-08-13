@@ -44,7 +44,7 @@ namespace
 	};
 }
 
-MainScene::MainScene( graphics::Renderer& renderer, events::InputController& input_controller, audio::AudioMixer& audio_mixer,
+MainScene::MainScene( eage::graphics::Renderer& renderer, events::InputController& input_controller, audio::AudioMixer& audio_mixer,
 					  eage::ecs::ECSRegistry& ecs_registry, eage::ecs::RenderSystem& render_system )
 	: mRenderer( renderer )
 	, mInputController( input_controller )
@@ -74,13 +74,13 @@ MainScene::OnEnter()
 	PrepareMaterials();
 
 	// Game objects
-	mPlayer = std::make_unique<Player>( mRenderer, mInputController, mECSRegistry );
+	mPlayer = std::make_unique<Player>( mRenderer, mInputController, mECSRegistry, mRenderSystem );
 	mPlayer->Init( *mSpriteMaterial, *mSpriteMaterialResources,
 				   std::make_unique<audio::SoundInstance>( mAudioMixer.CreateSound( "./resources/sounds/thruster.mp3" ) ) );
 
 	float half_width = static_cast<float>( config::DesignResolution::WIDTH ) / 2.f;
 	float half_height = static_cast<float>( config::DesignResolution::HEIGHT ) / 2.f;
-	mCamera = std::make_shared<graphics::OrthographicCamera>( half_width * -1.f, half_width, half_height * -1.f, half_height, 0.1f, 100.0f );
+	mCamera = std::make_shared<eage::graphics::OrthographicCamera>( half_width * -1.f, half_width, half_height * -1.f, half_height, 0.1f, 100.0f );
 	mCamera->SetPosition( { 0, 0, 2.f } );
 }
 
@@ -125,7 +125,7 @@ MainScene::PrepareMaterials()
 {
 	// Descriptor set layout
 	{
-		graphics::DescriptorLayoutBuilder layout_builder;
+		eage::graphics::DescriptorLayoutBuilder layout_builder;
 		layout_builder.AddBinding( 0, vk::DescriptorType::eUniformBufferDynamic );
 		mSceneGlobalDataLayout = layout_builder.Build( mRenderer.GetDevice(), vk::ShaderStageFlagBits::eVertex );
 	}
@@ -133,14 +133,14 @@ MainScene::PrepareMaterials()
 	// Material
 	mSpriteMaterial = std::make_unique<SingleTextureSpriteMaterial>();
 	{
-		graphics::DescriptorLayoutBuilder builder;
+		eage::graphics::DescriptorLayoutBuilder builder;
 		builder.AddBinding(0, vk::DescriptorType::eCombinedImageSampler );
 		mSpriteMaterial->material_layout = builder.Build( mRenderer.GetDevice(), vk::ShaderStageFlagBits::eFragment );
 	}
 	mSpriteMaterial->build_pipeline( mRenderer, { mSceneGlobalDataLayout.get(), mRenderer.GetBuiltInDescriptorSetLayouts().render_component.get() } );
-	mSpriteMaterial->pipeline->global_descriptor = std::make_shared<graphics::UniformDescriptor>( mRenderer, mSceneGlobalDataLayout.get() );
+	mSpriteMaterial->pipeline->global_descriptor = std::make_shared<eage::graphics::UniformDescriptor>( mRenderer, mSceneGlobalDataLayout.get() );
 	const auto num_overlapping_frames = mRenderer.GetFrames().size();
-	mSceneGlobalDataDynamic = graphics::ManagedBuffer::Create( 
+	mSceneGlobalDataDynamic = eage::graphics::ManagedBuffer::Create( 
 		*mRenderer.GetMemoryAllocator().allocator.get(), sizeof( SceneGlobalData ) * num_overlapping_frames, vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU );
 	mSpriteMaterial->pipeline->global_descriptor->WriteDynamicBuffer( 0, vk::DescriptorType::eUniformBufferDynamic, mSceneGlobalDataDynamic->buffer, sizeof( SceneGlobalData ) );
 

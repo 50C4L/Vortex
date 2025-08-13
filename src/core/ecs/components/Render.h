@@ -15,10 +15,6 @@ namespace eage::ecs
 		ResourceID mesh_uniform_data_dynamic_id = INVALID_ID;
 		ResourceID mesh_descriptor_id = INVALID_ID;
 		
-		uint32_t firstIndex = 0;
-		uint32_t indexCount = 0;
-		uint32_t vertexOffset = 0;
-		
 		bool visible = true;
 	};
 }

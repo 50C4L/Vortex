@@ -10,7 +10,7 @@
 
 #include "GameMaterials.h"
 
-namespace graphics
+namespace eage::graphics
 {
 	class RenderComponent;;
 	class Renderer;
@@ -46,7 +46,7 @@ namespace vortex
 	class MainScene : public AbstractScene
 	{
 	public:
-		MainScene( graphics::Renderer& renderer, events::InputController& input_controller, 
+		MainScene( eage::graphics::Renderer& renderer, events::InputController& input_controller, 
 				   audio::AudioMixer& audio_mixer, eage::ecs::ECSRegistry& ecs_registry,
 				   eage::ecs::RenderSystem& render_system );
 		virtual ~MainScene();
@@ -62,17 +62,17 @@ namespace vortex
 	private:
 		void DrawDebugGUI();
 
-		graphics::Renderer& mRenderer;
+		eage::graphics::Renderer& mRenderer;
 		events::InputController& mInputController;
 		audio::AudioMixer& mAudioMixer;
 		eage::ecs::ECSRegistry& mECSRegistry;
 		eage::ecs::RenderSystem& mRenderSystem;
 
 		vk::UniqueDescriptorSetLayout mSceneGlobalDataLayout;
-		std::shared_ptr<graphics::UniformDescriptor> mSceneGlobalDescriptor;
-		std::unique_ptr<graphics::ManagedBuffer, std::function<void(graphics::ManagedBuffer*)>> mSceneGlobalDataDynamic;
+		std::shared_ptr<eage::graphics::UniformDescriptor> mSceneGlobalDescriptor;
+		std::unique_ptr<eage::graphics::ManagedBuffer, std::function<void(eage::graphics::ManagedBuffer*)>> mSceneGlobalDataDynamic;
 
-		std::shared_ptr<graphics::OrthographicCamera> mCamera;
+		std::shared_ptr<eage::graphics::OrthographicCamera> mCamera;
 
 		std::unique_ptr<SingleTextureSpriteMaterial> mSpriteMaterial;
 		std::unique_ptr<SingleTextureSpriteMaterial::Resources> mSpriteMaterialResources;

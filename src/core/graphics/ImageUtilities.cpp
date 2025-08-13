@@ -1,6 +1,6 @@
 #include "ImageUtilities.h"
 
-void graphics::transition_image( vk::CommandBuffer& cmd_buffer, vk::Image image, vk::ImageLayout current_layout, vk::ImageLayout new_layout )
+void eage::graphics::transition_image( vk::CommandBuffer& cmd_buffer, vk::Image image, vk::ImageLayout current_layout, vk::ImageLayout new_layout )
 {
 	vk::ImageMemoryBarrier2 image_barrier{};
 	image_barrier.sType = vk::StructureType::eImageMemoryBarrier2;
@@ -26,7 +26,7 @@ void graphics::transition_image( vk::CommandBuffer& cmd_buffer, vk::Image image,
 	cmd_buffer.pipelineBarrier2( dep_info );
 }
 
-void graphics::copy_image_to_image( vk::CommandBuffer& cmd_buffer, vk::Image src_image, vk::Image dst_image, vk::Extent2D src_size, vk::Extent2D dst_size )
+void eage::graphics::copy_image_to_image( vk::CommandBuffer& cmd_buffer, vk::Image src_image, vk::Image dst_image, vk::Extent2D src_size, vk::Extent2D dst_size )
 {
 	vk::ImageBlit2 blit_region{};
 

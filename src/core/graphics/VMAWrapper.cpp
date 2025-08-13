@@ -4,7 +4,7 @@
 
 #define VMA_IMPLEMENTATION
 
-using namespace graphics;
+using namespace eage::graphics;
 
 VMAWrapper::VMAWrapper( VulkanContext& context )
 {

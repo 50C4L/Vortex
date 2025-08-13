@@ -6,7 +6,7 @@
 #include <vector>
 #include <memory>
 
-namespace graphics
+namespace eage::graphics
 {
 	class UniformDescriptor;
 

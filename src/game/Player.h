@@ -9,7 +9,7 @@
 
 #include "GameMaterials.h"
 
-namespace graphics
+namespace eage::graphics
 {
 	class Renderer;
 	struct GPUMeshBuffers;
@@ -21,6 +21,11 @@ namespace audio
 	class SoundInstance;
 }
 
+namespace eage::ecs
+{
+	class RenderSystem;
+}
+
 namespace vortex
 {
 	class Ship;
@@ -29,7 +34,8 @@ namespace vortex
 	class Player : public events::InputController::Observer
 	{
 	public:
-		Player( graphics::Renderer& renderer, events::InputController& input_controller, eage::ecs::ECSRegistry& ecs_registry );
+		Player( eage::graphics::Renderer& renderer, events::InputController& input_controller, eage::ecs::ECSRegistry& ecs_registry, 
+				eage::ecs::RenderSystem& render_system );
 		virtual ~Player();
 
 		void Init( SingleTextureSpriteMaterial& material,
@@ -45,9 +51,10 @@ namespace vortex
 	private:
 		void StopRotation();
 
-		graphics::Renderer& mRenderer;
+		eage::graphics::Renderer& mRenderer;
 		events::InputController& mInputController;
 		eage::ecs::ECSRegistry& mEcsRegistry;
+		eage::ecs::RenderSystem& mRenderSystem;
 		eage::ecs::Entity mShipEntity;
 		std::unique_ptr<Ship> mShip;
 		std::unique_ptr<ShipControlSystem> mShipControlSystem;
