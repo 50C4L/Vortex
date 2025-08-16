@@ -6,6 +6,7 @@
 #include <graphics/RenderInfo.h>
 #include <graphics/VulkanMesh.h>
 #include <graphics/Material.h>
+#include <graphics/MaterialProperty.h>
 #include <graphics/ManagedVulkanResources.h>
 #include <graphics/VulkanDescriptor.h>
 
@@ -23,11 +24,11 @@ namespace eage::ecs
 		~RenderSystem();
 
 		// Resource creation methods
-		ResourceID CreateMeshBuffer( const std::vector<uint32_t>& indices, const std::vector<eage::graphics::Vertex>& vertices,
+		ResourceId CreateMeshBuffer( const std::vector<uint32_t>& indices, const std::vector<eage::graphics::Vertex>& vertices,
 									 uint32_t first_index, uint32_t index_count, uint32_t vertex_offset );
-		ResourceID CreateMaterial(/* material parameters */);
-		ResourceID CreateUniformBuffer(/* uniform data */);
-		ResourceID CreateDescriptorSet(/* descriptor parameters */);
+		ResourceId CreateMaterial( const eage::graphics::MaterialProperty& property );
+		ResourceId CreateUniformBuffer(/* uniform data */);
+		ResourceId CreateDescriptorSet(/* descriptor parameters */);
 
 		void Update();
 		void Render();
@@ -37,6 +38,12 @@ namespace eage::ecs
 
 	private:
 		eage::graphics::RenderInfo CreateRenderInfo( eage::ecs::Entity entity );
+
+		std::shared_ptr<eage::graphics::RenderPipeline> CreateOrGetPipeline(
+			const eage::graphics::MaterialProperty& property,
+			const std::vector<vk::DescriptorSetLayout>& global_layouts );
+
+		size_t HashMaterialProperty( const eage::graphics::MaterialProperty& property );
 		
 		eage::graphics::Renderer& mRenderer;
 		eage::ecs::ECSRegistry& mECSRegistry;
@@ -46,6 +53,8 @@ namespace eage::ecs
 		ResourceManager<eage::graphics::Material> mMaterials;
 		ResourceManager<eage::graphics::ManagedBuffer> mUniformBuffers;
 		ResourceManager<eage::graphics::UniformDescriptor> mDescriptorSets;
+
+		std::unordered_map<size_t, std::shared_ptr<eage::graphics::RenderPipeline>> mPipelineCache;
 	};
 }
 

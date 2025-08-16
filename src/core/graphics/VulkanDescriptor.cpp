@@ -290,3 +290,93 @@ UniformDescriptor::WriteImage( uint32_t binding, vk::DescriptorType type, vk::Im
 		mWriter.Clear();
 	}
 }
+
+// StaticDescriptor Implementation
+StaticDescriptor::StaticDescriptor( Renderer& renderer, vk::DescriptorSetLayout layout )
+	: mRenderer( renderer )
+{
+	// Allocate a single descriptor set (not per-frame)
+	auto& frame = mRenderer.GetFrames()[0]; // Use any frame's allocator
+	mDescriptorSet = frame.descriptor_allocator->Allocate( layout );
+}
+
+void
+StaticDescriptor::WriteBuffer( uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize range )
+{
+	mWriter.WriteBuffer( binding, type, buffer, 0, range );
+	mWriter.Update( mRenderer.GetDevice(), mDescriptorSet.get() );
+	mWriter.Clear();
+}
+
+void
+StaticDescriptor::WriteImage( uint32_t binding, vk::DescriptorType type, vk::ImageView image_view, vk::ImageLayout layout, vk::Sampler sampler )
+{
+	mWriter.WriteImage( binding, type, image_view, layout, sampler );
+	mWriter.Update( mRenderer.GetDevice(), mDescriptorSet.get() );
+	mWriter.Clear();
+}
+
+// DynamicDescriptor Implementation
+DynamicDescriptor::DynamicDescriptor( Renderer& renderer, vk::DescriptorSetLayout layout )
+	: mRenderer( renderer )
+{
+	auto& frames = mRenderer.GetFrames();
+	for( size_t i = 0; i < frames.size(); ++i )
+	{
+		auto descriptor_set = frames[i].descriptor_allocator->Allocate( layout );
+		mPerFrameDescriptors[i] = { std::move( descriptor_set ), {} };
+	}
+}
+
+void
+DynamicDescriptor::WriteDynamicBuffer( uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize sub_size )
+{
+	auto& frames = mRenderer.GetFrames();
+	for( size_t i = 0; i < frames.size(); ++i )
+	{
+		mPerFrameDescriptors[i].dynamic_offsets.push_back( static_cast<uint32_t>( i * sub_size ) );
+		mWriter.WriteBuffer( binding, type, buffer, 0, sub_size );
+		mWriter.Update( mRenderer.GetDevice(), mPerFrameDescriptors[i].descriptor_set.get() );
+		mWriter.Clear();
+	}
+}
+
+void
+DynamicDescriptor::WriteBuffer( size_t frame_index, uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize offset, vk::DeviceSize range )
+{
+	auto find = mPerFrameDescriptors.find( frame_index );
+	if( find == mPerFrameDescriptors.end() )
+	{
+		LOG_ERROR( "Descriptor set not found for the current frame index" );
+		throw std::runtime_error( "Descriptor set not found for the current frame index" );
+	}
+
+	mWriter.WriteBuffer( binding, type, buffer, offset, range );
+	mWriter.Update( mRenderer.GetDevice(), find->second.descriptor_set.get() );
+	mWriter.Clear();
+}
+
+vk::DescriptorSet*
+DynamicDescriptor::GetDescriptorSet( size_t frame_index )
+{
+	auto find = mPerFrameDescriptors.find( frame_index );
+	if( find == mPerFrameDescriptors.end() )
+	{
+		LOG_ERROR( "Descriptor set not found for the current frame index" );
+		throw std::runtime_error( "Descriptor set not found for the current frame index" );
+	}
+	return &find->second.descriptor_set.get();
+}
+
+std::vector<uint32_t>&
+DynamicDescriptor::GetDynamicOffsets( size_t frame_index )
+{
+	auto find = mPerFrameDescriptors.find( frame_index );
+	if( find == mPerFrameDescriptors.end() )
+	{
+		LOG_ERROR( "Descriptor set not found for the current frame index" );
+		throw std::runtime_error( "Descriptor set not found for the current frame index" );
+	}
+	return find->second.dynamic_offsets;
+}
+

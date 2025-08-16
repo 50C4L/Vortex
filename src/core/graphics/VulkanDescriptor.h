@@ -107,6 +107,52 @@ namespace eage::graphics
 		};
 		std::unordered_map<size_t, DescriptorState> mPerFrameDescriptors;
 	};
+
+	/// StaticDescriptor: For resources that don't change between frames (textures, static uniforms)
+	/// - Allocates only one descriptor set
+	/// - More memory efficient for static resources
+	/// - Use for: material textures, constant material properties
+	class StaticDescriptor
+	{
+	public:
+		StaticDescriptor(Renderer& renderer, vk::DescriptorSetLayout layout);
+		
+		void WriteBuffer(uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize range);
+		void WriteImage(uint32_t binding, vk::DescriptorType type, vk::ImageView image_view, vk::ImageLayout layout, vk::Sampler sampler);
+		
+		vk::DescriptorSet GetDescriptorSet() const { return mDescriptorSet.get(); }
+
+	private:
+		Renderer& mRenderer;
+		vk::UniqueDescriptorSet mDescriptorSet;
+		DescriptorWriter mWriter;
+	};
+
+	/// DynamicDescriptor: For resources that change between frames (scene globals, per-object transforms)
+	/// - Allocates per-frame descriptor sets
+	/// - Supports dynamic uniform buffer offsets
+	/// - Use for: view/projection matrices, model matrices, animation data
+	class DynamicDescriptor
+	{
+	public:
+		DynamicDescriptor(Renderer& renderer, vk::DescriptorSetLayout layout);
+		
+		void WriteDynamicBuffer(uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize sub_size);
+		void WriteBuffer(size_t frame_index, uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize offset, vk::DeviceSize range);
+		
+		vk::DescriptorSet* GetDescriptorSet(size_t frame_index);
+		std::vector<uint32_t>& GetDynamicOffsets(size_t frame_index);
+
+	private:
+		Renderer& mRenderer;
+		struct PerFrameState
+		{
+			vk::UniqueDescriptorSet descriptor_set;
+			std::vector<uint32_t> dynamic_offsets;
+		};
+		std::unordered_map<size_t, PerFrameState> mPerFrameDescriptors;
+		DescriptorWriter mWriter;
+	};
 }
 
 #endif // _VULKAN_DESCRIPTOR_H_

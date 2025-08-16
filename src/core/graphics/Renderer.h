@@ -106,7 +106,8 @@ namespace eage::graphics
 
 		struct BuiltInDescriptorSetLayouts
 		{
-			vk::UniqueDescriptorSetLayout render_component;
+			vk::UniqueDescriptorSetLayout global;
+			vk::UniqueDescriptorSetLayout per_object;
 		};
 		BuiltInDescriptorSetLayouts& GetBuiltInDescriptorSetLayouts();
 

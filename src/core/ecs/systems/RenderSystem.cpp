@@ -1,15 +1,19 @@
 #include "RenderSystem.h"
 
+#include <assets/ImageLoader.h>
 #include <ecs/components/Basics.h>
 #include <ecs/components/Render.h>
 #include <graphics/BuiltInUniforms.h>
 #include <graphics/Renderer.h>
 #include <graphics/VulkanMesh.h>
 #include <graphics/VulkanDescriptor.h>
+#include <graphics/VulkanShader.h>
 #include <graphics/VMAWrapper.h>
 #include <graphics/ManagedVulkanResources.h>
+#include <utility/Logger.h>
 
 using namespace eage::ecs;
+using namespace utility;
 
 RenderSystem::RenderSystem( eage::graphics::Renderer& renderer, ECSRegistry& ecs_registry )
 	: mRenderer(renderer)
@@ -21,7 +25,7 @@ RenderSystem::~RenderSystem()
 {
 }
 
-ResourceID
+ResourceId
 RenderSystem::CreateMeshBuffer( const std::vector<uint32_t>& indices, const std::vector<eage::graphics::Vertex>& vertices, 
 								uint32_t first_index, uint32_t index_count, uint32_t vertex_offset )
 {
@@ -33,19 +37,97 @@ RenderSystem::CreateMeshBuffer( const std::vector<uint32_t>& indices, const std:
 	return mMeshBuffers.Store( std::move(mesh) );
 }
 
-ResourceID
-RenderSystem::CreateMaterial(/* material parameters */)
+ResourceId
+RenderSystem::CreateMaterial( const eage::graphics::MaterialProperty& material_property )
 {
-	return INVALID_ID;
+	// Create descriptor layout for material-specific bindings
+	eage::graphics::DescriptorLayoutBuilder layout_builder;
+	
+	for( const auto& texture : material_property.textures )
+	{
+		layout_builder.AddBinding(texture.binding, vk::DescriptorType::eCombinedImageSampler);
+	}
+	
+	for( const auto& uniform : material_property.uniforms )
+	{
+		layout_builder.AddBinding(uniform.binding, uniform.type);
+	}
+	
+	auto material_layout = layout_builder.Build( mRenderer.GetDevice(),
+		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
+	
+	// Get global descriptor layouts
+	std::vector<vk::DescriptorSetLayout> global_layouts = {
+		// Add your global layouts here (scene data, render component data, etc.)
+		mRenderer.GetBuiltInDescriptorSetLayouts().global.get(),
+		mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get()
+	};
+	
+	// Create or get cached pipeline
+	auto pipeline = CreateOrGetPipeline(material_property, global_layouts);
+	
+	// Create material instance
+	auto material = std::make_unique<eage::graphics::Material>();
+	material->pipeline = pipeline;
+	material->descriptor = std::make_unique<eage::graphics::StaticDescriptor>(
+		mRenderer, material_layout.get());
+	
+	// Bind textures
+	for( const auto& texture_binding : material_property.textures )
+	{
+		// Load texture
+		// @todo: Should texture loading be handled here or in a separate system?
+		assets::ImageLoader image_loader;
+		auto image = image_loader.LoadImage(texture_binding.texture_path);
+		
+		auto texture = mRenderer.UploadImage(
+			image.data.data(), sizeof(unsigned char) * image.data.size(),
+			image.width, image.height, vk::Format::eR8G8B8A8Srgb,
+			vk::ImageUsageFlagBits::eSampled, vk::ImageAspectFlagBits::eColor, 1);
+		
+		auto sampler = mRenderer.CreateSampler(
+			texture_binding.min_filter, 
+			texture_binding.mag_filter );
+		
+		material->descriptor->WriteImage(
+			texture_binding.binding,
+			vk::DescriptorType::eCombinedImageSampler,
+			texture->image_view.get(),
+			vk::ImageLayout::eShaderReadOnlyOptimal,
+			sampler.get());
+	}
+	
+	// Bind uniform buffers
+	for( const auto& uniform_binding : material_property.uniforms )
+	{
+		if( uniform_binding.data )
+		{
+			auto uniform_buffer = eage::graphics::ManagedBuffer::Create(
+				*mRenderer.GetMemoryAllocator().allocator.get(),
+				uniform_binding.size,
+				vk::BufferUsageFlagBits::eUniformBuffer,
+				VMA_MEMORY_USAGE_CPU_TO_GPU);
+			
+			uniform_buffer->Update( uniform_binding.data, uniform_binding.size, 0 );
+			
+			material->descriptor->WriteBuffer(
+				uniform_binding.binding,
+				uniform_binding.type,
+				uniform_buffer->buffer,
+				uniform_binding.size);
+		}
+	}
+	
+	return mMaterials.Store( std::move( material ) );
 }
 
-ResourceID
+ResourceId
 RenderSystem::CreateUniformBuffer(/* uniform data */)
 {
 	return INVALID_ID;
 }
 
-ResourceID
+ResourceId
 RenderSystem::CreateDescriptorSet(/* descriptor parameters */)
 {
 	return INVALID_ID;
@@ -92,4 +174,71 @@ eage::graphics::RenderInfo RenderSystem::CreateRenderInfo(Entity entity)
 	eage::graphics::RenderInfo info{};
 	// Fill info with data from render component
 	return info;
+}
+
+std::shared_ptr<eage::graphics::RenderPipeline> 
+RenderSystem::CreateOrGetPipeline( const eage::graphics::MaterialProperty& property,
+								   const std::vector<vk::DescriptorSetLayout>& global_layouts)
+{
+	size_t hash = HashMaterialProperty(property);
+	
+	auto it = mPipelineCache.find(hash);
+	if (it != mPipelineCache.end())
+	{
+		return it->second;
+	}
+	
+	// Create new pipeline
+	auto pipeline = std::make_shared<eage::graphics::RenderPipeline>();
+	
+	// Load shaders
+	auto vertex_shader = eage::graphics::create_shader_module_from_file(
+		mRenderer.GetDevice(), property.vertex_shader_path);
+	auto fragment_shader = eage::graphics::create_shader_module_from_file(
+		mRenderer.GetDevice(), property.fragment_shader_path);
+	
+	if( !vertex_shader || !fragment_shader )
+	{
+		LOG_ERROR("Failed to load shaders for material");
+		return nullptr;
+	}
+	
+	// Create pipeline layout (global layouts + material layout)
+	std::vector<vk::DescriptorSetLayout> all_layouts = global_layouts;
+	// Material layout will be added by the calling function
+	
+	eage::graphics::VulkanPipelineBuilder pipeline_builder;
+	pipeline->pipeline = pipeline_builder
+		.SetShaders(vertex_shader->get(), fragment_shader->get())
+		.SetInputTopology(property.topology)
+		.SetPolygonMode(property.polygon_mode)
+		.SetCullMode(property.cull_mode, property.front_face)
+		.SetMultisampling()
+		.SetBlendMode(
+			vk::Bool32(property.blend_enable),
+			property.src_color_blend,
+			property.dst_color_blend,
+			property.color_blend_op)
+		.SetColorAttachmentFormat(mRenderer.GetColorFormat())
+		.SetDepthTest(
+			vk::Bool32(property.depth_test),
+			vk::Bool32(property.depth_write),
+			property.depth_compare)
+		.SetDepthFormat(mRenderer.GetDepthFormat())
+		.Build(mRenderer.GetDevice());
+	
+	mPipelineCache[hash] = pipeline;
+	return pipeline;
+}
+
+size_t
+RenderSystem::HashMaterialProperty( const eage::graphics::MaterialProperty& property )
+{
+	// Simple hash combining shader paths and pipeline state
+	size_t hash = std::hash<std::string>{}(property.vertex_shader_path);
+	hash ^= std::hash<std::string>{}(property.fragment_shader_path) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+	hash ^= static_cast<size_t>(property.topology) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+	hash ^= static_cast<size_t>(property.polygon_mode) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+	// Add more fields as needed
+	return hash;
 }

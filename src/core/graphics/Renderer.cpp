@@ -418,10 +418,10 @@ Renderer::Present( uint32_t image_index )
 
 	vk::PresentInfoKHR present_info{};
 	present_info.waitSemaphoreCount = 1;
-	present_info.pWaitSemaphores    = &frame.command_context->GetPresentSemaphore();
-	present_info.swapchainCount     = 1;
-	present_info.pSwapchains        = &mSwapChain->GetSwapChain();
-	present_info.pImageIndices      = &image_index;
+	present_info.pWaitSemaphores	= &frame.command_context->GetPresentSemaphore();
+	present_info.swapchainCount	 = 1;
+	present_info.pSwapchains		= &mSwapChain->GetSwapChain();
+	present_info.pImageIndices	  = &image_index;
 
 	std::ignore = mContext->present_queue.presentKHR( present_info );
 }
@@ -458,10 +458,20 @@ Renderer::InitDescriptors()
 	};
 	mGlobalDescriptorAllocator = std::make_unique<DynamicDescriptorAllocator>( *mContext->logical_device, DEFAULT_DESCRIPTOR_SET_COUNT, sizes );
 
+	// Scene global layout (view/projection matrices)
 	{
 		DescriptorLayoutBuilder layout_builder;
 		layout_builder.AddBinding( 0, vk::DescriptorType::eUniformBufferDynamic );
-		mBuiltInDescriptorSetLayouts.render_component = layout_builder.Build( mContext->logical_device.get(), vk::ShaderStageFlagBits::eVertex );
+		mBuiltInDescriptorSetLayouts.global = 
+			layout_builder.Build( mContext->logical_device.get(), vk::ShaderStageFlagBits::eVertex );
+	}
+
+	// Render component layout (model matrix, vertex buffer address)
+	{
+		DescriptorLayoutBuilder layout_builder;
+		layout_builder.AddBinding( 0, vk::DescriptorType::eUniformBufferDynamic );
+		mBuiltInDescriptorSetLayouts.per_object = 
+			layout_builder.Build( mContext->logical_device.get(), vk::ShaderStageFlagBits::eVertex );
 	}
 }
 
@@ -569,7 +579,7 @@ Renderer::DrawRenderQueue( vk::CommandBuffer& cmd )
 				static_cast<uint32_t>( dynamic_offsets.size() ), dynamic_offsets.data() );
 		}
 
-		// RenderComponent uniform
+		// Per-object predefined uniform
 		{
 			auto& dynamic_offsets = render_info.mesh_descriptor->GetDynamicOffsets( current_frame );
 			cmd.bindDescriptorSets( 
@@ -580,15 +590,15 @@ Renderer::DrawRenderQueue( vk::CommandBuffer& cmd )
 				static_cast<uint32_t>( dynamic_offsets.size() ), dynamic_offsets.data() );
 		}
 		
-		// Material uniform
+		// Material static uniform
 		{
-			auto& dynamic_offsets = render_info.material->descriptor->GetDynamicOffsets( current_frame );
+			vk::DescriptorSet material_descriptor = render_info.material->descriptor->GetDescriptorSet();
 			cmd.bindDescriptorSets( 
 				vk::PipelineBindPoint::eGraphics,
 				render_info.material->pipeline->layout.get(),
 				descriptor_index++, 1,
-				render_info.material->descriptor->GetDescriptorSet( current_frame ),
-				static_cast<uint32_t>( dynamic_offsets.size() ), dynamic_offsets.data() );
+				&material_descriptor,
+				0, nullptr ); // No dynamic offsets for static descriptors
 		}
 
 		cmd.bindIndexBuffer( render_info.mesh_buffer->index_buffer->buffer, 0, vk::IndexType::eUint32 );

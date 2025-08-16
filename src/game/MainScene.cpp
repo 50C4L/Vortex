@@ -137,7 +137,7 @@ MainScene::PrepareMaterials()
 		builder.AddBinding(0, vk::DescriptorType::eCombinedImageSampler );
 		mSpriteMaterial->material_layout = builder.Build( mRenderer.GetDevice(), vk::ShaderStageFlagBits::eFragment );
 	}
-	mSpriteMaterial->build_pipeline( mRenderer, { mSceneGlobalDataLayout.get(), mRenderer.GetBuiltInDescriptorSetLayouts().render_component.get() } );
+	mSpriteMaterial->build_pipeline( mRenderer, { mSceneGlobalDataLayout.get(), mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() } );
 	mSpriteMaterial->pipeline->global_descriptor = std::make_shared<eage::graphics::UniformDescriptor>( mRenderer, mSceneGlobalDataLayout.get() );
 	const auto num_overlapping_frames = mRenderer.GetFrames().size();
 	mSceneGlobalDataDynamic = eage::graphics::ManagedBuffer::Create( 

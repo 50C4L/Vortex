@@ -58,7 +58,7 @@ SingleTextureSpriteMaterial::Instantiate( eage::graphics::Renderer& renderer, co
 	auto material = std::make_unique<eage::graphics::Material>();
 
 	material->pipeline = this->pipeline;
-	material->descriptor = std::make_unique<eage::graphics::UniformDescriptor>( renderer, this->material_layout.get() );
+	material->descriptor = std::make_unique<eage::graphics::StaticDescriptor>( renderer, this->material_layout.get() );
 	material->descriptor->WriteImage(
 		0, 
 		vk::DescriptorType::eCombinedImageSampler,

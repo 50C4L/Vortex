@@ -10,10 +10,10 @@ namespace eage::ecs
 {
 	struct RenderComponent
 	{
-		ResourceID mesh_buffer_id = INVALID_ID;
-		ResourceID material_id = INVALID_ID;
-		ResourceID mesh_uniform_data_dynamic_id = INVALID_ID;
-		ResourceID mesh_descriptor_id = INVALID_ID;
+		ResourceId mesh_buffer_id = INVALID_ID;
+		ResourceId material_id = INVALID_ID;
+		ResourceId mesh_uniform_data_dynamic_id = INVALID_ID;
+		ResourceId mesh_descriptor_id = INVALID_ID;
 		
 		bool visible = true;
 	};

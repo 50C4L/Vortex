@@ -8,8 +8,8 @@
 
 namespace eage::ecs
 {
-	using ResourceID = uint32_t;
-	static constexpr ResourceID INVALID_ID = 0;
+	using ResourceId = uint32_t;
+	static constexpr ResourceId INVALID_ID = 0;
 
 	template<typename T>
 	class ResourceManager
@@ -26,35 +26,35 @@ namespace eage::ecs
 
 		// Store a resource and return its ID
 		template<typename... Args>
-		ResourceID Create(Args&&... args)
+		ResourceId Create(Args&&... args)
 		{
 			auto resource = std::make_shared<T>(std::forward<Args>(args)...);
-			ResourceID id = mNextID++;
+			ResourceId id = mNextID++;
 			mResources[id] = resource;
 			mReferenceCounts[id] = 1;
 			return id;
 		}
 
 		// Store an existing resource
-		ResourceID Store(std::unique_ptr<T> resource)
+		ResourceId Store(std::unique_ptr<T> resource)
 		{
 			if (!resource) return INVALID_ID;
 			
-			ResourceID id = mNextID++;
+			ResourceId id = mNextID++;
 			mResources[id] = std::move( resource );
 			mReferenceCounts[id] = 1;
 			return id;
 		}
 
 		// Get resource by ID
-		T* Get(ResourceID id) const
+		T* Get(ResourceId id) const
 		{
 			auto it = mResources.find(id);
 			return (it != mResources.end()) ? it->second.get() : nullptr;
 		}
 
 		// Add reference to resource
-		void AddReference(ResourceID id)
+		void AddReference(ResourceId id)
 		{
 			auto it = mReferenceCounts.find(id);
 			if (it != mReferenceCounts.end()) {
@@ -63,7 +63,7 @@ namespace eage::ecs
 		}
 
 		// Remove reference, delete if no more references
-		void RemoveReference(ResourceID id)
+		void RemoveReference(ResourceId id)
 		{
 			auto it = mReferenceCounts.find(id);
 			if (it != mReferenceCounts.end()) {
@@ -76,13 +76,13 @@ namespace eage::ecs
 		}
 
 		// Check if resource exists
-		bool Exists(ResourceID id) const
+		bool Exists(ResourceId id) const
 		{
 			return mResources.find(id) != mResources.end();
 		}
 
 		// Get reference count
-		int GetReferenceCount(ResourceID id) const
+		int GetReferenceCount(ResourceId id) const
 		{
 			auto it = mReferenceCounts.find(id);
 			return (it != mReferenceCounts.end()) ? it->second : 0;
@@ -102,9 +102,9 @@ namespace eage::ecs
 		}
 
 	private:
-		ResourceID mNextID = 1; // Start from 1, reserve 0 for INVALID_ID
-		std::unordered_map<ResourceID, std::unique_ptr<T>> mResources;
-		std::unordered_map<ResourceID, int> mReferenceCounts;
+		ResourceId mNextID = 1; // Start from 1, reserve 0 for INVALID_ID
+		std::unordered_map<ResourceId, std::unique_ptr<T>> mResources;
+		std::unordered_map<ResourceId, int> mReferenceCounts;
 	};
 }
 

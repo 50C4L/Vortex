@@ -12,7 +12,7 @@ namespace eage::graphics
 	struct Material
 	{
 		std::shared_ptr<RenderPipeline> pipeline;		// Pipeline can be shared between instances
-		std::unique_ptr<UniformDescriptor> descriptor;	// Descriptor is unique to each instance
+		std::unique_ptr<StaticDescriptor> descriptor;	// Static descriptor for textures and material properties
 	};
 }
 
