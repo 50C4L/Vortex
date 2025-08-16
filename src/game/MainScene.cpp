@@ -11,11 +11,14 @@
 #include <graphics/ManagedVulkanResources.h>
 #include <graphics/VMAWrapper.h>
 #include <graphics/Material.h>
+#include <graphics/MaterialBuilder.h>
 #include <imgui/imgui.h>
 #include <events/InputController.h>
 #include <audio/AudioMixer.h>
 #include <assets/ImageLoader.h>
 #include <assets/TextureAtlas.h>
+
+#include <ecs/systems/RenderSystem.h>
 
 #include "GameConfig.h"
 #include "Player.h"
@@ -123,14 +126,34 @@ MainScene::PrepareMeshes()
 void
 MainScene::PrepareMaterials()
 {
-	// Descriptor set layout
+	// Scene global data layout (for view/projection matrices)
 	{
 		eage::graphics::DescriptorLayoutBuilder layout_builder;
 		layout_builder.AddBinding( 0, vk::DescriptorType::eUniformBufferDynamic );
 		mSceneGlobalDataLayout = layout_builder.Build( mRenderer.GetDevice(), vk::ShaderStageFlagBits::eVertex );
 	}
 
-	// Material
+	// Scene global data buffer
+	const auto num_overlapping_frames = mRenderer.GetFrames().size();
+	mSceneGlobalDataDynamic = eage::graphics::ManagedBuffer::Create( 
+		*mRenderer.GetMemoryAllocator().allocator.get(), 
+		sizeof( SceneGlobalData ) * num_overlapping_frames, 
+		vk::BufferUsageFlagBits::eUniformBuffer, 
+		VMA_MEMORY_USAGE_CPU_TO_GPU );
+
+	// Create sprite material using the new MaterialBuilder and RenderSystem
+	auto material_property = eage::graphics::MaterialBuilder()
+		.SetShaders("./src/shaders/compiled/colored_triangle_mesh.vert.spv", 
+					"./src/shaders/compiled/colored_triangle.frag.spv")
+		.AddTexture(0, "./resources/textures/ship/ship_texatlas.png", 
+					vk::Filter::eNearest, vk::Filter::eNearest)
+		.SetAlphaBlending()
+		.EnableDepthTest(true)
+		.Build();
+
+	mSpriteMaterialId = mRenderSystem.CreateMaterial(material_property);
+
+	// Keep the old material system for now (can be removed later)
 	mSpriteMaterial = std::make_unique<SingleTextureSpriteMaterial>();
 	{
 		eage::graphics::DescriptorLayoutBuilder builder;
@@ -139,12 +162,9 @@ MainScene::PrepareMaterials()
 	}
 	mSpriteMaterial->build_pipeline( mRenderer, { mSceneGlobalDataLayout.get(), mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() } );
 	mSpriteMaterial->pipeline->global_descriptor = std::make_shared<eage::graphics::UniformDescriptor>( mRenderer, mSceneGlobalDataLayout.get() );
-	const auto num_overlapping_frames = mRenderer.GetFrames().size();
-	mSceneGlobalDataDynamic = eage::graphics::ManagedBuffer::Create( 
-		*mRenderer.GetMemoryAllocator().allocator.get(), sizeof( SceneGlobalData ) * num_overlapping_frames, vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU );
 	mSpriteMaterial->pipeline->global_descriptor->WriteDynamicBuffer( 0, vk::DescriptorType::eUniformBufferDynamic, mSceneGlobalDataDynamic->buffer, sizeof( SceneGlobalData ) );
 
-	// Texture
+	// Texture resources (keeping for old system)
 	{
 		assets::ImageLoader image_loader;
 		auto image = image_loader.LoadImage( "./resources/textures/ship/ship_texatlas.png" );

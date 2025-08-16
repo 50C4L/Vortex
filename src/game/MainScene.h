@@ -2,6 +2,7 @@
 #define _MAIN_SCENE_H
 
 #include "../AbstractScene.h"
+#include <ecs/ResourceManager.h>
 
 #include <vulkan/vulkan.hpp>
 
@@ -76,6 +77,8 @@ namespace vortex
 
 		std::unique_ptr<SingleTextureSpriteMaterial> mSpriteMaterial;
 		std::unique_ptr<SingleTextureSpriteMaterial::Resources> mSpriteMaterialResources;
+		
+		eage::ecs::ResourceId mSpriteMaterialId;
 
 		std::unique_ptr<Player> mPlayer;
 

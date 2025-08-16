@@ -63,8 +63,12 @@ RenderSystem::CreateMaterial( const eage::graphics::MaterialProperty& material_p
 		mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get()
 	};
 	
+	// Add material layout to the global layouts
+	std::vector<vk::DescriptorSetLayout> all_layouts = global_layouts;
+	all_layouts.push_back(material_layout.get());
+	
 	// Create or get cached pipeline
-	auto pipeline = CreateOrGetPipeline(material_property, global_layouts);
+	auto pipeline = CreateOrGetPipeline(material_property, all_layouts);
 	
 	// Create material instance
 	auto material = std::make_unique<eage::graphics::Material>();
@@ -205,11 +209,19 @@ RenderSystem::CreateOrGetPipeline( const eage::graphics::MaterialProperty& prope
 	
 	// Create pipeline layout (global layouts + material layout)
 	std::vector<vk::DescriptorSetLayout> all_layouts = global_layouts;
-	// Material layout will be added by the calling function
+	
+	vk::PipelineLayoutCreateInfo layout_info;
+	layout_info.setLayoutCount = static_cast<uint32_t>(all_layouts.size());
+	layout_info.pSetLayouts = all_layouts.data();
+	layout_info.pushConstantRangeCount = 0;
+	layout_info.pPushConstantRanges = nullptr;
+	
+	auto pipeline_layout = mRenderer.GetDevice().createPipelineLayoutUnique(layout_info);
 	
 	eage::graphics::VulkanPipelineBuilder pipeline_builder;
 	pipeline->pipeline = pipeline_builder
 		.SetShaders(vertex_shader->get(), fragment_shader->get())
+		.SetPipelineLayout(pipeline_layout.get())
 		.SetInputTopology(property.topology)
 		.SetPolygonMode(property.polygon_mode)
 		.SetCullMode(property.cull_mode, property.front_face)
@@ -226,6 +238,9 @@ RenderSystem::CreateOrGetPipeline( const eage::graphics::MaterialProperty& prope
 			property.depth_compare)
 		.SetDepthFormat(mRenderer.GetDepthFormat())
 		.Build(mRenderer.GetDevice());
+	
+	// Store the pipeline layout in the RenderPipeline
+	pipeline->layout = std::move(pipeline_layout);
 	
 	mPipelineCache[hash] = pipeline;
 	return pipeline;
