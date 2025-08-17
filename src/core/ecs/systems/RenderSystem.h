@@ -27,8 +27,11 @@ namespace eage::ecs
 		ResourceId CreateMeshBuffer( const std::vector<uint32_t>& indices, const std::vector<eage::graphics::Vertex>& vertices,
 									 uint32_t first_index, uint32_t index_count, uint32_t vertex_offset );
 		ResourceId CreateMaterial( const eage::graphics::MaterialProperty& property );
-		ResourceId CreateUniformBuffer(/* uniform data */);
-		ResourceId CreateDescriptorSet(/* descriptor parameters */);
+		ResourceId CreateUniformBuffer( size_t data_size, bool dynamic = false );
+		ResourceId CreateDescriptorSet( vk::DescriptorSetLayout layout );
+
+		// Resource accessors
+		eage::graphics::ManagedBuffer* GetUniformBuffer(ResourceId id);
 
 		void Update();
 		void Render();
@@ -49,10 +52,10 @@ namespace eage::ecs
 		eage::ecs::ECSRegistry& mECSRegistry;
 
 		// Resource managers
-		ResourceManager<eage::graphics::GPUMeshBuffers> mMeshBuffers;
-		ResourceManager<eage::graphics::Material> mMaterials;
-		ResourceManager<eage::graphics::ManagedBuffer> mUniformBuffers;
-		ResourceManager<eage::graphics::UniformDescriptor> mDescriptorSets;
+		ResourceManager<std::unique_ptr<eage::graphics::GPUMeshBuffers>> mMeshBuffers;
+		ResourceManager<std::unique_ptr<eage::graphics::Material>> mMaterials;
+		ResourceManager<eage::graphics::ManagedBuffer::Ptr> mUniformBuffers;
+		ResourceManager<std::unique_ptr<eage::graphics::UniformDescriptor>> mDescriptorSets;
 
 		std::unordered_map<size_t, std::shared_ptr<eage::graphics::RenderPipeline>> mPipelineCache;
 	};

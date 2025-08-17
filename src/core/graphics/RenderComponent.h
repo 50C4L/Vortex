@@ -13,7 +13,7 @@ namespace eage::graphics
 	struct GPUMeshBuffers;
 	struct ManagedBuffer;
 	struct Material;
-	class UniformDescriptor;
+	class DynamicDescriptor;
 
 	///
 	/// RenderComponent class
@@ -55,7 +55,7 @@ namespace eage::graphics
 		std::shared_ptr<GPUMeshBuffers> mMeshBuffer;
 
 		std::unique_ptr<eage::graphics::ManagedBuffer, std::function<void(eage::graphics::ManagedBuffer*)>> mMeshUniformDataDynamic;
-		std::unique_ptr<UniformDescriptor> mMeshDescriptor;
+		std::unique_ptr<DynamicDescriptor> mMeshDescriptor;
 		
 		uint32_t mFirstIndex   = 0;
 		uint32_t mIndexCount   = 0;

@@ -74,11 +74,11 @@ namespace eage::graphics
 	{
 	public:
 		UniformDescriptor( Renderer& renderer, vk::DescriptorSetLayout layout );
-		~UniformDescriptor();
+		virtual ~UniformDescriptor();
 
-		vk::DescriptorSet* GetDescriptorSet( size_t current_frame_index );
+		virtual vk::DescriptorSet* GetDescriptorSet( size_t current_frame_index );
 
-		std::vector<uint32_t>& GetDynamicOffsets( size_t current_frame_index );
+		virtual std::vector<uint32_t>& GetDynamicOffsets( size_t current_frame_index );
 
 		///
 		/// Write buffer to the given frame's descriptor set
@@ -132,7 +132,7 @@ namespace eage::graphics
 	/// - Allocates per-frame descriptor sets
 	/// - Supports dynamic uniform buffer offsets
 	/// - Use for: view/projection matrices, model matrices, animation data
-	class DynamicDescriptor
+	class DynamicDescriptor : public UniformDescriptor
 	{
 	public:
 		DynamicDescriptor(Renderer& renderer, vk::DescriptorSetLayout layout);
@@ -140,8 +140,8 @@ namespace eage::graphics
 		void WriteDynamicBuffer(uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize sub_size);
 		void WriteBuffer(size_t frame_index, uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize offset, vk::DeviceSize range);
 		
-		vk::DescriptorSet* GetDescriptorSet(size_t frame_index);
-		std::vector<uint32_t>& GetDynamicOffsets(size_t frame_index);
+		virtual vk::DescriptorSet* GetDescriptorSet(size_t frame_index) override;
+		virtual std::vector<uint32_t>& GetDynamicOffsets(size_t frame_index) override;
 
 	private:
 		Renderer& mRenderer;

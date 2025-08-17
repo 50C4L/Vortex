@@ -11,10 +11,14 @@ namespace eage::ecs
 	using ResourceId = uint32_t;
 	static constexpr ResourceId INVALID_ID = 0;
 
-	template<typename T>
+	// Flexible ResourceManager that works with any smart pointer type
+	template<typename PtrType>
 	class ResourceManager
 	{
 	public:
+		using pointer_type = PtrType;
+		using element_type = typename PtrType::element_type;
+
 		ResourceManager() = default;
 		~ResourceManager() = default;
 
@@ -25,29 +29,18 @@ namespace eage::ecs
 		ResourceManager& operator=(ResourceManager&&) = default;
 
 		// Store a resource and return its ID
-		template<typename... Args>
-		ResourceId Create(Args&&... args)
-		{
-			auto resource = std::make_shared<T>(std::forward<Args>(args)...);
-			ResourceId id = mNextID++;
-			mResources[id] = resource;
-			mReferenceCounts[id] = 1;
-			return id;
-		}
-
-		// Store an existing resource
-		ResourceId Store(std::unique_ptr<T> resource)
+		ResourceId Store(PtrType resource)
 		{
 			if (!resource) return INVALID_ID;
 			
 			ResourceId id = mNextID++;
-			mResources[id] = std::move( resource );
+			mResources[id] = std::move(resource);
 			mReferenceCounts[id] = 1;
 			return id;
 		}
 
 		// Get resource by ID
-		T* Get(ResourceId id) const
+		element_type* Get(ResourceId id) const
 		{
 			auto it = mResources.find(id);
 			return (it != mResources.end()) ? it->second.get() : nullptr;
@@ -103,7 +96,7 @@ namespace eage::ecs
 
 	private:
 		ResourceId mNextID = 1; // Start from 1, reserve 0 for INVALID_ID
-		std::unordered_map<ResourceId, std::unique_ptr<T>> mResources;
+		std::unordered_map<ResourceId, PtrType> mResources;
 		std::unordered_map<ResourceId, int> mReferenceCounts;
 	};
 }

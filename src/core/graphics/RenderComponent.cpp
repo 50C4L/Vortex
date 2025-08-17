@@ -28,7 +28,7 @@ RenderComponent::RenderComponent( Renderer& renderer )
 		VMA_MEMORY_USAGE_CPU_TO_GPU 
 	);
 
-	mMeshDescriptor = std::make_unique<eage::graphics::UniformDescriptor>( mRenderer, mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() );
+	mMeshDescriptor = std::make_unique<eage::graphics::DynamicDescriptor>( mRenderer, mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() );
 	mMeshDescriptor->WriteDynamicBuffer( 0, vk::DescriptorType::eUniformBufferDynamic, mMeshUniformDataDynamic->buffer, sizeof( MeshUniformData ) );
 }
 

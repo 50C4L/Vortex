@@ -126,15 +126,29 @@ RenderSystem::CreateMaterial( const eage::graphics::MaterialProperty& material_p
 }
 
 ResourceId
-RenderSystem::CreateUniformBuffer(/* uniform data */)
+RenderSystem::CreateUniformBuffer( size_t data_size, bool dynamic )
 {
-	return INVALID_ID;
+	size_t buffer_size = dynamic ? data_size * mRenderer.GetFrames().size() : data_size;
+	auto buffer = eage::graphics::ManagedBuffer::Create(
+		*mRenderer.GetMemoryAllocator().allocator.get(),
+		buffer_size,
+		vk::BufferUsageFlagBits::eUniformBuffer,
+		VMA_MEMORY_USAGE_CPU_TO_GPU );
+
+	return mUniformBuffers.Store(std::move(buffer));
 }
 
 ResourceId
-RenderSystem::CreateDescriptorSet(/* descriptor parameters */)
+RenderSystem::CreateDescriptorSet( vk::DescriptorSetLayout layout )
 {
-	return INVALID_ID;
+	auto descriptor = std::make_unique<eage::graphics::UniformDescriptor>( mRenderer, layout );
+	return mDescriptorSets.Store( std::move(descriptor) );
+}
+
+eage::graphics::ManagedBuffer*
+RenderSystem::GetUniformBuffer(ResourceId id)
+{
+	return mUniformBuffers.Get(id);
 }
 
 

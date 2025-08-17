@@ -318,7 +318,8 @@ StaticDescriptor::WriteImage( uint32_t binding, vk::DescriptorType type, vk::Ima
 
 // DynamicDescriptor Implementation
 DynamicDescriptor::DynamicDescriptor( Renderer& renderer, vk::DescriptorSetLayout layout )
-	: mRenderer( renderer )
+	: UniformDescriptor( renderer, layout )
+	, mRenderer( renderer )
 {
 	auto& frames = mRenderer.GetFrames();
 	for( size_t i = 0; i < frames.size(); ++i )
