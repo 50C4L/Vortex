@@ -15,12 +15,8 @@ add_executable(Vortex
 	./src/VortexGame.h
 	./src/VortexGame.cpp
 	./src/game/GameConfig.h
-	./src/game/GameMaterials.h
-	./src/game/GameMaterials.cpp
 	./src/game/MainScene.h
 	./src/game/MainScene.cpp
-	./src/game/Ship.h
-	./src/game/Ship.cpp
 	./src/game/Player.h
 	./src/game/Player.cpp
 	./src/game/systems/ShipControlSystem.h

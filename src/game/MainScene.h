@@ -9,8 +9,6 @@
 #include <memory>
 #include <chrono>
 
-#include "GameMaterials.h"
-
 namespace eage::graphics
 {
 	class RenderComponent;;
@@ -69,15 +67,10 @@ namespace vortex
 		eage::ecs::ECSRegistry& mECSRegistry;
 		eage::ecs::RenderSystem& mRenderSystem;
 
-		vk::UniqueDescriptorSetLayout mSceneGlobalDataLayout;
-		std::shared_ptr<eage::graphics::UniformDescriptor> mSceneGlobalDescriptor;
 		std::unique_ptr<eage::graphics::ManagedBuffer, std::function<void(eage::graphics::ManagedBuffer*)>> mSceneGlobalDataDynamic;
 
 		std::shared_ptr<eage::graphics::OrthographicCamera> mCamera;
 
-		std::unique_ptr<SingleTextureSpriteMaterial> mSpriteMaterial;
-		std::unique_ptr<SingleTextureSpriteMaterial::Resources> mSpriteMaterialResources;
-		
 		eage::ecs::ResourceId mSpriteMaterialId;
 
 		std::unique_ptr<Player> mPlayer;

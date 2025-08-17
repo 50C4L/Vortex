@@ -6,8 +6,7 @@
 
 #include <events/InputController.h>
 #include <ecs/ECS.h>
-
-#include "GameMaterials.h"
+#include <ecs/ResourceManager.h>
 
 namespace eage::graphics
 {
@@ -28,7 +27,6 @@ namespace eage::ecs
 
 namespace vortex
 {
-	class Ship;
 	class ShipControlSystem;
 
 	class Player : public events::InputController::Observer
@@ -38,8 +36,7 @@ namespace vortex
 				eage::ecs::RenderSystem& render_system );
 		virtual ~Player();
 
-		void Init( SingleTextureSpriteMaterial& material,
-				   SingleTextureSpriteMaterial::Resources& resources,
+		void Init( eage::ecs::ResourceId sprite_material_id,
 				   std::unique_ptr<audio::SoundInstance> engine_sound );
 
 		void Update();
@@ -56,7 +53,6 @@ namespace vortex
 		eage::ecs::ECSRegistry& mEcsRegistry;
 		eage::ecs::RenderSystem& mRenderSystem;
 		eage::ecs::Entity mShipEntity;
-		std::unique_ptr<Ship> mShip;
 		std::unique_ptr<ShipControlSystem> mShipControlSystem;
 		std::unique_ptr<audio::SoundInstance> mEngineSound;
 

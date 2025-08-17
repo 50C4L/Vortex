@@ -76,9 +76,9 @@ MainScene::OnEnter()
 	// Prepare materials
 	PrepareMaterials();
 
-	// Game objects
+	// Game objects - pass the sprite material resource ID to Player
 	mPlayer = std::make_unique<Player>( mRenderer, mInputController, mECSRegistry, mRenderSystem );
-	mPlayer->Init( *mSpriteMaterial, *mSpriteMaterialResources,
+	mPlayer->Init( mSpriteMaterialId,
 				   std::make_unique<audio::SoundInstance>( mAudioMixer.CreateSound( "./resources/sounds/thruster.mp3" ) ) );
 
 	float half_width = static_cast<float>( config::DesignResolution::WIDTH ) / 2.f;
@@ -126,13 +126,6 @@ MainScene::PrepareMeshes()
 void
 MainScene::PrepareMaterials()
 {
-	// Scene global data layout (for view/projection matrices)
-	{
-		eage::graphics::DescriptorLayoutBuilder layout_builder;
-		layout_builder.AddBinding( 0, vk::DescriptorType::eUniformBufferDynamic );
-		mSceneGlobalDataLayout = layout_builder.Build( mRenderer.GetDevice(), vk::ShaderStageFlagBits::eVertex );
-	}
-
 	// Scene global data buffer
 	const auto num_overlapping_frames = mRenderer.GetFrames().size();
 	mSceneGlobalDataDynamic = eage::graphics::ManagedBuffer::Create( 
@@ -152,28 +145,6 @@ MainScene::PrepareMaterials()
 		.Build();
 
 	mSpriteMaterialId = mRenderSystem.CreateMaterial(material_property);
-
-	// Keep the old material system for now (can be removed later)
-	mSpriteMaterial = std::make_unique<SingleTextureSpriteMaterial>();
-	{
-		eage::graphics::DescriptorLayoutBuilder builder;
-		builder.AddBinding(0, vk::DescriptorType::eCombinedImageSampler );
-		mSpriteMaterial->material_layout = builder.Build( mRenderer.GetDevice(), vk::ShaderStageFlagBits::eFragment );
-	}
-	mSpriteMaterial->build_pipeline( mRenderer, { mSceneGlobalDataLayout.get(), mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() } );
-	mSpriteMaterial->pipeline->global_descriptor = std::make_shared<eage::graphics::UniformDescriptor>( mRenderer, mSceneGlobalDataLayout.get() );
-	mSpriteMaterial->pipeline->global_descriptor->WriteDynamicBuffer( 0, vk::DescriptorType::eUniformBufferDynamic, mSceneGlobalDataDynamic->buffer, sizeof( SceneGlobalData ) );
-
-	// Texture resources (keeping for old system)
-	{
-		assets::ImageLoader image_loader;
-		auto image = image_loader.LoadImage( "./resources/textures/ship/ship_texatlas.png" );
-
-		mSpriteMaterialResources = std::make_unique<SingleTextureSpriteMaterial::Resources>();
-		mSpriteMaterialResources->color_texture = mRenderer.UploadImage( 
-			image.data.data(), sizeof( unsigned char ) * image.data.size(), image.width, image.height, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eSampled, vk::ImageAspectFlagBits::eColor, 1 );
-	}
-	mSpriteMaterialResources->color_texture_sampler = mRenderer.CreateSampler( vk::Filter::eNearest, vk::Filter::eNearest );
 }
 
 void
