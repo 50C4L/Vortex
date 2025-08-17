@@ -3,6 +3,7 @@
 
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <unordered_map>
 #include <mutex>
 #include <chrono>
@@ -222,7 +223,54 @@ namespace utility
 		static std::unique_ptr<Logger> singleton( GetFactory().Produce( config ) );
 		return *singleton;
 	}
+
+	// Stream-based logging helper class
+	class LogStream
+	{
+	public:
+		LogStream(LOG_LEVEL level, bool shouldAssert = false) : mLevel(level), mShouldAssert(shouldAssert) {}
+		
+		~LogStream()
+		{
+			std::string message = mStream.str();
+			GetLogger().Log(message, mLevel);
+			
+			if (mShouldAssert)
+			{
+				EAGE_ASSERT(false, message.c_str());
+			}
+		}
+		
+		template<typename T>
+		LogStream& operator<<(const T& value)
+		{
+			mStream << value;
+			return *this;
+		}
+		
+	private:
+		LOG_LEVEL mLevel;
+		bool mShouldAssert;
+		std::ostringstream mStream;
+	};
 	
+	// Stream-based LOG functions
+	inline LogStream LOG(LOG_LEVEL level)
+	{
+		return LogStream(level);
+	}
+	
+	inline LogStream LOG()
+	{
+		return LogStream(LOG_LEVEL::INFO);
+	}
+	
+	inline LogStream LOG_ERROR()
+	{
+		return LogStream(LOG_LEVEL::EAGE_ERROR, true);
+	}
+	
+	// String-based LOG functions (existing)
 	inline void LOG( const LOG_LEVEL level, const std::string& message )
 	{
 		GetLogger().Log( message, level );
@@ -236,6 +284,7 @@ namespace utility
 	inline void LOG_ERROR( const std::string& message )
 	{
 		GetLogger().Log( message, LOG_LEVEL::EAGE_ERROR );
+		EAGE_ASSERT(false, message.c_str());
 	}
 }
 
