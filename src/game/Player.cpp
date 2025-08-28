@@ -75,22 +75,36 @@ Player::Init( eage::ecs::ResourceId sprite_material_id,
 	// Create uniform buffer and descriptor for mesh data
 	auto ship_uniform_buffer_id = mRenderSystem.CreateDynamicUniformBuffer( sizeof(eage::graphics::MeshUniformData) );
 	auto ship_descriptor_id = mRenderSystem.CreateDynamicDescriptorSet( mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() );
+	
+	// Set up the descriptor binding for the ship (this should be done once at creation time)
+	mRenderSystem.GetDescriptorSet( ship_descriptor_id )->WriteBuffer(
+		0, // binding
+		vk::DescriptorType::eUniformBufferDynamic,
+		mRenderSystem.GetUniformBuffer( ship_uniform_buffer_id )->buffer,
+		sizeof(eage::graphics::MeshUniformData) );
 
 	// Create the thrust mesh
-	const auto& thrust_tex = texture_atlas.GetSubTexture( "ship_thrust_fx.png" );
-	rect = eage::graphics::made_rect_vertices( { 0, -30.f, 0 }, 10, 10 );
-	rect.vertices[0].uv_x = thrust_tex.uv_max.x;
-	rect.vertices[0].uv_y = thrust_tex.uv_min.y;
-	rect.vertices[1].uv_x = thrust_tex.uv_max.x;
-	rect.vertices[1].uv_y = thrust_tex.uv_max.y;
-	rect.vertices[2].uv_x = thrust_tex.uv_min.x;
-	rect.vertices[2].uv_y = thrust_tex.uv_min.y;
-	rect.vertices[3].uv_x = thrust_tex.uv_min.x;
-	rect.vertices[3].uv_y = thrust_tex.uv_max.y;
+	// const auto& thrust_tex = texture_atlas.GetSubTexture( "ship_thrust_fx.png" );
+	// rect = eage::graphics::made_rect_vertices( { 0, -30.f, 0 }, 10, 10 );
+	// rect.vertices[0].uv_x = thrust_tex.uv_max.x;
+	// rect.vertices[0].uv_y = thrust_tex.uv_min.y;
+	// rect.vertices[1].uv_x = thrust_tex.uv_max.x;
+	// rect.vertices[1].uv_y = thrust_tex.uv_max.y;
+	// rect.vertices[2].uv_x = thrust_tex.uv_min.x;
+	// rect.vertices[2].uv_y = thrust_tex.uv_min.y;
+	// rect.vertices[3].uv_x = thrust_tex.uv_min.x;
+	// rect.vertices[3].uv_y = thrust_tex.uv_max.y;
 
-	auto thrust_mesh_id = mRenderSystem.CreateMeshBuffer( rect.indices, rect.vertices, 0, 6, 0 );
-	auto thrust_uniform_buffer_id = mRenderSystem.CreateDynamicUniformBuffer( sizeof(eage::graphics::MeshUniformData) );
-	auto thrust_descriptor_id = mRenderSystem.CreateDescriptorSet( mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() );
+	// auto thrust_mesh_id = mRenderSystem.CreateMeshBuffer( rect.indices, rect.vertices, 0, 6, 0 );
+	// auto thrust_uniform_buffer_id = mRenderSystem.CreateDynamicUniformBuffer( sizeof(eage::graphics::MeshUniformData) );
+	// auto thrust_descriptor_id = mRenderSystem.CreateDynamicDescriptorSet( mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() );
+	
+	// Set up the descriptor binding for the thrust effect
+	// mRenderSystem.GetDescriptorSet( thrust_descriptor_id )->WriteBuffer(
+	// 	0, // binding
+	// 	vk::DescriptorType::eUniformBufferDynamic,
+	// 	mRenderSystem.GetUniformBuffer( thrust_uniform_buffer_id )->buffer,
+	// 	sizeof(eage::graphics::MeshUniformData) );
 
 	// Add ECS RenderComponent with the new resource IDs
 	mEcsRegistry.AddComponent<RenderComponent>( mShipEntity, RenderComponent{ 

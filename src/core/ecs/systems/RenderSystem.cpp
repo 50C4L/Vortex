@@ -27,7 +27,7 @@ RenderSystem::RenderSystem( eage::graphics::Renderer& renderer, ECSRegistry& ecs
 {
 	// Create global descriptor set and uniform buffer
 	mGlobalDescriptorSetId = CreateDynamicDescriptorSet( mRenderer.GetBuiltInDescriptorSetLayouts().global.get() );
-	mGlobalUniformBufferId = CreateUniformBuffer( sizeof( eage::graphics::SceneGlobalData ) );
+	mGlobalUniformBufferId = CreateDynamicUniformBuffer( sizeof( eage::graphics::SceneGlobalData ) );
 	GetDescriptorSet( mGlobalDescriptorSetId )->WriteBuffer(
 		GLOBAL_SCENE_DATA_BINDING,
 		vk::DescriptorType::eUniformBufferDynamic,
@@ -309,11 +309,7 @@ void RenderSystem::PrepareRenderInfo()
 		if( auto mesh_uniform_data = mUniformBuffers.Get( render_cmp.mesh_uniform_data_dynamic_id ) )
 		{
 			render_info.mesh_uniform_data_dynamic = mesh_uniform_data;
-			render_info.mesh_descriptor->WriteBuffer(
-				PER_OBJECT_MESH_DATA_BINDING,
-				vk::DescriptorType::eUniformBufferDynamic,
-				render_info.mesh_uniform_data_dynamic->buffer,
-				sizeof(eage::graphics::MeshUniformData) );
+			// Note: Descriptor binding should be set up once during entity creation, not here
 		}
 		else
 		{
