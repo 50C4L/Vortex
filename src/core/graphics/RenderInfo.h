@@ -8,7 +8,7 @@ namespace eage::graphics
 {
 	struct GPUMeshBuffers;
 	struct Material;
-	class UniformDescriptor;
+	class AbstractUniformDescriptor;
 	struct MeshUniformData;
 	struct ManagedBuffer;
 
@@ -16,7 +16,7 @@ namespace eage::graphics
 	{
 		Material*          material;
 		GPUMeshBuffers*    mesh_buffer;
-		UniformDescriptor* mesh_descriptor;
+		AbstractUniformDescriptor* mesh_descriptor;
 		ManagedBuffer*     mesh_uniform_data_dynamic;
 		uint32_t           first_index;
 		uint32_t           index_count;

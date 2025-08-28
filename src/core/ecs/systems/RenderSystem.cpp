@@ -15,10 +15,24 @@
 using namespace eage::ecs;
 using namespace utility;
 
+namespace
+{
+	constexpr uint32_t GLOBAL_SCENE_DATA_BINDING = 0;
+	constexpr uint32_t PER_OBJECT_MESH_DATA_BINDING = 0;
+}
+
 RenderSystem::RenderSystem( eage::graphics::Renderer& renderer, ECSRegistry& ecs_registry )
 	: mRenderer(renderer)
 	, mECSRegistry(ecs_registry)
 {
+	// Create global descriptor set and uniform buffer
+	mGlobalDescriptorSetId = CreateDynamicDescriptorSet( mRenderer.GetBuiltInDescriptorSetLayouts().global.get() );
+	mGlobalUniformBufferId = CreateUniformBuffer( sizeof( eage::graphics::SceneGlobalData ) );
+	GetDescriptorSet( mGlobalDescriptorSetId )->WriteBuffer(
+		GLOBAL_SCENE_DATA_BINDING,
+		vk::DescriptorType::eUniformBufferDynamic,
+		GetGlobalUniformBuffer()->buffer,
+		sizeof( eage::graphics::SceneGlobalData ) );
 }
 
 RenderSystem::~RenderSystem()
@@ -79,26 +93,33 @@ RenderSystem::CreateMaterial( const eage::graphics::MaterialProperty& material_p
 	// Bind textures
 	for( const auto& texture_binding : material_property.textures )
 	{
-		// Load texture
-		// @todo: Should texture loading be handled here or in a separate system?
-		assets::ImageLoader image_loader;
-		auto image = image_loader.LoadImage(texture_binding.texture_path);
+		auto it = mImagePathToIdMap.find(texture_binding.texture_path);
+		if( it == mImagePathToIdMap.end() )
+		{
+			LOG_ERROR() << "Failed to find image buffer for texture path: " << texture_binding.texture_path;
+			continue;
+		}
+
+		auto texture = mImages.Get( it->second );
+		if( !texture )
+		{
+			LOG_ERROR() << "Invalid image buffer for texture path: " << texture_binding.texture_path;
+			continue;
+		}
 		
-		auto texture = mRenderer.UploadImage(
-			image.data.data(), sizeof(unsigned char) * image.data.size(),
-			image.width, image.height, vk::Format::eR8G8B8A8Srgb,
-			vk::ImageUsageFlagBits::eSampled, vk::ImageAspectFlagBits::eColor, 1);
-		
-		auto sampler = mRenderer.CreateSampler(
+		// Get or create cached sampler
+		ResourceId sampler_id = CreateSampler(
 			texture_binding.min_filter, 
 			texture_binding.mag_filter );
+		
+		vk::Sampler sampler = GetSampler(sampler_id);
 		
 		material->descriptor->WriteImage(
 			texture_binding.binding,
 			vk::DescriptorType::eCombinedImageSampler,
 			texture->image_view.get(),
 			vk::ImageLayout::eShaderReadOnlyOptimal,
-			sampler.get());
+			sampler);
 	}
 	
 	// Bind uniform buffers
@@ -126,62 +147,196 @@ RenderSystem::CreateMaterial( const eage::graphics::MaterialProperty& material_p
 }
 
 ResourceId
-RenderSystem::CreateUniformBuffer( size_t data_size, bool dynamic )
+RenderSystem::CreateUniformBuffer( size_t data_size )
 {
-	size_t buffer_size = dynamic ? data_size * mRenderer.GetFrames().size() : data_size;
+	auto buffer = eage::graphics::ManagedBuffer::Create(
+		*mRenderer.GetMemoryAllocator().allocator.get(),
+		data_size,
+		vk::BufferUsageFlagBits::eUniformBuffer,
+		VMA_MEMORY_USAGE_CPU_TO_GPU );
+
+	return mUniformBuffers.Store( std::move(buffer) );
+}
+
+ResourceId
+RenderSystem::CreateImageBuffer( const std::string& file_path )
+{
+	if( auto it = mImagePathToIdMap.find(file_path); it != mImagePathToIdMap.end() )
+	{
+		return it->second;
+	}
+
+	assets::ImageLoader image_loader;
+		auto image = image_loader.LoadImage( file_path );
+
+	// @todo: Expose image flags and format
+	auto texture = mRenderer.UploadImage(
+		image.data.data(), sizeof(unsigned char) * image.data.size(),
+		image.width, image.height, vk::Format::eR8G8B8A8Srgb,
+		vk::ImageUsageFlagBits::eSampled, vk::ImageAspectFlagBits::eColor, 1);
+
+	mImagePathToIdMap[file_path] = mImages.Store( std::move( texture ) );
+	return mImagePathToIdMap[file_path];
+}
+
+ResourceId
+RenderSystem::CreateDynamicUniformBuffer( size_t data_size )
+{
+	size_t buffer_size = data_size * mRenderer.GetFrames().size();
 	auto buffer = eage::graphics::ManagedBuffer::Create(
 		*mRenderer.GetMemoryAllocator().allocator.get(),
 		buffer_size,
 		vk::BufferUsageFlagBits::eUniformBuffer,
 		VMA_MEMORY_USAGE_CPU_TO_GPU );
 
-	return mUniformBuffers.Store(std::move(buffer));
+	return mUniformBuffers.Store( std::move(buffer) );
 }
 
 ResourceId
 RenderSystem::CreateDescriptorSet( vk::DescriptorSetLayout layout )
 {
-	auto descriptor = std::make_unique<eage::graphics::UniformDescriptor>( mRenderer, layout );
+	auto descriptor = std::make_unique<eage::graphics::StaticDescriptor>( mRenderer, layout );
 	return mDescriptorSets.Store( std::move(descriptor) );
 }
 
+ResourceId
+RenderSystem::CreateDynamicDescriptorSet( vk::DescriptorSetLayout layout )
+{
+	auto descriptor = std::make_unique<eage::graphics::DynamicDescriptor>( mRenderer, layout );
+	return mDescriptorSets.Store( std::move(descriptor) );
+}
+
+ResourceId
+RenderSystem::CreateSampler( vk::Filter min_filter, vk::Filter mag_filter )
+{
+	// Create a hash from the filter parameters
+	size_t hash = std::hash<int>{}(static_cast<int>(min_filter));
+	hash ^= std::hash<int>{}(static_cast<int>(mag_filter)) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+	
+	// Check if sampler with these parameters already exists
+	auto it = mSamplerCache.find(hash);
+	if (it != mSamplerCache.end())
+	{
+		return it->second;
+	}
+	
+	// Create new sampler
+	auto sampler = mRenderer.CreateSampler(min_filter, mag_filter);
+	auto sampler_ptr = std::make_unique<vk::UniqueSampler>(std::move(sampler));
+	ResourceId sampler_id = mSamplers.Store(std::move(sampler_ptr));
+	
+	// Cache the sampler ID
+	mSamplerCache[hash] = sampler_id;
+	
+	return sampler_id;
+}
+
 eage::graphics::ManagedBuffer*
-RenderSystem::GetUniformBuffer(ResourceId id)
+RenderSystem::GetGlobalUniformBuffer()
+{
+	return mUniformBuffers.Get( mGlobalUniformBufferId );
+}
+
+eage::graphics::ManagedImage*
+RenderSystem::GetImageBuffer( ResourceId id )
+{
+	return mImages.Get(id);
+}
+
+eage::graphics::ManagedBuffer*
+RenderSystem::GetUniformBuffer( ResourceId id )
 {
 	return mUniformBuffers.Get(id);
 }
 
-
-void RenderSystem::Update()
+eage::graphics::AbstractUniformDescriptor*
+RenderSystem::GetDescriptorSet( ResourceId id )
 {
-	// Update uniform buffers with transform data
-	// This replaces the old RenderComponent::Transform logic
+	return mDescriptorSets.Get(id);
 }
 
-void RenderSystem::Render()
+vk::Sampler
+RenderSystem::GetSampler( ResourceId id )
 {
-	// Iterate through all entities with both Transform and Render components
-	// This replaces the old RenderComponent::CreateRenderInfo logic
-	
-	// For now, you'd need to iterate manually or implement a query system
-	// Example pseudo-code:
-	/*
-	for (auto entity : entities_with_render_and_transform_components)
+	auto sampler_ptr = mSamplers.Get(id);
+	return sampler_ptr ? sampler_ptr->get() : vk::Sampler{};
+}
+
+void RenderSystem::PrepareRenderInfo()
+{
+	auto renderable_entities = mECSRegistry.GetComponentMap<RenderComponent>();
+	for( const auto& [entity, render_cmp] : renderable_entities )
 	{
-		auto& transform = mECSRegistry.GetComponent<TransformComponent>(entity);
-		auto& render = mECSRegistry.GetComponent<RenderComponent>(entity);
-		
-		if (render.visible)
+		if( !render_cmp.visible )
 		{
-			// Update uniforms with transform.ToMatrix()
-			// Create RenderInfo and add to render queue
-			mRenderer.AddToRenderQueue(CreateRenderInfo(entity));
+			continue;
 		}
+
+		auto render_info = CreateRenderInfo(entity);
+
+		// Material
+		if( auto material = mMaterials.Get( render_cmp.material_id ) )
+		{
+			render_info.material = material;
+		}
+
+		// Mesh buffer
+		if( auto mesh_buffer = mMeshBuffers.Get( render_cmp.mesh_buffer_id ) )
+		{
+			render_info.mesh_buffer = mesh_buffer;
+			render_info.first_index   = mesh_buffer->first_index;
+			render_info.index_count   = mesh_buffer->index_count;
+			render_info.vertex_offset = mesh_buffer->vertex_offset;
+		}
+		else
+		{
+			LOG_ERROR( "Mesh buffer not found for entity: " + std::to_string(entity) );
+			continue; // Skip rendering this entity if mesh buffer is not found
+		}
+
+		// Mesh descriptor
+		if( auto mesh_descriptor = mDescriptorSets.Get( render_cmp.mesh_descriptor_id ) )
+		{
+			render_info.mesh_descriptor = mesh_descriptor;
+		}
+		else
+		{
+			LOG_ERROR( "Mesh descriptor not found for entity: " + std::to_string(entity) );
+			continue; // Skip rendering this entity if mesh descriptor is not found
+		}
+
+		// Mesh uniform data
+		if( auto mesh_uniform_data = mUniformBuffers.Get( render_cmp.mesh_uniform_data_dynamic_id ) )
+		{
+			render_info.mesh_uniform_data_dynamic = mesh_uniform_data;
+			render_info.mesh_descriptor->WriteBuffer(
+				PER_OBJECT_MESH_DATA_BINDING,
+				vk::DescriptorType::eUniformBufferDynamic,
+				render_info.mesh_uniform_data_dynamic->buffer,
+				sizeof(eage::graphics::MeshUniformData) );
+		}
+		else
+		{
+			LOG_ERROR( "Mesh uniform data not found for entity: " + std::to_string(entity) );
+			continue; // Skip rendering this entity if mesh uniform data is not found
+		}
+
+		// Model matrix
+		if( mECSRegistry.HasComponent<TransformComponent>(entity) )
+		{
+			auto& transform = mECSRegistry.GetComponent<TransformComponent>(entity);
+			render_info.model_matrix = transform.ToMatrix();
+		}
+		else
+		{
+			render_info.model_matrix = glm::mat4( 1.0f ); // Identity matrix if no transform
+		}
+
+		mRenderer.AddToRenderQueue( std::move( render_info ) );
 	}
-	*/
 }
 
-eage::graphics::RenderInfo RenderSystem::CreateRenderInfo(Entity entity)
+eage::graphics::RenderInfo RenderSystem::CreateRenderInfo( Entity entity )
 {
 	auto& render = mECSRegistry.GetComponent<RenderComponent>(entity);
 	auto& transform = mECSRegistry.GetComponent<TransformComponent>(entity);
@@ -255,6 +410,7 @@ RenderSystem::CreateOrGetPipeline( const eage::graphics::MaterialProperty& prope
 	
 	// Store the pipeline layout in the RenderPipeline
 	pipeline->layout = std::move(pipeline_layout);
+	pipeline->global_descriptor = GetDescriptorSet( mGlobalDescriptorSetId );
 	
 	mPipelineCache[hash] = pipeline;
 	return pipeline;

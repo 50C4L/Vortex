@@ -1,7 +1,6 @@
 #include "Player.h"
 
 #include <graphics/BuiltInMeshes.h>
-#include <graphics/RenderComponent.h>
 #include <graphics/Renderer.h>
 #include <graphics/BuiltInUniforms.h>
 
@@ -74,8 +73,8 @@ Player::Init( eage::ecs::ResourceId sprite_material_id,
 	auto ship_mesh_id = mRenderSystem.CreateMeshBuffer( rect.indices, rect.vertices, 0, 6, 0 );
 
 	// Create uniform buffer and descriptor for mesh data
-	auto ship_uniform_buffer_id = mRenderSystem.CreateUniformBuffer( sizeof(eage::graphics::MeshUniformData), true );
-	auto ship_descriptor_id = mRenderSystem.CreateDescriptorSet( mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() );
+	auto ship_uniform_buffer_id = mRenderSystem.CreateDynamicUniformBuffer( sizeof(eage::graphics::MeshUniformData) );
+	auto ship_descriptor_id = mRenderSystem.CreateDynamicDescriptorSet( mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() );
 
 	// Create the thrust mesh
 	const auto& thrust_tex = texture_atlas.GetSubTexture( "ship_thrust_fx.png" );
@@ -90,7 +89,7 @@ Player::Init( eage::ecs::ResourceId sprite_material_id,
 	rect.vertices[3].uv_y = thrust_tex.uv_max.y;
 
 	auto thrust_mesh_id = mRenderSystem.CreateMeshBuffer( rect.indices, rect.vertices, 0, 6, 0 );
-	auto thrust_uniform_buffer_id = mRenderSystem.CreateUniformBuffer( sizeof(eage::graphics::MeshUniformData), true );
+	auto thrust_uniform_buffer_id = mRenderSystem.CreateDynamicUniformBuffer( sizeof(eage::graphics::MeshUniformData) );
 	auto thrust_descriptor_id = mRenderSystem.CreateDescriptorSet( mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() );
 
 	// Add ECS RenderComponent with the new resource IDs

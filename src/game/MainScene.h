@@ -11,7 +11,6 @@
 
 namespace eage::graphics
 {
-	class RenderComponent;;
 	class Renderer;
 	class OrthographicCamera;
 	class UniformDescriptor;
@@ -66,8 +65,6 @@ namespace vortex
 		audio::AudioMixer& mAudioMixer;
 		eage::ecs::ECSRegistry& mECSRegistry;
 		eage::ecs::RenderSystem& mRenderSystem;
-
-		std::unique_ptr<eage::graphics::ManagedBuffer, std::function<void(eage::graphics::ManagedBuffer*)>> mSceneGlobalDataDynamic;
 
 		std::shared_ptr<eage::graphics::OrthographicCamera> mCamera;
 

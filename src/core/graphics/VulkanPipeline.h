@@ -8,7 +8,7 @@
 
 namespace eage::graphics
 {
-	class UniformDescriptor;
+	class AbstractUniformDescriptor;
 
 	class VulkanPipelineBuilder
 	{
@@ -46,7 +46,7 @@ namespace eage::graphics
 	{
 		vk::UniquePipeline pipeline;
 		vk::UniquePipelineLayout layout;
-		std::shared_ptr<UniformDescriptor> global_descriptor;
+		AbstractUniformDescriptor* global_descriptor;
 	};
 }
 

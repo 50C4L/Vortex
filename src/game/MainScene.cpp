@@ -2,7 +2,6 @@
 
 #include <utility/Logger.h>
 #include <graphics/Renderer.h>
-#include <graphics/RenderComponent.h>
 #include <graphics/VulkanDescriptor.h>
 #include <graphics/VulkanMesh.h>
 #include <graphics/VulkanPipeline.h>
@@ -35,15 +34,6 @@ namespace
 		alignas(64) glm::mat4 view_proj;
 		// padding
 		float extra[16];
-	};
-
-	// @TODO: Move this to be handled inside RenderComponent
-	struct RenderComponentData
-	{
-		alignas(64) glm::mat4 model;
-		alignas(8) uint64_t vertex_buffer_address;
-		// padding
-		float extra[46];
 	};
 }
 
@@ -108,7 +98,7 @@ MainScene::Update()
 		scene_global_data.view = mCamera->GetViewMatrix();
 		scene_global_data.proj = mCamera->GetProjectionMatrix();
 		scene_global_data.view_proj = scene_global_data.proj * scene_global_data.view;
-		mSceneGlobalDataDynamic->Update( &scene_global_data, sizeof( SceneGlobalData ), sizeof( SceneGlobalData ) * current_frame );
+		mRenderSystem.GetGlobalUniformBuffer()->Update( &scene_global_data, sizeof( SceneGlobalData ), sizeof( SceneGlobalData ) * current_frame );
 	}
 	
 	// player update
@@ -126,13 +116,7 @@ MainScene::PrepareMeshes()
 void
 MainScene::PrepareMaterials()
 {
-	// Scene global data buffer
-	const auto num_overlapping_frames = mRenderer.GetFrames().size();
-	mSceneGlobalDataDynamic = eage::graphics::ManagedBuffer::Create( 
-		*mRenderer.GetMemoryAllocator().allocator.get(), 
-		sizeof( SceneGlobalData ) * num_overlapping_frames, 
-		vk::BufferUsageFlagBits::eUniformBuffer, 
-		VMA_MEMORY_USAGE_CPU_TO_GPU );
+	mRenderSystem.CreateImageBuffer( "./resources/textures/ship/ship_texatlas.png" );
 
 	// Create sprite material using the new MaterialBuilder and RenderSystem
 	auto material_property = eage::graphics::MaterialBuilder()

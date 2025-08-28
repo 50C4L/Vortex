@@ -73,8 +73,6 @@ add_library(eage_core STATIC
 	./graphics/MaterialProperty.h
 	./graphics/Renderer.h
 	./graphics/Renderer.cpp
-	./graphics/RenderComponent.h
-	./graphics/RenderComponent.cpp
 	./graphics/VMAWrapper.h
 	./graphics/VMAWrapper.cpp
 	./graphics/VulkanDescriptor.h

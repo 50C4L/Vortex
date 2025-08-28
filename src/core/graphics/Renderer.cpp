@@ -532,14 +532,14 @@ Renderer::DrawRenderQueue( vk::CommandBuffer& cmd )
 	auto depth_attachment = create_attachment_info( mDepthImage->image_view.get(), std::move( depth_clear_value ), vk::ImageLayout::eDepthAttachmentOptimal );
 
 	vk::Extent2D render_extent = { mRenderImage->extent.width, mRenderImage->extent.height };
-	vk::RenderingInfo render_info{};
-	render_info.colorAttachmentCount = 1;
-	render_info.pColorAttachments = &color_attachment;
-	render_info.renderArea = vk::Rect2D{ vk::Offset2D{ 0, 0 }, std::move( render_extent ) };
-	render_info.layerCount = 1;
-	render_info.pDepthAttachment = &depth_attachment;
+	vk::RenderingInfo rendering_info{};
+	rendering_info.colorAttachmentCount = 1;
+	rendering_info.pColorAttachments = &color_attachment;
+	rendering_info.renderArea = vk::Rect2D{ vk::Offset2D{ 0, 0 }, std::move( render_extent ) };
+	rendering_info.layerCount = 1;
+	rendering_info.pDepthAttachment = &depth_attachment;
 
-	cmd.beginRendering( render_info );
+	cmd.beginRendering( rendering_info );
 
 	size_t current_frame = GetCurrentFrameIndex();
 	for( auto& render_info : mRenderQueue )
@@ -570,34 +570,33 @@ Renderer::DrawRenderQueue( vk::CommandBuffer& cmd )
 		// Pipeline global uniform
 		uint32_t descriptor_index = 0;
 		{
-			auto& dynamic_offsets = render_info.material->pipeline->global_descriptor->GetDynamicOffsets( current_frame );
+			auto dynamic_offsets = render_info.material->pipeline->global_descriptor->GetDynamicOffsets( current_frame );
 			cmd.bindDescriptorSets( 
 				vk::PipelineBindPoint::eGraphics,
 				render_info.material->pipeline->layout.get(),
 				descriptor_index++, 1,
 				render_info.material->pipeline->global_descriptor->GetDescriptorSet( current_frame ),
-				static_cast<uint32_t>( dynamic_offsets.size() ), dynamic_offsets.data() );
+				static_cast<uint32_t>( dynamic_offsets->size() ), dynamic_offsets->data() );
 		}
 
 		// Per-object predefined uniform
 		{
-			auto& dynamic_offsets = render_info.mesh_descriptor->GetDynamicOffsets( current_frame );
+			auto dynamic_offsets = render_info.mesh_descriptor->GetDynamicOffsets( current_frame );
 			cmd.bindDescriptorSets( 
 				vk::PipelineBindPoint::eGraphics,
 				render_info.material->pipeline->layout.get(),
 				descriptor_index++, 1,
 				render_info.mesh_descriptor->GetDescriptorSet( current_frame ),
-				static_cast<uint32_t>( dynamic_offsets.size() ), dynamic_offsets.data() );
+				static_cast<uint32_t>( dynamic_offsets->size() ), dynamic_offsets->data() );
 		}
 		
 		// Material static uniform
 		{
-			vk::DescriptorSet material_descriptor = render_info.material->descriptor->GetDescriptorSet();
 			cmd.bindDescriptorSets( 
 				vk::PipelineBindPoint::eGraphics,
 				render_info.material->pipeline->layout.get(),
 				descriptor_index++, 1,
-				&material_descriptor,
+				render_info.material->descriptor->GetDescriptorSet(),
 				0, nullptr ); // No dynamic offsets for static descriptors
 		}
 

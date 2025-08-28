@@ -70,57 +70,56 @@ namespace eage::graphics
 
 	class Renderer;
 
-	class UniformDescriptor
+	/// AbstractUniformDescriptor: Base class for different types of uniform descriptors
+	class AbstractUniformDescriptor
 	{
 	public:
-		UniformDescriptor( Renderer& renderer, vk::DescriptorSetLayout layout );
-		virtual ~UniformDescriptor();
+		virtual ~AbstractUniformDescriptor() = default;
 
-		virtual vk::DescriptorSet* GetDescriptorSet( size_t current_frame_index );
-
-		virtual std::vector<uint32_t>& GetDynamicOffsets( size_t current_frame_index );
-
+		/// 
+		/// Check if the descriptor is dynamic (per-frame) or static (single)
 		///
-		/// Write buffer to the given frame's descriptor set
-		///
-		void WriteBuffer( size_t current_frame_index, uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize offset, vk::DeviceSize range );
+		virtual bool IsDynamic() const = 0;
 
 		///
-		/// The providing buffer is assumed to be shared among all frames (e.g it has a size of sizeof( uniform_data ) * num_frames)
-		/// Each frame's descriptor set will be using different section of the buffer
+		/// Get the descriptor set for the current frame
+		/// This could be a single descriptor set (for static descriptors) or per-frame descriptor sets (for dynamic descriptors)
 		///
-		void WriteDynamicBuffer( uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize sub_size );
+		virtual vk::DescriptorSet* GetDescriptorSet( size_t current_frame_index = 0 ) = 0;
 
 		///
-		/// Write the image buffer to the all frames' descriptor set
-		/// This is usful for static textures
+		/// Get the dynamic offsets for the current frame
+		/// This is only relevant for dynamic descriptors
 		///
-		void WriteImage( uint32_t binding, vk::DescriptorType type, vk::ImageView image_view, vk::ImageLayout layout, vk::Sampler sampler );
+		virtual std::vector<uint32_t>* GetDynamicOffsets( size_t current_frame_index = 0 ) = 0;
 
-	private:
-		Renderer& mRenderer;
-		DescriptorWriter mWriter;
-		struct DescriptorState
-		{
-			vk::UniqueDescriptorSet descriptor_set;
-			std::vector<uint32_t> dynamic_offsets;
-		};
-		std::unordered_map<size_t, DescriptorState> mPerFrameDescriptors;
+		///
+		/// Write buffer to the descriptor set
+		///
+		virtual void WriteBuffer( uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize size ) = 0;
+
+		///
+		/// Write the image buffer to the descriptor set
+		///
+		virtual void WriteImage( uint32_t binding, vk::DescriptorType type, vk::ImageView image_view, vk::ImageLayout layout, vk::Sampler sampler ) = 0;
 	};
 
 	/// StaticDescriptor: For resources that don't change between frames (textures, static uniforms)
 	/// - Allocates only one descriptor set
 	/// - More memory efficient for static resources
 	/// - Use for: material textures, constant material properties
-	class StaticDescriptor
+	class StaticDescriptor final : public AbstractUniformDescriptor
 	{
 	public:
-		StaticDescriptor(Renderer& renderer, vk::DescriptorSetLayout layout);
+		StaticDescriptor( Renderer& renderer, vk::DescriptorSetLayout layout );
 		
-		void WriteBuffer(uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize range);
-		void WriteImage(uint32_t binding, vk::DescriptorType type, vk::ImageView image_view, vk::ImageLayout layout, vk::Sampler sampler);
-		
-		vk::DescriptorSet GetDescriptorSet() const { return mDescriptorSet.get(); }
+		// Implementation of AbstractUniformDescriptor
+		virtual bool IsDynamic() const override { return false; }
+		virtual vk::DescriptorSet* GetDescriptorSet( size_t frame_index = 0 ) override { return &mDescriptorSet.get(); };
+		virtual std::vector<uint32_t>* GetDynamicOffsets( size_t frame_index = 0 ) override { return nullptr; }
+		virtual void WriteBuffer( uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize size ) override;
+		virtual void WriteImage( uint32_t binding, vk::DescriptorType type, vk::ImageView image_view, vk::ImageLayout layout, vk::Sampler sampler ) override;
+		// End of implementation of AbstractUniformDescriptor
 
 	private:
 		Renderer& mRenderer;
@@ -132,16 +131,18 @@ namespace eage::graphics
 	/// - Allocates per-frame descriptor sets
 	/// - Supports dynamic uniform buffer offsets
 	/// - Use for: view/projection matrices, model matrices, animation data
-	class DynamicDescriptor : public UniformDescriptor
+	class DynamicDescriptor final : public AbstractUniformDescriptor
 	{
 	public:
-		DynamicDescriptor(Renderer& renderer, vk::DescriptorSetLayout layout);
+		DynamicDescriptor( Renderer& renderer, vk::DescriptorSetLayout layout );
 		
-		void WriteDynamicBuffer(uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize sub_size);
-		void WriteBuffer(size_t frame_index, uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize offset, vk::DeviceSize range);
-		
-		virtual vk::DescriptorSet* GetDescriptorSet(size_t frame_index) override;
-		virtual std::vector<uint32_t>& GetDynamicOffsets(size_t frame_index) override;
+		// Implementation of AbstractUniformDescriptor
+		virtual bool IsDynamic() const override { return true; }
+		virtual vk::DescriptorSet* GetDescriptorSet( size_t frame_index ) override;
+		virtual std::vector<uint32_t>* GetDynamicOffsets( size_t frame_index ) override;
+		virtual void WriteBuffer( uint32_t binding, vk::DescriptorType type, vk::Buffer buffer, vk::DeviceSize size ) override;
+		virtual void WriteImage( uint32_t binding, vk::DescriptorType type, vk::ImageView image_view, vk::ImageLayout layout, vk::Sampler sampler ) override;
+		// End of implementation of AbstractUniformDescriptor
 
 	private:
 		Renderer& mRenderer;

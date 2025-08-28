@@ -55,6 +55,7 @@ VortexGame::Run()
 
 		mSceneController->Update();
 
+		mRenderSystem->PrepareRenderInfo();
 		mRenderer->Render();
 	}
 	mRenderer->WaitForIdle();
