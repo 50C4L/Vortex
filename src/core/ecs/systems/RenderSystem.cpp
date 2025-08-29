@@ -272,7 +272,7 @@ void RenderSystem::PrepareRenderInfo()
 			continue;
 		}
 
-		auto render_info = CreateRenderInfo(entity);
+		eage::graphics::RenderInfo render_info{};
 
 		// Material
 		if( auto material = mMaterials.Get( render_cmp.material_id ) )
@@ -330,19 +330,6 @@ void RenderSystem::PrepareRenderInfo()
 
 		mRenderer.AddToRenderQueue( std::move( render_info ) );
 	}
-}
-
-eage::graphics::RenderInfo RenderSystem::CreateRenderInfo( Entity entity )
-{
-	auto& render = mECSRegistry.GetComponent<RenderComponent>(entity);
-	auto& transform = mECSRegistry.GetComponent<TransformComponent>(entity);
-	
-	// Update uniform buffer with transform matrix
-	// Return RenderInfo similar to old implementation
-	
-	eage::graphics::RenderInfo info{};
-	// Fill info with data from render component
-	return info;
 }
 
 std::shared_ptr<eage::graphics::RenderPipeline> 

@@ -54,8 +54,6 @@ namespace eage::ecs
 		void PrepareRenderInfo();
 
 	private:
-		eage::graphics::RenderInfo CreateRenderInfo( eage::ecs::Entity entity );
-
 		std::shared_ptr<eage::graphics::RenderPipeline> CreateOrGetPipeline(
 			const eage::graphics::MaterialProperty& property,
 			const std::vector<vk::DescriptorSetLayout>& global_layouts );

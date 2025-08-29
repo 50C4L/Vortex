@@ -103,9 +103,6 @@ MainScene::Update()
 	
 	// player update
 	mPlayer->Update();
-
-	// Add to render queue
-	mPlayer->Draw();
 }
 
 void 
