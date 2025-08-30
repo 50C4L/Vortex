@@ -23,6 +23,7 @@ namespace events
 		void Handle( SDL_Event& event );
 
 		void Subscribe( uint64_t event_id, Observer* observer );
+		void Unsubscribe( uint64_t event_id, Observer* observer );
 
 	private:
 		std::unordered_map<SDL_Keycode, uint64_t> mKeysToEventIds;

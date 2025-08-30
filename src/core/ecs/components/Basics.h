@@ -5,9 +5,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-namespace eage
-{
-namespace ecs
+namespace eage::ecs
 {
 	struct TransformComponent
 	{
@@ -23,11 +21,11 @@ namespace ecs
 		}
 	};
 
-	struct VelocityComponent
+	struct Velocity2DComponent
 	{
  		glm::vec3 velocity = glm::vec3(0.0f);
+		float angular_velocity = 0.0f; // In degrees per second
 	};
-}
 }
 
 #endif // _EAGE_COMPONENTS_BASICS_H_

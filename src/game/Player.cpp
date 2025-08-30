@@ -12,7 +12,6 @@
 
 #include "GameConfig.h"
 #include "components/ShipStateComponents.h"
-#include "systems/ShipControlSystem.h"
 
 using namespace vortex;
 using namespace vortex::config;
@@ -36,11 +35,8 @@ Player::Player( eage::graphics::Renderer& renderer, events::InputController& inp
 	// Init ship componments
 	mShipEntity = mEcsRegistry.CreateEntity();
 	mEcsRegistry.AddComponent<eage::ecs::TransformComponent>( mShipEntity, TransformComponent{ { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.f, 1.f }, { 1.f, 1.f, 1.f } } );
-	mEcsRegistry.AddComponent<eage::ecs::VelocityComponent>( mShipEntity, eage::ecs::VelocityComponent{ { 0.f, 0.f, 0.f } } );
+	mEcsRegistry.AddComponent<eage::ecs::Velocity2DComponent>( mShipEntity, eage::ecs::Velocity2DComponent{ { 0.f, 0.f, 0.f } } );
 	mEcsRegistry.AddComponent<components::ShipStateComponent>( mShipEntity, components::ShipStateComponent{ false } );
-
-	// Init ship coontrol system
-	mShipControlSystem = std::make_unique<ShipControlSystem>( mEcsRegistry, mShipEntity );
 
 	mInputController.Subscribe( static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_LEFT ), this );
 	mInputController.Subscribe( static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_RIGHT ), this );
@@ -84,16 +80,16 @@ Player::Init( eage::ecs::ResourceId sprite_material_id,
 		sizeof(eage::graphics::MeshUniformData) );
 
 	// Create the thrust mesh
-	// const auto& thrust_tex = texture_atlas.GetSubTexture( "ship_thrust_fx.png" );
-	// rect = eage::graphics::made_rect_vertices( { 0, -30.f, 0 }, 10, 10 );
-	// rect.vertices[0].uv_x = thrust_tex.uv_max.x;
-	// rect.vertices[0].uv_y = thrust_tex.uv_min.y;
-	// rect.vertices[1].uv_x = thrust_tex.uv_max.x;
-	// rect.vertices[1].uv_y = thrust_tex.uv_max.y;
-	// rect.vertices[2].uv_x = thrust_tex.uv_min.x;
-	// rect.vertices[2].uv_y = thrust_tex.uv_min.y;
-	// rect.vertices[3].uv_x = thrust_tex.uv_min.x;
-	// rect.vertices[3].uv_y = thrust_tex.uv_max.y;
+	const auto& thrust_tex = texture_atlas.GetSubTexture( "ship_thrust_fx.png" );
+	rect = eage::graphics::made_rect_vertices( { 0, -30.f, 0 }, 10, 10 );
+	rect.vertices[0].uv_x = thrust_tex.uv_max.x;
+	rect.vertices[0].uv_y = thrust_tex.uv_min.y;
+	rect.vertices[1].uv_x = thrust_tex.uv_max.x;
+	rect.vertices[1].uv_y = thrust_tex.uv_max.y;
+	rect.vertices[2].uv_x = thrust_tex.uv_min.x;
+	rect.vertices[2].uv_y = thrust_tex.uv_min.y;
+	rect.vertices[3].uv_x = thrust_tex.uv_min.x;
+	rect.vertices[3].uv_y = thrust_tex.uv_max.y;
 
 	// auto thrust_mesh_id = mRenderSystem.CreateMeshBuffer( rect.indices, rect.vertices, 0, 6, 0 );
 	// auto thrust_uniform_buffer_id = mRenderSystem.CreateDynamicUniformBuffer( sizeof(eage::graphics::MeshUniformData) );
@@ -120,24 +116,24 @@ Player::Init( eage::ecs::ResourceId sprite_material_id,
 void
 Player::Update()
 {
-	std::chrono::time_point<std::chrono::steady_clock> current_time = std::chrono::steady_clock::now();
-	std::chrono::duration<float, std::milli> delta_time_ms = current_time - mLastUpdateTime;
-	mLastUpdateTime = current_time;
+	// std::chrono::time_point<std::chrono::steady_clock> current_time = std::chrono::steady_clock::now();
+	// std::chrono::duration<float, std::milli> delta_time_ms = current_time - mLastUpdateTime;
+	// mLastUpdateTime = current_time;
 
-	if( mRotateState.left )
-	{
-		mShipControlSystem->Rotate( ROTATION_SPEED );
-	}
-	else if( mRotateState.right )
-	{
-		mShipControlSystem->Rotate( -1.f * ROTATION_SPEED );
-	}
-	else
-	{
-		mShipControlSystem->Rotate( 0.f );
-	}
+	// if( mRotateState.left )
+	// {
+	// 	mShipControlSystem->Rotate( ROTATION_SPEED );
+	// }
+	// else if( mRotateState.right )
+	// {
+	// 	mShipControlSystem->Rotate( -1.f * ROTATION_SPEED );
+	// }
+	// else
+	// {
+	// 	mShipControlSystem->Rotate( 0.f );
+	// }
 
-	mShipControlSystem->Update( delta_time_ms.count() );
+	// mShipControlSystem->Update( delta_time_ms.count() );
 }
 
 void
@@ -184,11 +180,6 @@ Player::OnInputEvent( uint64_t event_id, bool on )
 		else
 		{
 			mEngineSound->Stop();
-		}
-
-		{
-			
-			mShipControlSystem->Thrust( on );
 		}
 
 		break;

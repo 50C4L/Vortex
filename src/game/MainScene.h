@@ -40,6 +40,8 @@ namespace eage::ecs
 namespace vortex
 {
 	class Player;
+	class PlayerInputSystem;
+	class PlayerMovementSystem;
 
 	class MainScene : public AbstractScene
 	{
@@ -60,17 +62,22 @@ namespace vortex
 	private:
 		void DrawDebugGUI();
 
+		void CreatePlayerEntity();
+
 		eage::graphics::Renderer& mRenderer;
 		events::InputController& mInputController;
 		audio::AudioMixer& mAudioMixer;
 		eage::ecs::ECSRegistry& mECSRegistry;
 		eage::ecs::RenderSystem& mRenderSystem;
 
+		std::unique_ptr<PlayerInputSystem> mPlayerInputSystem;
+		std::unique_ptr<PlayerMovementSystem> mPlayerMovementSystem;
+
 		std::shared_ptr<eage::graphics::OrthographicCamera> mCamera;
 
 		eage::ecs::ResourceId mSpriteMaterialId;
 
-		std::unique_ptr<Player> mPlayer;
+		uint64_t mPlayerEntity = 0;
 
 		std::chrono::time_point<std::chrono::steady_clock> mLastUpdateTime;
 	};

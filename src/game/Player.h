@@ -27,8 +27,6 @@ namespace eage::ecs
 
 namespace vortex
 {
-	class ShipControlSystem;
-
 	class Player : public events::InputController::Observer
 	{
 	public:
@@ -53,7 +51,6 @@ namespace vortex
 		eage::ecs::ECSRegistry& mEcsRegistry;
 		eage::ecs::RenderSystem& mRenderSystem;
 		eage::ecs::Entity mShipEntity;
-		std::unique_ptr<ShipControlSystem> mShipControlSystem;
 		std::unique_ptr<audio::SoundInstance> mEngineSound;
 
 		struct RotateState

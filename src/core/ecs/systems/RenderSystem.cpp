@@ -264,7 +264,7 @@ RenderSystem::GetSampler( ResourceId id )
 
 void RenderSystem::PrepareRenderInfo()
 {
-	auto renderable_entities = mECSRegistry.GetComponentMap<RenderComponent>();
+	auto& renderable_entities = mECSRegistry.GetComponentMap<RenderComponent>();
 	for( const auto& [entity, render_cmp] : renderable_entities )
 	{
 		if( !render_cmp.visible )

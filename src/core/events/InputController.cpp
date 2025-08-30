@@ -48,3 +48,18 @@ InputController::Subscribe( uint64_t event_id, Observer* observer )
 	}
 	mEventObservers[event_id].push_back( observer );
 }
+
+void
+InputController::Unsubscribe( uint64_t event_id, Observer* observer )
+{
+	auto it = mEventObservers.find( event_id );
+	if( it != mEventObservers.end() )
+	{
+		auto& observers = it->second;
+		observers.erase( std::remove( observers.begin(), observers.end(), observer ), observers.end() );
+		if( observers.empty() )
+		{
+			mEventObservers.erase( it );
+		}
+	}
+}
