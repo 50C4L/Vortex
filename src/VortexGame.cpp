@@ -12,6 +12,7 @@
 #include <imgui/imgui_impl_sdl2.h>
 #include <audio/AudioMixer.h>
 #include <ecs/ECS.h>
+#include <ecs/systems/AudioSystem.h>
 #include <ecs/systems/RenderSystem.h>
 
 #include "SceneController.h"
@@ -53,9 +54,11 @@ VortexGame::Run()
 			}
 		}
 
+		// @todo: delta time should be calulated here and pass down
 		mSceneController->Update();
 
-		mRenderSystem->PrepareRenderInfo();
+		mAudioSystem->Update( 0.f );
+		mRenderSystem->Update();
 		mRenderer->Render();
 	}
 	mRenderer->WaitForIdle();
@@ -95,7 +98,7 @@ VortexGame::Init()
 	}
 
 	// Initialize AudioMixer
-	mAudioMixer = std::make_unique<audio::AudioMixer>();
+	mAudioMixer = std::make_unique<eage::audio::AudioMixer>();
 
 	// Initialize InputController
 	std::unordered_map<SDL_Keycode, uint64_t> keycode_to_event = {
@@ -108,13 +111,16 @@ VortexGame::Init()
 	// Initialize ECSRegistry
 	mECSRegistry = std::make_unique<eage::ecs::ECSRegistry>();
 
+	// Initialize AudioSystem
+	mAudioSystem = std::make_unique<eage::ecs::AudioSystem>( *mECSRegistry, *mAudioMixer );
+
 	// Initialize RenderSystem
 	mRenderSystem = std::make_unique<eage::ecs::RenderSystem>( *mRenderer, *mECSRegistry );
 
 	// Initialize SceneController
 	mSceneController = std::make_unique<SceneController>();
 	mSceneController->AddScene( static_cast<int>( config::SceneID::MAIN_SCENE ), 
-		std::make_unique<MainScene>( *mRenderer, *mInputController, *mAudioMixer, *mECSRegistry, *mRenderSystem ) );
+		std::make_unique<MainScene>( *mRenderer, *mInputController, *mECSRegistry, *mAudioSystem, *mRenderSystem ) );
 	mSceneController->ChangeScene( static_cast<int>( config::SceneID::MAIN_SCENE ) );
 
 	return true;

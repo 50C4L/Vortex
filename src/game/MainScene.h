@@ -26,13 +26,9 @@ namespace events
 	class InputController;
 }
 
-namespace audio
-{
-	class AudioMixer;
-}
-
 namespace eage::ecs
 {
+	class AudioSystem;
 	class ECSRegistry;
 	class RenderSystem;
 }
@@ -47,8 +43,8 @@ namespace vortex
 	{
 	public:
 		MainScene( eage::graphics::Renderer& renderer, events::InputController& input_controller, 
-				   audio::AudioMixer& audio_mixer, eage::ecs::ECSRegistry& ecs_registry,
-				   eage::ecs::RenderSystem& render_system );
+				   eage::ecs::ECSRegistry& ecs_registry,
+				   eage::ecs::AudioSystem& audio_system, eage::ecs::RenderSystem& render_system );
 		virtual ~MainScene();
 
 		virtual void OnEnter() override;
@@ -66,8 +62,8 @@ namespace vortex
 
 		eage::graphics::Renderer& mRenderer;
 		events::InputController& mInputController;
-		audio::AudioMixer& mAudioMixer;
 		eage::ecs::ECSRegistry& mECSRegistry;
+		eage::ecs::AudioSystem& mAudioSystem;
 		eage::ecs::RenderSystem& mRenderSystem;
 
 		std::unique_ptr<PlayerInputSystem> mPlayerInputSystem;

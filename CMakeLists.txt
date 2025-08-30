@@ -17,8 +17,6 @@ add_executable(Vortex
 	./src/game/GameConfig.h
 	./src/game/MainScene.h
 	./src/game/MainScene.cpp
-	./src/game/Player.h
-	./src/game/Player.cpp
 	./src/game/components/PlayerComponents.h
 	./src/game/systems/PlayerInputSystem.h
 	./src/game/systems/PlayerInputSystem.cpp

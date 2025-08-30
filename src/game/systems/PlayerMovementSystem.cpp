@@ -1,5 +1,6 @@
 #include "PlayerMovementSystem.h"
 
+#include <ecs/components/Audio.h>
 #include <ecs/components/Basics.h>
 
 #include "../components/PlayerComponents.h"
@@ -29,6 +30,21 @@ PlayerMovementSystem::Update( float delta_time_sec )
 			auto& transform = mRegistry.GetComponent<eage::ecs::TransformComponent>( entity );
 			
 			UpdatePlayerMovement(player, movement, transform, delta_time_sec);
+
+			// Audio logic specific to player thrust
+			if( mRegistry.HasComponent<AudioEventComponent>( entity ) )
+			{
+				auto& audio_event = mRegistry.GetComponent<AudioEventComponent>( entity );
+				
+				if( player.thruster_on )
+				{
+					audio_event.QueueEvent( AudioEventComponent::EventType::Play );
+				}
+				else
+				{
+					audio_event.QueueEvent( AudioEventComponent::EventType::Stop );
+				}
+			}
 		}
 	}
 }
@@ -56,7 +72,7 @@ PlayerMovementSystem::UpdatePlayerMovement( PlayerComponent& player_comp,
 	glm::vec3 forward = transform_comp.rotation * player_comp.forward;
 
 	// Thrust
-	if( player_comp.thrusting )
+	if( player_comp.thruster_on )
 	{
 		velocity_comp.velocity += forward * player_comp.thrust_acceleration * delta_time_sec;
 		

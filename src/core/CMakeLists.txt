@@ -102,8 +102,11 @@ add_library(eage_core STATIC
 
 	./ecs/ECS.h
 	./ecs/ResourceManager.h
+	./ecs/components/Audio.h
 	./ecs/components/Basics.h
 	./ecs/components/Render.h
+	./ecs/systems/AudioSystem.h
+	./ecs/systems/AudioSystem.cpp
 	./ecs/systems/RenderSystem.h
 	./ecs/systems/RenderSystem.cpp
 

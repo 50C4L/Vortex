@@ -39,7 +39,7 @@ PlayerInputSystem::OnInputEvent( uint64_t event_id, bool on )
 				player.turning_right = on;
 				break;
 			case GameEvents::PLAYER_THRUST:
-				player.thrusting = on;
+				player.thruster_on = on;
 				break;
 		}
 	}

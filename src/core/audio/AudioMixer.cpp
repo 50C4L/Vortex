@@ -5,7 +5,7 @@
 
 #include <utility/Logger.h>
 
-using namespace audio;
+using namespace eage::audio;
 
 SoundInstance::SoundInstance( ma_engine& engine, const std::string sound_path )
 	: mEngine( engine )

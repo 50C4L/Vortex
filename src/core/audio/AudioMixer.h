@@ -8,7 +8,7 @@
 struct ma_engine;
 struct ma_sound;
 
-namespace audio
+namespace eage::audio
 {
 	///
 	/// Instance of a sound file, it's loaded into memory asynchroniously.

@@ -10,7 +10,7 @@ namespace vortex
 		// Movement state
 		bool turning_left = false;
 		bool turning_right = false;
-		bool thrusting = false;
+		bool thruster_on = false;
 
 		// Player properties
 		glm::vec3 forward = glm::vec3(0.0f, 1.0f, 0.0f);

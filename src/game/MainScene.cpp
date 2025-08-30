@@ -19,12 +19,12 @@
 #include <assets/ImageLoader.h>
 #include <assets/TextureAtlas.h>
 
+#include <ecs/systems/AudioSystem.h>
 #include <ecs/systems/RenderSystem.h>
 #include <ecs/components/Basics.h>
 #include <ecs/components/Render.h>
 
 #include "GameConfig.h"
-#include "Player.h"
 #include "systems/PlayerInputSystem.h"
 #include "systems/PlayerMovementSystem.h"
 #include "components/PlayerComponents.h"
@@ -44,12 +44,12 @@ namespace
 	};
 }
 
-MainScene::MainScene( eage::graphics::Renderer& renderer, events::InputController& input_controller, audio::AudioMixer& audio_mixer,
-					  eage::ecs::ECSRegistry& ecs_registry, eage::ecs::RenderSystem& render_system )
+MainScene::MainScene( eage::graphics::Renderer& renderer, events::InputController& input_controller,
+					  eage::ecs::ECSRegistry& ecs_registry, eage::ecs::AudioSystem& audio_system, eage::ecs::RenderSystem& render_system )
 	: mRenderer( renderer )
 	, mInputController( input_controller )
-	, mAudioMixer( audio_mixer )
 	, mECSRegistry( ecs_registry )
+	, mAudioSystem( audio_system )
 	, mRenderSystem( render_system )
 	, mLastUpdateTime( std::chrono::high_resolution_clock::now() )
 {
@@ -75,11 +75,6 @@ MainScene::OnEnter()
 
 	// Create player entity
 	CreatePlayerEntity();
-	
-	// Game objects - pass the sprite material resource ID to Player
-	// mPlayer = std::make_unique<Player>( mRenderer, mInputController, mECSRegistry, mRenderSystem );
-	// mPlayer->Init( mSpriteMaterialId,
-	// 			   std::make_unique<audio::SoundInstance>( mAudioMixer.CreateSound( "./resources/sounds/thruster.mp3" ) ) );
 
 	float half_width = static_cast<float>( config::DesignResolution::WIDTH ) / 2.f;
 	float half_height = static_cast<float>( config::DesignResolution::HEIGHT ) / 2.f;
@@ -159,8 +154,6 @@ MainScene::CreatePlayerEntity()
 
 	// Player component with all player-specific data
 	PlayerComponent player;
-	// player.engine_sound = std::make_unique<audio::SoundInstance>(
-	// 	mAudioMixer.CreateSound("./resources/sounds/thruster.mp3"));
 	mECSRegistry.AddComponent( mPlayerEntity, std::move(player) );
 	
 	// Velocity component
@@ -205,5 +198,11 @@ MainScene::CreatePlayerEntity()
 		ship_descriptor_id 
 	} );
 
-	// @todo audio component
+	// Audio components
+	AudioSourceComponent thrust_audio;
+	thrust_audio.sound_path = "./resources/sounds/thruster.mp3";
+	thrust_audio.sound_resource_id = mAudioSystem.LoadSound( thrust_audio.sound_path );
+	thrust_audio.should_loop = true;
+	mECSRegistry.AddComponent( mPlayerEntity, std::move(thrust_audio) );
+	mECSRegistry.AddComponent( mPlayerEntity, AudioEventComponent{}) ;
 }

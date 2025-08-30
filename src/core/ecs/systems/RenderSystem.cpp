@@ -262,7 +262,7 @@ RenderSystem::GetSampler( ResourceId id )
 	return sampler_ptr ? sampler_ptr->get() : vk::Sampler{};
 }
 
-void RenderSystem::PrepareRenderInfo()
+void RenderSystem::Update()
 {
 	auto& renderable_entities = mECSRegistry.GetComponentMap<RenderComponent>();
 	for( const auto& [entity, render_cmp] : renderable_entities )

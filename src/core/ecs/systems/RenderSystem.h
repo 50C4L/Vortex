@@ -51,7 +51,7 @@ namespace eage::ecs
 		eage::graphics::AbstractUniformDescriptor* GetDescriptorSet( ResourceId id );
 		vk::Sampler GetSampler( ResourceId id );
 
-		void PrepareRenderInfo();
+		void Update();
 
 	private:
 		std::shared_ptr<eage::graphics::RenderPipeline> CreateOrGetPipeline(
