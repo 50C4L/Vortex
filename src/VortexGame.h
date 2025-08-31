@@ -25,6 +25,7 @@ namespace eage::ecs
 	class AudioSystem;
 	class ECSRegistry;
 	class RenderSystem;
+	class SceneGraphSystem;
 }
 
 namespace vortex
@@ -49,6 +50,7 @@ namespace vortex
 		std::unique_ptr<eage::audio::AudioMixer> mAudioMixer;
 		std::unique_ptr<eage::ecs::ECSRegistry> mECSRegistry;
 		std::unique_ptr<eage::ecs::AudioSystem> mAudioSystem;
+		std::unique_ptr<eage::ecs::SceneGraphSystem> mSceneGraphSystem;
 		std::unique_ptr<eage::ecs::RenderSystem> mRenderSystem;
 	};
 }

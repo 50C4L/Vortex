@@ -88,7 +88,8 @@ PlayerMovementSystem::UpdatePlayerMovement( PlayerComponent& player_comp,
 	{
 		float angle_rad = glm::radians( velocity_comp.angular_velocity * delta_time_sec );
 		glm::quat delta_rot = glm::angleAxis( angle_rad, glm::vec3( 0.0f, 0.0f, 1.0f ) );
-		transform_comp.rotation = glm::normalize( delta_rot * transform_comp.rotation );
+		transform_comp.SetRotation( glm::normalize( delta_rot * transform_comp.rotation ) );
 	}
 	transform_comp.position += velocity_comp.velocity * delta_time_sec;
+	transform_comp.MarkDirty();
 }

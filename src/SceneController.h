@@ -22,6 +22,8 @@ namespace vortex
 
 		void FreeAllScenes();
 
+		uint64_t GetCurrentSceneRoot();
+
 	private:
 		std::unordered_map<int, std::unique_ptr<AbstractScene>> mScenes;
 		AbstractScene* mCurrentScene;

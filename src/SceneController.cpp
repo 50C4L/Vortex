@@ -58,3 +58,13 @@ SceneController::FreeAllScenes()
 	mCurrentScene = nullptr;
 	mCurrentSceneId = -1;
 }
+
+uint64_t
+SceneController::GetCurrentSceneRoot()
+{
+	if( mCurrentScene )
+	{
+		return mCurrentScene->GetSceneRoot();
+	}
+	return 0;
+}

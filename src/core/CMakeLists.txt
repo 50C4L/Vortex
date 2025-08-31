@@ -109,6 +109,8 @@ add_library(eage_core STATIC
 	./ecs/systems/AudioSystem.cpp
 	./ecs/systems/RenderSystem.h
 	./ecs/systems/RenderSystem.cpp
+	./ecs/systems/SceneGraphSystem.h
+	./ecs/systems/SceneGraphSystem.cpp
 
 	./utility/Filesystem.h
 	./utility/Pointers.h

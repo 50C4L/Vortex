@@ -1,6 +1,8 @@
 #ifndef _ABSTRACT_SCENE_H
 #define _ABSTRACT_SCENE_H
 
+#include <cstdint>
+
 namespace vortex
 {
 	class AbstractScene
@@ -10,6 +12,7 @@ namespace vortex
 		virtual ~AbstractScene() {}
 
 		virtual void OnEnter() = 0;
+		virtual uint64_t GetSceneRoot() = 0;
 		virtual void Update() = 0;
 		virtual void OnExit() = 0;
 	};

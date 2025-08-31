@@ -14,6 +14,7 @@
 #include <ecs/ECS.h>
 #include <ecs/systems/AudioSystem.h>
 #include <ecs/systems/RenderSystem.h>
+#include <ecs/systems/SceneGraphSystem.h>
 
 #include "SceneController.h"
 #include "game/MainScene.h"
@@ -58,6 +59,7 @@ VortexGame::Run()
 		mSceneController->Update();
 
 		mAudioSystem->Update( 0.f );
+		mSceneGraphSystem->Update();
 		mRenderSystem->Update();
 		mRenderer->Render();
 	}
@@ -114,6 +116,9 @@ VortexGame::Init()
 	// Initialize AudioSystem
 	mAudioSystem = std::make_unique<eage::ecs::AudioSystem>( *mECSRegistry, *mAudioMixer );
 
+	// Initialize SceneGraphSystem
+	mSceneGraphSystem = std::make_unique<eage::ecs::SceneGraphSystem>( *mECSRegistry );
+
 	// Initialize RenderSystem
 	mRenderSystem = std::make_unique<eage::ecs::RenderSystem>( *mRenderer, *mECSRegistry );
 
@@ -122,6 +127,7 @@ VortexGame::Init()
 	mSceneController->AddScene( static_cast<int>( config::SceneID::MAIN_SCENE ), 
 		std::make_unique<MainScene>( *mRenderer, *mInputController, *mECSRegistry, *mAudioSystem, *mRenderSystem ) );
 	mSceneController->ChangeScene( static_cast<int>( config::SceneID::MAIN_SCENE ) );
+	mSceneGraphSystem->SetSceneRoot( mSceneController->GetCurrentSceneRoot() );
 
 	return true;
 }

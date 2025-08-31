@@ -321,7 +321,7 @@ void RenderSystem::Update()
 		if( mECSRegistry.HasComponent<TransformComponent>(entity) )
 		{
 			auto& transform = mECSRegistry.GetComponent<TransformComponent>(entity);
-			render_info.model_matrix = transform.ToMatrix();
+			render_info.model_matrix = transform.GetWorldMatrix();
 		}
 		else
 		{

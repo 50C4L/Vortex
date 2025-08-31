@@ -67,19 +67,24 @@ MainScene::OnEnter()
 	// Set the ImGUI render function
 	mRenderer.SetImGUIRenderFunction( [&](){ DrawDebugGUI(); } );
 
-	// Prepare meshes
 	PrepareMeshes();
 
-	// Prepare materials
 	PrepareMaterials();
 
-	// Create player entity
+	CreateSceneRoot();
+
 	CreatePlayerEntity();
 
 	float half_width = static_cast<float>( config::DesignResolution::WIDTH ) / 2.f;
 	float half_height = static_cast<float>( config::DesignResolution::HEIGHT ) / 2.f;
 	mCamera = std::make_shared<eage::graphics::OrthographicCamera>( half_width * -1.f, half_width, half_height * -1.f, half_height, 0.1f, 100.0f );
 	mCamera->SetPosition( { 0, 0, 2.f } );
+}
+
+uint64_t
+MainScene::GetSceneRoot()
+{
+	return mSceneRootEntity;
 }
 
 void
@@ -144,6 +149,18 @@ MainScene::DrawDebugGUI()
 	ImGui::End();
 }
 
+void 
+MainScene::CreateSceneRoot()
+{
+	mSceneRootEntity = mECSRegistry.CreateEntity();
+
+	// Root identity transform
+	mECSRegistry.AddComponent( mSceneRootEntity, eage::ecs::TransformComponent{} );
+
+	// Root relationship component
+	mECSRegistry.AddComponent( mSceneRootEntity, eage::ecs::RelationshipComponent{} );
+}
+
 void
 MainScene::CreatePlayerEntity()
 {
@@ -151,6 +168,13 @@ MainScene::CreatePlayerEntity()
 	mPlayerMovementSystem = std::make_unique<PlayerMovementSystem>( mECSRegistry );
 
 	mPlayerEntity = mECSRegistry.CreateEntity();
+
+	// Set parent-child relationship with scene root
+	auto& root = mECSRegistry.GetComponent<eage::ecs::RelationshipComponent>( mSceneRootEntity );
+	root.children_entities.push_back( mPlayerEntity );
+	eage::ecs::RelationshipComponent player_relationship;
+	player_relationship.parent_entity = mSceneRootEntity;
+	mECSRegistry.AddComponent( mPlayerEntity, std::move( player_relationship ) );
 
 	// Player component with all player-specific data
 	PlayerComponent player;

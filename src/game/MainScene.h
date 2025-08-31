@@ -48,8 +48,8 @@ namespace vortex
 		virtual ~MainScene();
 
 		virtual void OnEnter() override;
+		virtual uint64_t GetSceneRoot() override;
 		virtual void OnExit() override;
-
 		virtual void Update() override;
 
 		void PrepareMeshes();
@@ -58,6 +58,7 @@ namespace vortex
 	private:
 		void DrawDebugGUI();
 
+		void CreateSceneRoot();
 		void CreatePlayerEntity();
 
 		eage::graphics::Renderer& mRenderer;
@@ -73,6 +74,7 @@ namespace vortex
 
 		eage::ecs::ResourceId mSpriteMaterialId;
 
+		uint64_t mSceneRootEntity = 0;
 		uint64_t mPlayerEntity = 0;
 
 		std::chrono::time_point<std::chrono::steady_clock> mLastUpdateTime;
