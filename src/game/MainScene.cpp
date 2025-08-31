@@ -26,7 +26,7 @@
 
 #include "GameConfig.h"
 #include "systems/PlayerInputSystem.h"
-#include "systems/PlayerMovementSystem.h"
+#include "systems/PlayerGameplaySystem.h"
 #include "components/PlayerComponents.h"
 
 using namespace vortex;
@@ -101,7 +101,7 @@ MainScene::Update()
 	mLastUpdateTime = current_time;
 
 	// player input
-	mPlayerMovementSystem->Update( delta_time_ms.count() / 1000.f );
+	mPlayerGameplaySystem->Update( delta_time_ms.count() / 1000.f );
 
 	// Update camera
 	auto current_frame = mRenderer.GetCurrentFrameIndex();
@@ -165,7 +165,7 @@ void
 MainScene::CreatePlayerEntity()
 {
 	mPlayerInputSystem = std::make_unique<PlayerInputSystem>( mECSRegistry, mInputController );
-	mPlayerMovementSystem = std::make_unique<PlayerMovementSystem>( mECSRegistry );
+	mPlayerGameplaySystem = std::make_unique<PlayerGameplaySystem>( mECSRegistry );
 
 	mPlayerEntity = mECSRegistry.CreateEntity();
 

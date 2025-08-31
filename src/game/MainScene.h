@@ -37,7 +37,7 @@ namespace vortex
 {
 	class Player;
 	class PlayerInputSystem;
-	class PlayerMovementSystem;
+	class PlayerGameplaySystem;
 
 	class MainScene : public AbstractScene
 	{
@@ -68,7 +68,7 @@ namespace vortex
 		eage::ecs::RenderSystem& mRenderSystem;
 
 		std::unique_ptr<PlayerInputSystem> mPlayerInputSystem;
-		std::unique_ptr<PlayerMovementSystem> mPlayerMovementSystem;
+		std::unique_ptr<PlayerGameplaySystem> mPlayerGameplaySystem;
 
 		std::shared_ptr<eage::graphics::OrthographicCamera> mCamera;
 

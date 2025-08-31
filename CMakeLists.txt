@@ -20,8 +20,8 @@ add_executable(Vortex
 	./src/game/components/PlayerComponents.h
 	./src/game/systems/PlayerInputSystem.h
 	./src/game/systems/PlayerInputSystem.cpp
-	./src/game/systems/PlayerMovementSystem.h
-	./src/game/systems/PlayerMovementSystem.cpp
+	./src/game/systems/PlayerGameplaySystem.h
+	./src/game/systems/PlayerGameplaySystem.cpp
 )
 
 target_link_libraries(Vortex PRIVATE

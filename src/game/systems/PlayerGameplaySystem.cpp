@@ -1,4 +1,4 @@
-#include "PlayerMovementSystem.h"
+#include "PlayerGameplaySystem.h"
 
 #include <ecs/components/Audio.h>
 #include <ecs/components/Basics.h>
@@ -8,17 +8,17 @@
 
 using namespace vortex;
 
-PlayerMovementSystem::PlayerMovementSystem( eage::ecs::ECSRegistry& registry )
+PlayerGameplaySystem::PlayerGameplaySystem( eage::ecs::ECSRegistry& registry )
 	: mRegistry(registry)
 {
 }
 
-PlayerMovementSystem::~PlayerMovementSystem() 
+PlayerGameplaySystem::~PlayerGameplaySystem() 
 {
 }
 
 void
-PlayerMovementSystem::Update( float delta_time_sec )
+PlayerGameplaySystem::Update( float delta_time_sec )
 {
 	// Get only entities with PlayerComponent (much smaller set)
 	for( auto& [entity, player] : mRegistry.GetComponentMap<PlayerComponent>() )
@@ -58,7 +58,7 @@ PlayerMovementSystem::Update( float delta_time_sec )
 }
 
 void
-PlayerMovementSystem::UpdatePlayerMovement( PlayerComponent& player_comp, 
+PlayerGameplaySystem::UpdatePlayerMovement( PlayerComponent& player_comp, 
 											eage::ecs::Velocity2DComponent& velocity_comp,
 											eage::ecs::TransformComponent& transform_comp,
 											float delta_time_sec )

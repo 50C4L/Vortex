@@ -1,5 +1,5 @@
-#ifndef _VORTEX_PLAYER_MOVEMENT_SYSTEM_H
-#define _VORTEX_PLAYER_MOVEMENT_SYSTEM_H
+#ifndef _VORTEX_PLAYER_GAMEPLAY_SYSTEM_H
+#define _VORTEX_PLAYER_GAMEPLAY_SYSTEM_H
 
 #include <ecs/ECS.h>
 
@@ -15,11 +15,11 @@ namespace vortex
 {
 	struct PlayerComponent;
 
-	class PlayerMovementSystem 
+	class PlayerGameplaySystem 
 	{
 	public:
-		PlayerMovementSystem( eage::ecs::ECSRegistry& registry );
-		~PlayerMovementSystem();
+		PlayerGameplaySystem( eage::ecs::ECSRegistry& registry );
+		~PlayerGameplaySystem();
 		
 		void Update( float delta_time );
 		
@@ -33,4 +33,4 @@ namespace vortex
 	};
 }
 
-#endif // _VORTEX_PLAYER_MOVEMENT_SYSTEM_H
+#endif // _VORTEX_PLAYER_GAMEPLAY_SYSTEM_H
