@@ -158,7 +158,7 @@ MainScene::CreateSceneRoot()
 	mECSRegistry.AddComponent( mSceneRootEntity, eage::ecs::TransformComponent{} );
 
 	// Root relationship component
-	mECSRegistry.AddComponent( mSceneRootEntity, eage::ecs::RelationshipComponent{} );
+	mECSRegistry.AddComponent( mSceneRootEntity, eage::ecs::SceneGraphComponment{} );
 }
 
 void
@@ -170,9 +170,9 @@ MainScene::CreatePlayerEntity()
 	mPlayerEntity = mECSRegistry.CreateEntity();
 
 	// Set parent-child relationship with scene root
-	auto& root = mECSRegistry.GetComponent<eage::ecs::RelationshipComponent>( mSceneRootEntity );
+	auto& root = mECSRegistry.GetComponent<eage::ecs::SceneGraphComponment>( mSceneRootEntity );
 	root.children_entities.push_back( mPlayerEntity );
-	eage::ecs::RelationshipComponent player_relationship;
+	eage::ecs::SceneGraphComponment player_relationship;
 	player_relationship.parent_entity = mSceneRootEntity;
 	mECSRegistry.AddComponent( mPlayerEntity, std::move( player_relationship ) );
 

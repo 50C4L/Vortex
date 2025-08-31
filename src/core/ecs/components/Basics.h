@@ -70,7 +70,7 @@ namespace eage::ecs
 		float angular_velocity = 0.0f; // In degrees per second
 	};
 
-	struct RelationshipComponent
+	struct SceneGraphComponment
 	{
 		uint64_t parent_entity = 0; // 0 means no parent
 		std::vector<uint64_t> children_entities;
