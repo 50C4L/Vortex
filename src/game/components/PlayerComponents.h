@@ -17,6 +17,8 @@ namespace vortex
 		float max_thrust_speed = 200.f;
 		float thrust_acceleration = 100.f;
 		float rotation_speed = 200.f; // degrees per second
+
+		uint64_t thruster_fx_entity = 0; // Entity ID of the thruster effect
 	};
 }
 

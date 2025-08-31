@@ -178,7 +178,7 @@ MainScene::CreatePlayerEntity()
 
 	// Player component with all player-specific data
 	PlayerComponent player;
-	mECSRegistry.AddComponent( mPlayerEntity, std::move(player) );
+	mECSRegistry.AddComponent( mPlayerEntity, std::move( player ) );
 	
 	// Velocity component
 	mECSRegistry.AddComponent( mPlayerEntity, eage::ecs::Velocity2DComponent{} );
@@ -229,4 +229,47 @@ MainScene::CreatePlayerEntity()
 	thrust_audio.should_loop = true;
 	mECSRegistry.AddComponent( mPlayerEntity, std::move(thrust_audio) );
 	mECSRegistry.AddComponent( mPlayerEntity, AudioEventComponent{}) ;
+
+	// Create Thruster entity - child of ship
+	auto thruster_entity = mECSRegistry.CreateEntity();
+
+	// Set parent-child relationship with player entity
+	auto& player_scene = mECSRegistry.GetComponent<eage::ecs::SceneGraphComponment>( mPlayerEntity );
+	player_scene.children_entities.push_back( thruster_entity );
+	auto& player_cmp = mECSRegistry.GetComponent<PlayerComponent>( mPlayerEntity );
+	player_cmp.thruster_fx_entity = thruster_entity;
+
+	// Thruster transform component
+	eage::ecs::TransformComponent thruster_transform;
+	thruster_transform.SetPosition( glm::vec3(0.0f, -30.f, 0.0f) ); // Behind ship in local space
+	thruster_transform.SetScale( glm::vec3( 1 / 5.f ) );
+	mECSRegistry.AddComponent( thruster_entity, std::move(thruster_transform) );
+
+	const auto& thrust_tex = texture_atlas.GetSubTexture( "ship_thrust_fx.png" );
+	rect.vertices[0].uv_x = thrust_tex.uv_max.x;
+	rect.vertices[0].uv_y = thrust_tex.uv_min.y;
+	rect.vertices[1].uv_x = thrust_tex.uv_max.x;
+	rect.vertices[1].uv_y = thrust_tex.uv_max.y;
+	rect.vertices[2].uv_x = thrust_tex.uv_min.x;
+	rect.vertices[2].uv_y = thrust_tex.uv_min.y;
+	rect.vertices[3].uv_x = thrust_tex.uv_min.x;
+	rect.vertices[3].uv_y = thrust_tex.uv_max.y;
+
+	// Create thruster mesh through RenderSystem
+	auto thrust_mesh_id = mRenderSystem.CreateMeshBuffer( rect.indices, rect.vertices, 0, 6, 0 );
+	auto thrust_uniform_buffer_id = mRenderSystem.CreateDynamicUniformBuffer( sizeof(eage::graphics::MeshUniformData) );
+	auto thrust_descriptor_id = mRenderSystem.CreateDynamicDescriptorSet( mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() );
+	mRenderSystem.GetDescriptorSet( thrust_descriptor_id )->WriteBuffer(
+		0, // binding
+		vk::DescriptorType::eUniformBufferDynamic,
+		mRenderSystem.GetUniformBuffer( thrust_uniform_buffer_id )->buffer,
+		sizeof(eage::graphics::MeshUniformData) );
+
+	// Add ECS RenderComponent with the new resource IDs
+	mECSRegistry.AddComponent( thruster_entity, eage::ecs::RenderComponent{ 
+		thrust_mesh_id, 
+		mSpriteMaterialId, 
+		thrust_uniform_buffer_id, 
+		thrust_descriptor_id 
+	} );
 }

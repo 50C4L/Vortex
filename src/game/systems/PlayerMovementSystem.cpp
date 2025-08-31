@@ -2,6 +2,7 @@
 
 #include <ecs/components/Audio.h>
 #include <ecs/components/Basics.h>
+#include <ecs/components/Render.h>
 
 #include "../components/PlayerComponents.h"
 
@@ -30,6 +31,13 @@ PlayerMovementSystem::Update( float delta_time_sec )
 			auto& transform = mRegistry.GetComponent<eage::ecs::TransformComponent>( entity );
 			
 			UpdatePlayerMovement(player, movement, transform, delta_time_sec);
+
+			if( player.thruster_fx_entity != 0 &&
+			 	mRegistry.HasComponent<eage::ecs::RenderComponent>( player.thruster_fx_entity ) )
+			{
+				auto& thruster_render = mRegistry.GetComponent<eage::ecs::RenderComponent>( player.thruster_fx_entity );
+				thruster_render.visible = player.thruster_on;
+			}
 
 			// Audio logic specific to player thrust
 			if( mRegistry.HasComponent<AudioEventComponent>( entity ) )
