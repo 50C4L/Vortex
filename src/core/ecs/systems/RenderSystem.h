@@ -27,6 +27,9 @@ namespace eage::graphics
 
 namespace eage::ecs
 {
+	///
+	/// RenderSystem: Manages rendering resources and convert ECS components to RenderInfo for rendering
+	///
 	class RenderSystem
 	{
 	public:

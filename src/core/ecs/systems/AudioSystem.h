@@ -16,6 +16,9 @@ namespace eage::ecs
 {
 	class ECSRegistry;
 
+	///
+	/// AudioSystem: Manages audio resources and processes audio events from ECS components
+	///
 	class AudioSystem
 	{
 	public:
@@ -23,6 +26,7 @@ namespace eage::ecs
 		
 		void Update( float delta_time );
 
+		// Load a sound and return its ResourceId, or existing ID if already loaded
 		eage::ecs::ResourceId LoadSound( const std::string& sound_path );
 		
 	private:

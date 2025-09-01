@@ -8,6 +8,9 @@ namespace vortex
 {
 	class AbstractScene;
 
+	///
+	/// SceneController: Manages scene transitions and updates the current scene
+	///
 	class SceneController
 	{
 	public:

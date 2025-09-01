@@ -15,6 +15,9 @@ namespace vortex
 {
 	struct PlayerComponent;
 
+	///
+	/// PlayerGameplaySystem: Updates player movement and gameplay logic
+	///
 	class PlayerGameplaySystem 
 	{
 	public:

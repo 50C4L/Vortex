@@ -8,12 +8,18 @@ namespace eage::ecs
 {
 	class ECSRegistry;
 
+	///
+	/// SceneGraphSystem: Updates world transforms based on parent-child relationships
+	///
 	class SceneGraphSystem
 	{
 	public:
 		SceneGraphSystem( ECSRegistry& ecs_registry );
 		~SceneGraphSystem();
 
+		///
+		/// Set the root entity of the scene graph
+		///
 		void SetSceneRoot( uint64_t entity );
 
 		void Update();

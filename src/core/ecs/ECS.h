@@ -12,6 +12,9 @@ namespace ecs
 {
 using Entity = uint64_t;
 
+///
+/// ECSRegistry: Manages entities and their components
+///
 class ECSRegistry
 {
 public:
@@ -20,11 +23,20 @@ public:
 	ECSRegistry(const ECSRegistry&) = delete;
 	ECSRegistry& operator=(const ECSRegistry&) = delete;
 
+	///
+	/// Create a new entity
+	///
+	/// @return
+	///   New entity ID
+	/// 
 	Entity CreateEntity()
 	{
 		return mNextEntity++;
 	}
 
+	///
+	/// Add a component to an entity
+	///
 	template<typename T>
 	void AddComponent(Entity e, T&& component )
 	{
@@ -32,6 +44,9 @@ public:
 		map.emplace( e, std::move(component) );
 	}
 
+	///
+	/// Check if an entity has a specific component
+	///
 	template<typename T>
 	bool HasComponent(Entity e) const
 	{
@@ -39,12 +54,18 @@ public:
 		return map.find(e) != map.end();
 	}
 
+	///
+	/// Get a component of an entity
+	///
 	template<typename T>
 	T& GetComponent(Entity e)
 	{
 		return GetComponentMap<T>().at(e);
 	}
 
+	///
+	/// Get a map of all entities and their components of a specific type
+	///
 	template<typename T>
 	const std::unordered_map<Entity, T>& GetComponentMap() const
 	{
@@ -52,6 +73,9 @@ public:
 		return std::any_cast<const std::unordered_map<Entity, T>&>(components.at(type));
 	}
 
+	///
+	/// Get a map of all entities and their components of a specific type (non-const)
+	///
 	template<typename T>
 	std::unordered_map<Entity, T>& GetComponentMap() 
 	{

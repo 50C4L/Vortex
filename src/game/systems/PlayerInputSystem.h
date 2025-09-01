@@ -6,6 +6,9 @@
 
 namespace vortex
 {
+	///
+	/// PlayerInputSystem: Maps input events to player actions and updates ECS components
+	///
 	class PlayerInputSystem final : public events::InputController::Observer
 	{
 	public:
