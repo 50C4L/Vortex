@@ -12,3 +12,4 @@ Thirdparty dependencies (put the headers and libs under ./thirdparty/{config}/in
  - stb_image
  - miniaudio 0.11.21
  - rapidjson
+ - box2D

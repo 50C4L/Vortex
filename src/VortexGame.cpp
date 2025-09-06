@@ -13,6 +13,7 @@
 #include <audio/AudioMixer.h>
 #include <ecs/ECS.h>
 #include <ecs/systems/AudioSystem.h>
+#include <ecs/systems/PhysicsSystem.h>
 #include <ecs/systems/RenderSystem.h>
 #include <ecs/systems/SceneGraphSystem.h>
 
@@ -58,6 +59,7 @@ VortexGame::Run()
 		// @todo: delta time should be calulated here and pass down
 		mSceneController->Update();
 
+		mPhysicsSystem->Update();
 		mAudioSystem->Update( 0.f );
 		mSceneGraphSystem->Update();
 		mRenderSystem->Update();
@@ -121,6 +123,10 @@ VortexGame::Init()
 
 	// Initialize RenderSystem
 	mRenderSystem = std::make_unique<eage::ecs::RenderSystem>( *mRenderer, *mECSRegistry );
+
+	// Initialize PhysicsSystem
+	mPhysicsSystem = std::make_unique<eage::ecs::PhysicsSystem>( *mECSRegistry );
+	mPhysicsSystem->Initialize( { 0.f, 0.f } ); // No gravity in space
 
 	// Initialize SceneController
 	mSceneController = std::make_unique<SceneController>();

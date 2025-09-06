@@ -60,6 +60,7 @@ namespace vortex
 
 		void CreateSceneRoot();
 		void CreatePlayerEntity();
+		void CreateScreenZoneEntities();
 
 		eage::graphics::Renderer& mRenderer;
 		events::InputController& mInputController;
@@ -76,6 +77,7 @@ namespace vortex
 
 		uint64_t mSceneRootEntity = 0;
 		uint64_t mPlayerEntity = 0;
+		uint64_t mOnScreenZoneEntity = 0;
 
 		std::chrono::time_point<std::chrono::steady_clock> mLastUpdateTime;
 	};

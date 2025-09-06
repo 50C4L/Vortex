@@ -69,8 +69,16 @@ public:
 	template<typename T>
 	const std::unordered_map<Entity, T>& GetComponentMap() const
 	{
-		auto type = std::type_index(typeid(T));
-		return std::any_cast<const std::unordered_map<Entity, T>&>(components.at(type));
+		auto type = std::type_index( typeid(T) );
+		auto it = components.find( type );
+		
+		if( it == components.end() )
+		{
+			// Return empty map if component type doesn't exist
+			static const std::unordered_map<Entity, T> empty_map;
+			return empty_map;
+		}
+		return std::any_cast<const std::unordered_map<Entity, T>&>( it->second );
 	}
 
 	///

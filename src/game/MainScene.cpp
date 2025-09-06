@@ -22,6 +22,7 @@
 #include <ecs/systems/AudioSystem.h>
 #include <ecs/systems/RenderSystem.h>
 #include <ecs/components/Basics.h>
+#include <ecs/components/Physics.h>
 #include <ecs/components/Render.h>
 
 #include "GameConfig.h"
@@ -74,6 +75,8 @@ MainScene::OnEnter()
 	CreateSceneRoot();
 
 	CreatePlayerEntity();
+
+	CreateScreenZoneEntities();
 
 	float half_width = static_cast<float>( config::DesignResolution::WIDTH ) / 2.f;
 	float half_height = static_cast<float>( config::DesignResolution::HEIGHT ) / 2.f;
@@ -186,6 +189,16 @@ MainScene::CreatePlayerEntity()
 	// Transform component
 	mECSRegistry.AddComponent( mPlayerEntity, eage::ecs::TransformComponent{} );
 
+	// Physics component
+	eage::ecs::CollisionComponent player_collision;
+	player_collision.is_static = true;
+	mECSRegistry.AddComponent( mPlayerEntity, std::move( player_collision ) );
+
+	eage::ecs::CircleColliderComponent player_collider;
+	player_collider.radius = 25.f; // Approximate radius of the ship
+	mECSRegistry.AddComponent( mPlayerEntity, std::move( player_collider ) );
+
+	// Render component
 	assets::TextureAtlas texture_atlas( "./resources/textures/ship/ship_texatlas.json" );
 	texture_atlas.Flip();
 	const auto& ship_tex = texture_atlas.GetSubTexture( "player_ship.png" ); 
@@ -272,4 +285,28 @@ MainScene::CreatePlayerEntity()
 		thrust_uniform_buffer_id, 
 		thrust_descriptor_id 
 	} );
+}
+
+void 
+MainScene::CreateScreenZoneEntities()
+{
+	mOnScreenZoneEntity = mECSRegistry.CreateEntity();
+
+	// Set parent-child relationship with scene root
+	auto& root = mECSRegistry.GetComponent<eage::ecs::SceneGraphComponment>( mSceneRootEntity );
+	root.children_entities.push_back( mOnScreenZoneEntity );
+	eage::ecs::SceneGraphComponment screen_zone_relationship;
+	screen_zone_relationship.parent_entity = mSceneRootEntity;
+	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( screen_zone_relationship ) );
+
+	// Collision component
+	eage::ecs::CollisionComponent collision;
+	collision.is_static = true;
+	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( collision ) );
+
+	// Box collider component
+	eage::ecs::BoxColliderComponent box_collider;
+	box_collider.width = static_cast<float>( config::DesignResolution::WIDTH );
+	box_collider.height = static_cast<float>( config::DesignResolution::HEIGHT );
+	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( box_collider ) );
 }
