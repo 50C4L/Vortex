@@ -190,9 +190,10 @@ MainScene::CreatePlayerEntity()
 	mECSRegistry.AddComponent( mPlayerEntity, eage::ecs::TransformComponent{} );
 
 	// Physics component
-	eage::ecs::CollisionComponent player_collision;
-	player_collision.is_static = true;
-	mECSRegistry.AddComponent( mPlayerEntity, std::move( player_collision ) );
+	eage::ecs::PhysicsComponent player_physics;
+	player_physics.body_type = eage::ecs::PhysicsComponent::BodyType::DYNAMIC;
+	player_physics.is_sensor = true;
+	mECSRegistry.AddComponent( mPlayerEntity, std::move( player_physics ) );
 
 	eage::ecs::CircleColliderComponent player_collider;
 	player_collider.radius = 25.f; // Approximate radius of the ship
@@ -299,14 +300,18 @@ MainScene::CreateScreenZoneEntities()
 	screen_zone_relationship.parent_entity = mSceneRootEntity;
 	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( screen_zone_relationship ) );
 
+	// Add Transform component
+	mECSRegistry.AddComponent( mOnScreenZoneEntity, eage::ecs::TransformComponent{} );
+
 	// Collision component
-	eage::ecs::CollisionComponent collision;
-	collision.is_static = true;
-	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( collision ) );
+	eage::ecs::PhysicsComponent physics;
+	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( physics ) );
 
 	// Box collider component
 	eage::ecs::BoxColliderComponent box_collider;
-	box_collider.width = static_cast<float>( config::DesignResolution::WIDTH );
-	box_collider.height = static_cast<float>( config::DesignResolution::HEIGHT );
+	// box_collider.width = static_cast<float>( config::DesignResolution::WIDTH );
+	// box_collider.height = static_cast<float>( config::DesignResolution::HEIGHT );
+	box_collider.width = 100.0f;
+	box_collider.height = 100.0f;
 	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( box_collider ) );
 }

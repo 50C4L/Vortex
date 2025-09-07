@@ -43,14 +43,14 @@ PhysicsSystem::Initialize( glm::vec2 gravity )
 void
 PhysicsSystem::Update() 
 {
-	for( auto& [entity, collision] : mECSRegistry.GetComponentMap<CollisionComponent>() )
+	for( auto& [entity, physics] : mECSRegistry.GetComponentMap<PhysicsComponent>() )
 	{
 		if( !mECSRegistry.HasComponent<TransformComponent>( entity ) )
 		{
 			continue; // No collider component found
 		}
 
-		if( collision.body_id == INVALID_ID )
+		if( physics.body_id == INVALID_ID )
 		{
 			CreateCollisionBodyFromComponents( entity );
 		}
@@ -70,12 +70,27 @@ PhysicsSystem::Shutdown()
 void
 PhysicsSystem::CreateCollisionBodyFromComponents( uint64_t entity )
 {
-	auto& collision = mECSRegistry.GetComponent<CollisionComponent>( entity );
+	auto& physics = mECSRegistry.GetComponent<PhysicsComponent>( entity );
 	auto& transform = mECSRegistry.GetComponent<TransformComponent>( entity );
 
 	// Create Box2D body definition
 	b2BodyDef body_def = b2DefaultBodyDef();
-	body_def.type = collision.is_static ? b2_staticBody : b2_dynamicBody;
+	switch( physics.body_type )
+	{
+		case PhysicsComponent::BodyType::STATIC:
+			body_def.type = b2_staticBody;
+			break;
+		case PhysicsComponent::BodyType::DYNAMIC:
+			body_def.type = b2_dynamicBody;
+			break;
+		case PhysicsComponent::BodyType::KINEMATIC:
+			body_def.type = b2_kinematicBody;
+			break;
+		default:
+			LOG_ERROR() << "Unknown body type for entity " << entity << ". Defaulting to STATIC.";
+			body_def.type = b2_staticBody;
+			break;
+	}
 	body_def.position = b2Vec2{ transform.position.x, transform.position.y };
 	body_def.rotation = quat_to_b2rot( transform.rotation );
 
@@ -88,37 +103,39 @@ PhysicsSystem::CreateCollisionBodyFromComponents( uint64_t entity )
 	if( mECSRegistry.HasComponent<CircleColliderComponent>( entity ) )
 	{
 		auto& circle_collider = mECSRegistry.GetComponent<CircleColliderComponent>( entity );
-		mPhysicsEngine->AddCircleColliderToBody( *physics_body, circle_collider.radius, circle_collider.offset );
+		mPhysicsEngine->AddCircleColliderToBody( *physics_body, circle_collider.radius, physics.is_sensor, circle_collider.offset );
 	}
 
 	// Add box collider
 	if( mECSRegistry.HasComponent<BoxColliderComponent>( entity ) )
 	{
 		auto& box_collider = mECSRegistry.GetComponent<BoxColliderComponent>( entity );
-		mPhysicsEngine->AddBoxColliderToBody( *physics_body, box_collider.width, box_collider.height, box_collider.offset );
+		mPhysicsEngine->AddBoxColliderToBody( *physics_body, box_collider.width, box_collider.height, physics.is_sensor, box_collider.offset );
 	}
 
 	// @todo more collider types
 
+	LOG() << "Created body " << physics_body->mBodyId.index1 << " for entity " << entity;
+
 	// Store the body in the resource manager and save the ID in the component
-	collision.body_id = mBodyManager.Store( std::move( physics_body ) );
+	physics.body_id = mBodyManager.Store( std::move( physics_body ) );
 }
 
 void
 PhysicsSystem::SyncTransformToStaticBodies( uint64_t entity )
 {
-	auto& collision = mECSRegistry.GetComponent<CollisionComponent>( entity );
+	auto& physics = mECSRegistry.GetComponent<PhysicsComponent>( entity );
 	auto& transform = mECSRegistry.GetComponent<TransformComponent>( entity );
 
-	if( !collision.is_static || collision.body_id == INVALID_ID || !transform.dirty )
+	if( !physics.sync_transform_to_body || physics.body_id == INVALID_ID || !transform.dirty )
 	{
-		return; // Only sync static bodies with valid body IDs
+		return;
 	}
 
-	auto body = mBodyManager.Get( collision.body_id );
+	auto body = mBodyManager.Get( physics.body_id );
 	if( !body )
 	{
-		LOG_ERROR() << "Invalid body ID in CollisionComponent for entity " << entity;
+		LOG_ERROR() << "Invalid body ID in PhysicsComponent for entity " << entity;
 		return; // Invalid body ID
 	}
 

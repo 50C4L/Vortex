@@ -5,6 +5,7 @@
 using namespace eage::physics;
 using namespace utility;
 
+// PhysicsBody implementation
 PhysicsBody::PhysicsBody( b2BodyId body_id )
 	: mBodyId( body_id )
 {
@@ -15,6 +16,7 @@ PhysicsBody::~PhysicsBody()
 	b2DestroyBody( mBodyId );
 }
 
+// PhysicsEngine implementation
 PhysicsEngine::PhysicsEngine()
 	: mWorldId( b2_nullWorldId )
 	, mLastUpdateTime( std::chrono::steady_clock::now() )
@@ -39,6 +41,41 @@ PhysicsEngine::CreateWorld( glm::vec2 gravity )
 	mWorldId = b2CreateWorld( &world_def );
 
 	LOG() << "Physics world created with gravity: (" << gravity.x << ", " << gravity.y << ")";
+
+	mDebugDraw = {};
+	mDebugDraw.drawShapes = true;
+	mDebugDraw.DrawPolygon =
+		[]( const b2Vec2* vertices, int vertexCount, b2HexColor color, void* context )
+		{
+			// LOG() << "Physic shape polygon debug info: ";
+			// for( int i = 0; i < vertexCount; ++i )
+			// {
+			// 	LOG() << "  Vertex " << i << ": (" << vertices[i].x << ", " << vertices[i].y << ")";
+			// }
+		};
+	mDebugDraw.DrawSolidPolygon =
+		[]( b2Transform transform, const b2Vec2* vertices, int vertexCount, float radius, b2HexColor color, void* context )
+		{
+			// LOG() << "Physic shape solid polygon debug info at position: (" 
+			// 	  << transform.p.x << ", " << transform.p.y << ") rotation: " 
+			// 	  << b2Rot_GetAngle(transform.q) << " rad";
+			// for( int i = 0; i < vertexCount; ++i )
+			// {
+			// 	LOG() << "  Vertex " << i << ": (" << vertices[i].x << ", " << vertices[i].y << ")";
+			// }
+		};
+	mDebugDraw.DrawCircle =
+		[]( b2Vec2 center, float radius, b2HexColor color, void* context )
+		{
+			// LOG() << "Physic shape circle debug info: Center(" << center.x << ", " << center.y << "), Radius: " << radius;
+		};
+	mDebugDraw.DrawSolidCircle =
+		[]( b2Transform transform, float radius, b2HexColor color, void* context )
+		{
+			// LOG() << "Physic shape solid circle debug info at position: (" 
+			// 	  << transform.p.x << ", " << transform.p.y << ") rotation: " 
+			// 	  << b2Rot_GetAngle(transform.q) << " rad, Radius: " << radius;
+		};
 }
 
 std::unique_ptr<PhysicsBody>
@@ -53,29 +90,34 @@ PhysicsEngine::CreateBody( const b2BodyDef& body_def )
 }
 
 void
-PhysicsEngine::AddCircleColliderToBody( PhysicsBody& body, float radius, glm::vec2 offset )
+PhysicsEngine::AddCircleColliderToBody( PhysicsBody& body, float radius, bool is_sensor, glm::vec2 offset )
 {
 	b2Circle circle;
 	circle.center = b2Vec2{ offset.x, offset.y };
 	circle.radius = radius;
+
 	b2ShapeDef def = b2DefaultShapeDef();
+	def.isSensor = is_sensor;
+	def.enableSensorEvents = true;
 	b2CreateCircleShape( body.mBodyId, &def, &circle );
 }
 
 void 
-PhysicsEngine::AddBoxColliderToBody( PhysicsBody& body, float width, float height, glm::vec2 offset )
+PhysicsEngine::AddBoxColliderToBody( PhysicsBody& body, float width, float height, bool is_sensor, glm::vec2 offset )
 {
 	b2Polygon box;
 	if( offset == glm::vec2(0.0f, 0.0f) )
 	{
-		box = b2MakeBox( width, height );
+		box = b2MakeBox( width / 2.f, height / 2.f );
 	}
 	else
 	{
-		box = b2MakeOffsetBox( width, height, b2Vec2{ offset.x, offset.y }, 0.0f );
+		box = b2MakeOffsetBox( width / 2.f, height / 2.f, b2Vec2{ offset.x, offset.y }, 0.0f );
 	}
 	
 	b2ShapeDef def = b2DefaultShapeDef();
+	def.isSensor = is_sensor;
+	def.enableSensorEvents = true;
 	b2CreatePolygonShape( body.mBodyId, &def, &box );
 }
 
@@ -100,6 +142,31 @@ PhysicsEngine::Update()
 		return;
 	}
 
-	b2World_Step( mWorldId, 1.f / 60.f, 0 );
+	b2World_Step( mWorldId, 1.f / 60.f, 4 );
 	mLastUpdateTime = std::chrono::steady_clock::now();
+
+	ProcessSensorEvents();
+
+	b2World_Draw( mWorldId, &mDebugDraw );
+}
+
+void
+PhysicsEngine::ProcessSensorEvents()
+{
+	b2SensorEvents sensor_events = b2World_GetSensorEvents( mWorldId );
+	// Process begin touch events
+	for( int i = 0; i < sensor_events.beginCount; ++i )
+	{
+		b2SensorBeginTouchEvent event = sensor_events.beginEvents[i];
+		LOG() << "Sensor Begin Touch: SensorShapeId=" << event.sensorShapeId.index1
+			  << " VisitorShapeId=" << event.visitorShapeId.index1;
+	}
+
+	// Process end touch events
+	for( int i = 0; i < sensor_events.endCount; ++i )
+	{
+		b2SensorEndTouchEvent event = sensor_events.endEvents[i];
+		LOG() << "Sensor End Touch: SensorShapeId=" << event.sensorShapeId.index1
+			  << " VisitorShapeId=" << event.visitorShapeId.index1;
+	}
 }

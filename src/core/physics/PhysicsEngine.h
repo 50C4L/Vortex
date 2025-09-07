@@ -32,16 +32,19 @@ namespace eage::physics
 
 		std::unique_ptr<PhysicsBody> CreateBody( const b2BodyDef& body_def );
 
-		void AddCircleColliderToBody( PhysicsBody& body, float radius, glm::vec2 offset = glm::vec2(0.0f, 0.0f) );
+		void AddCircleColliderToBody( PhysicsBody& body, float radius, bool is_sensor, glm::vec2 offset = glm::vec2(0.0f, 0.0f) );
 
-		void AddBoxColliderToBody( PhysicsBody& body, float width, float height, glm::vec2 offset = glm::vec2(0.0f, 0.0f) );
+		void AddBoxColliderToBody( PhysicsBody& body, float width, float height, bool is_sensor, glm::vec2 offset = glm::vec2(0.0f, 0.0f) );
 
 		void UpdateBodyTransform( PhysicsBody& body, glm::vec2 position, b2Rot rotation );
 
 		void Update();
 
 	private:
+		void ProcessSensorEvents();
+
 		b2WorldId mWorldId;
+		b2DebugDraw mDebugDraw;
 		std::chrono::time_point<std::chrono::steady_clock> mLastUpdateTime;
 	};
 }
