@@ -2,6 +2,8 @@
 
 #include <utility/Logger.h>
 
+#include <glm/gtc/matrix_transform.hpp>
+
 using namespace eage::physics;
 using namespace utility;
 
@@ -148,6 +150,22 @@ PhysicsEngine::Update()
 	ProcessSensorEvents();
 
 	b2World_Draw( mWorldId, &mDebugDraw );
+}
+
+PhysicsEngine::PhysicsBodyTransform
+PhysicsEngine::GetBodyTransform( const PhysicsBody& body )
+{
+	if( B2_IS_NULL( body.mBodyId ) )
+	{
+		LOG_ERROR() << "Cannot get body transform: Body is not valid.";
+		return {};
+	}
+
+	b2Transform transform = b2Body_GetTransform( body.mBodyId );
+	glm::vec3 position = glm::vec3( transform.p.x, transform.p.y, 0.0f );
+	float angle = b2Rot_GetAngle( transform.q );
+	glm::quat rotation = glm::angleAxis( angle, glm::vec3( 0.0f, 0.0f, 1.0f ) );
+	return { std::move( position ), std::move( rotation ) };
 }
 
 void

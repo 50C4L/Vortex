@@ -63,41 +63,41 @@ PlayerGameplaySystem::UpdatePlayerMovement( PlayerComponent& player_comp,
 											eage::ecs::TransformComponent& transform_comp,
 											float delta_time_sec )
 {
-	// Rotation
-	if( player_comp.turning_left )
-	{
-		velocity_comp.angular_velocity = player_comp.rotation_speed;
-	} 
-	else if( player_comp.turning_right )
-	{
-		velocity_comp.angular_velocity = -player_comp.rotation_speed;
-	} 
-	else
-	{
-		velocity_comp.angular_velocity = 0.0f;
-	}
+	// // Rotation
+	// if( player_comp.turning_left )
+	// {
+	// 	velocity_comp.angular_velocity = player_comp.rotation_speed;
+	// } 
+	// else if( player_comp.turning_right )
+	// {
+	// 	velocity_comp.angular_velocity = -player_comp.rotation_speed;
+	// } 
+	// else
+	// {
+	// 	velocity_comp.angular_velocity = 0.0f;
+	// }
 
-	glm::vec3 forward = transform_comp.rotation * player_comp.forward;
+	// glm::vec3 forward = transform_comp.rotation * player_comp.forward;
 
-	// Thrust
-	if( player_comp.thruster_on )
-	{
-		velocity_comp.velocity += forward * player_comp.thrust_acceleration * delta_time_sec;
+	// // Thrust
+	// if( player_comp.thruster_on )
+	// {
+	// 	velocity_comp.velocity += forward * player_comp.thrust_acceleration * delta_time_sec;
 		
-		// Clamp speed
-		if( glm::length( velocity_comp.velocity ) > player_comp.max_thrust_speed )
-		{
-			velocity_comp.velocity = glm::normalize( velocity_comp.velocity ) * player_comp.max_thrust_speed;
-		}
-	}
+	// 	// Clamp speed
+	// 	if( glm::length( velocity_comp.velocity ) > player_comp.max_thrust_speed )
+	// 	{
+	// 		velocity_comp.velocity = glm::normalize( velocity_comp.velocity ) * player_comp.max_thrust_speed;
+	// 	}
+	// }
 	
-	// Apply movement
-	if( velocity_comp.angular_velocity != 0.0f )
-	{
-		float angle_rad = glm::radians( velocity_comp.angular_velocity * delta_time_sec );
-		glm::quat delta_rot = glm::angleAxis( angle_rad, glm::vec3( 0.0f, 0.0f, 1.0f ) );
-		transform_comp.SetRotation( glm::normalize( delta_rot * transform_comp.rotation ) );
-	}
-	transform_comp.position += velocity_comp.velocity * delta_time_sec;
-	transform_comp.MarkDirty();
+	// // Apply movement
+	// if( velocity_comp.angular_velocity != 0.0f )
+	// {
+	// 	float angle_rad = glm::radians( velocity_comp.angular_velocity * delta_time_sec );
+	// 	glm::quat delta_rot = glm::angleAxis( angle_rad, glm::vec3( 0.0f, 0.0f, 1.0f ) );
+	// 	transform_comp.SetRotation( glm::normalize( delta_rot * transform_comp.rotation ) );
+	// }
+	// transform_comp.position += velocity_comp.velocity * delta_time_sec;
+	// transform_comp.MarkDirty();
 }

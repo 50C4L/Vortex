@@ -55,7 +55,8 @@ PhysicsSystem::Update()
 			CreateCollisionBodyFromComponents( entity );
 		}
 
-		SyncTransformToStaticBodies( entity );
+		SyncTransformToBodies( entity );
+		SyncTransformFromBodies( entity );
 	}
 
 	mPhysicsEngine->Update();
@@ -122,7 +123,7 @@ PhysicsSystem::CreateCollisionBodyFromComponents( uint64_t entity )
 }
 
 void
-PhysicsSystem::SyncTransformToStaticBodies( uint64_t entity )
+PhysicsSystem::SyncTransformToBodies( uint64_t entity )
 {
 	auto& physics = mECSRegistry.GetComponent<PhysicsComponent>( entity );
 	auto& transform = mECSRegistry.GetComponent<TransformComponent>( entity );
@@ -140,4 +141,28 @@ PhysicsSystem::SyncTransformToStaticBodies( uint64_t entity )
 	}
 
 	mPhysicsEngine->UpdateBodyTransform( *body, transform.position, quat_to_b2rot( transform.rotation ) );
+}
+
+void
+PhysicsSystem::SyncTransformFromBodies( uint64_t entity )
+{
+	auto& physics = mECSRegistry.GetComponent<PhysicsComponent>( entity );
+	auto& transform = mECSRegistry.GetComponent<TransformComponent>( entity );
+
+	if( physics.body_id == INVALID_ID || physics.sync_transform_to_body )
+	{
+		return;
+	}
+
+	auto body = mBodyManager.Get( physics.body_id );
+	if( !body )
+	{
+		LOG_ERROR() << "Invalid body ID in PhysicsComponent for entity " << entity;
+		return; // Invalid body ID
+	}
+
+	auto body_transform = mPhysicsEngine->GetBodyTransform( *body );
+
+	transform.SetPosition( body_transform.position );
+	transform.SetRotation( body_transform.rotation );
 }

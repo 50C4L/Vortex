@@ -6,6 +6,7 @@
 
 #include <box2d/box2d.h>
 #include <glm/glm.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 namespace eage::physics
 {
@@ -39,6 +40,13 @@ namespace eage::physics
 		void UpdateBodyTransform( PhysicsBody& body, glm::vec2 position, b2Rot rotation );
 
 		void Update();
+
+		struct PhysicsBodyTransform
+		{
+			glm::vec3 position = glm::vec3(0.0f);
+			glm::quat rotation = glm::quat();
+		};
+		PhysicsBodyTransform GetBodyTransform( const PhysicsBody& body );
 
 	private:
 		void ProcessSensorEvents();
