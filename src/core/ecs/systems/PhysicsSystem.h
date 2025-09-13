@@ -33,7 +33,6 @@ namespace eage::ecs
 
 	private:
 		void CreateCollisionBodyFromComponents( uint64_t entity );
-		void SyncTransformToBodies( uint64_t entity );
 		void SyncTransformFromBodies( uint64_t entity );
 
 		ECSRegistry& mECSRegistry;

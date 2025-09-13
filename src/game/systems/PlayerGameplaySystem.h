@@ -7,8 +7,8 @@
 
 namespace eage::ecs
 {
+	struct PhysicsComponent;
 	struct TransformComponent;
-	struct Velocity2DComponent;
 }
 
 namespace vortex
@@ -28,7 +28,7 @@ namespace vortex
 		
 	private:
 		void UpdatePlayerMovement( PlayerComponent& player_comp,
-								   eage::ecs::Velocity2DComponent& velocity_comp,
+								   eage::ecs::PhysicsComponent& physics_comp,
 								   eage::ecs::TransformComponent& transform_comp,
 								   float delta_time_sec );
 		

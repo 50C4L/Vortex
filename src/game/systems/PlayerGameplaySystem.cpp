@@ -2,6 +2,7 @@
 
 #include <ecs/components/Audio.h>
 #include <ecs/components/Basics.h>
+#include <ecs/components/Physics.h>
 #include <ecs/components/Render.h>
 
 #include "../components/PlayerComponents.h"
@@ -24,13 +25,13 @@ PlayerGameplaySystem::Update( float delta_time_sec )
 	for( auto& [entity, player] : mRegistry.GetComponentMap<PlayerComponent>() )
 	{
 		// We know this entity has PlayerComponent, now check for others
-		if( mRegistry.HasComponent<eage::ecs::Velocity2DComponent>( entity ) &&
+		if( mRegistry.HasComponent<eage::ecs::PhysicsComponent>( entity ) &&
 			mRegistry.HasComponent<eage::ecs::TransformComponent>( entity ) )
 		{
-			auto& movement = mRegistry.GetComponent<eage::ecs::Velocity2DComponent>( entity );
+			auto& physics = mRegistry.GetComponent<eage::ecs::PhysicsComponent>( entity );
 			auto& transform = mRegistry.GetComponent<eage::ecs::TransformComponent>( entity );
 			
-			UpdatePlayerMovement(player, movement, transform, delta_time_sec);
+			UpdatePlayerMovement( player, physics, transform, delta_time_sec );
 
 			if( player.thruster_fx_entity != 0 &&
 			 	mRegistry.HasComponent<eage::ecs::RenderComponent>( player.thruster_fx_entity ) )
@@ -59,45 +60,30 @@ PlayerGameplaySystem::Update( float delta_time_sec )
 
 void
 PlayerGameplaySystem::UpdatePlayerMovement( PlayerComponent& player_comp, 
-											eage::ecs::Velocity2DComponent& velocity_comp,
+											eage::ecs::PhysicsComponent& physics_comp,
 											eage::ecs::TransformComponent& transform_comp,
 											float delta_time_sec )
 {
-	// // Rotation
-	// if( player_comp.turning_left )
-	// {
-	// 	velocity_comp.angular_velocity = player_comp.rotation_speed;
-	// } 
-	// else if( player_comp.turning_right )
-	// {
-	// 	velocity_comp.angular_velocity = -player_comp.rotation_speed;
-	// } 
-	// else
-	// {
-	// 	velocity_comp.angular_velocity = 0.0f;
-	// }
+	// Rotation
+	if( player_comp.turning_left )
+	{
+		physics_comp.QueueSetAngularVelocity( player_comp.rotation_speed ); // Convert to radians
+	} 
+	else if( player_comp.turning_right )
+	{
+		physics_comp.QueueSetAngularVelocity( -player_comp.rotation_speed ); // Convert to radians
+	}
+	else
+	{
+		physics_comp.QueueSetAngularVelocity( 0.0f );
+	}
 
-	// glm::vec3 forward = transform_comp.rotation * player_comp.forward;
+	glm::vec3 forward = transform_comp.rotation * player_comp.forward;
 
-	// // Thrust
-	// if( player_comp.thruster_on )
-	// {
-	// 	velocity_comp.velocity += forward * player_comp.thrust_acceleration * delta_time_sec;
-		
-	// 	// Clamp speed
-	// 	if( glm::length( velocity_comp.velocity ) > player_comp.max_thrust_speed )
-	// 	{
-	// 		velocity_comp.velocity = glm::normalize( velocity_comp.velocity ) * player_comp.max_thrust_speed;
-	// 	}
-	// }
-	
-	// // Apply movement
-	// if( velocity_comp.angular_velocity != 0.0f )
-	// {
-	// 	float angle_rad = glm::radians( velocity_comp.angular_velocity * delta_time_sec );
-	// 	glm::quat delta_rot = glm::angleAxis( angle_rad, glm::vec3( 0.0f, 0.0f, 1.0f ) );
-	// 	transform_comp.SetRotation( glm::normalize( delta_rot * transform_comp.rotation ) );
-	// }
-	// transform_comp.position += velocity_comp.velocity * delta_time_sec;
-	// transform_comp.MarkDirty();
+	// Thrust
+	if( player_comp.thruster_on )
+	{
+		glm::vec2 thrust_force = glm::vec2(forward.x, forward.y) * player_comp.thrust_acceleration;
+		physics_comp.QueueForce( thrust_force );
+	}
 }

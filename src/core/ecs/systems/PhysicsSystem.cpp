@@ -55,7 +55,60 @@ PhysicsSystem::Update()
 			CreateCollisionBodyFromComponents( entity );
 		}
 
-		SyncTransformToBodies( entity );
+		// Process physics events
+		if( physics.body_id != INVALID_ID )
+		{
+			auto body = mBodyManager.Get( physics.body_id );
+			if( body )
+			{
+				for( const auto& event : physics.pending_events )
+				{
+					switch( event.type )
+					{
+						case PhysicsComponent::EventType::ApplyForce:
+							b2Body_ApplyForceToCenter( body->mBodyId, b2Vec2{ event.vector_data.x, event.vector_data.y }, event.wake_body );
+							break;
+						case PhysicsComponent::EventType::ApplyImpulse:
+							b2Body_ApplyLinearImpulseToCenter( body->mBodyId, b2Vec2{ event.vector_data.x, event.vector_data.y }, event.wake_body );
+							break;
+						case PhysicsComponent::EventType::ApplyTorque:
+							b2Body_ApplyTorque( body->mBodyId, event.scalar_data, event.wake_body );
+							break;
+						case PhysicsComponent::EventType::ApplyAngularImpulse:
+							b2Body_ApplyAngularImpulse( body->mBodyId, event.scalar_data, event.wake_body );
+							break;
+						case PhysicsComponent::EventType::SetVelocity:
+							b2Body_SetLinearVelocity( body->mBodyId, b2Vec2{ event.vector_data.x, event.vector_data.y } );
+							break;
+						case PhysicsComponent::EventType::SetAngularVelocity:
+							b2Body_SetAngularVelocity( body->mBodyId, event.scalar_data );
+							break;
+						case PhysicsComponent::EventType::SetPosition:
+						{
+							auto current_rot = b2Body_GetRotation( body->mBodyId );
+							b2Body_SetTransform( body->mBodyId, b2Vec2{ event.vector_data.x, event.vector_data.y }, current_rot );
+							break;
+						}
+						case PhysicsComponent::EventType::SetRotation:
+						{
+							auto current_pos = b2Body_GetPosition( body->mBodyId );
+							b2Rot new_rot = b2MakeRot( event.scalar_data);
+							b2Body_SetTransform( body->mBodyId, current_pos, new_rot );
+							break;
+						}
+						default:
+							LOG_ERROR() << "Unknown physics event type for entity " << entity;
+							break;
+					}
+				}
+				physics.ClearEvents();
+			}
+			else
+			{
+				LOG_ERROR() << "Invalid physic body in PhysicsComponent for entity " << entity;
+			}
+		}
+
 		SyncTransformFromBodies( entity );
 	}
 
@@ -123,33 +176,12 @@ PhysicsSystem::CreateCollisionBodyFromComponents( uint64_t entity )
 }
 
 void
-PhysicsSystem::SyncTransformToBodies( uint64_t entity )
-{
-	auto& physics = mECSRegistry.GetComponent<PhysicsComponent>( entity );
-	auto& transform = mECSRegistry.GetComponent<TransformComponent>( entity );
-
-	if( !physics.sync_transform_to_body || physics.body_id == INVALID_ID || !transform.dirty )
-	{
-		return;
-	}
-
-	auto body = mBodyManager.Get( physics.body_id );
-	if( !body )
-	{
-		LOG_ERROR() << "Invalid body ID in PhysicsComponent for entity " << entity;
-		return; // Invalid body ID
-	}
-
-	mPhysicsEngine->UpdateBodyTransform( *body, transform.position, quat_to_b2rot( transform.rotation ) );
-}
-
-void
 PhysicsSystem::SyncTransformFromBodies( uint64_t entity )
 {
 	auto& physics = mECSRegistry.GetComponent<PhysicsComponent>( entity );
 	auto& transform = mECSRegistry.GetComponent<TransformComponent>( entity );
 
-	if( physics.body_id == INVALID_ID || physics.sync_transform_to_body )
+	if( physics.body_id == INVALID_ID || !physics.sync_transform_from_body )
 	{
 		return;
 	}

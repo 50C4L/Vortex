@@ -19,14 +19,82 @@ namespace eage::ecs
 
 		bool is_sensor = false;
 
-		// If true, the TransformComponent will be used to update the physics body position
-		// This is useful for static bodies that need to be moved infrequently
-		// For dynamic bodies, setting this to true may lead to unexpected behavior
-		bool sync_transform_to_body = false;
+		// If true, the TransformComponent will be updated from the physics body each frame
+		// If false, the TransformComponent will only be used to set the initial position of the body
+		bool sync_transform_from_body = false;
 
 		uint16_t category_bits = 0x0001;
 		uint16_t mask_bits = 0xFFFF;
 		int16_t group_index = 0;
+
+		// Physics Events
+		enum class EventType
+		{
+			ApplyForce,
+			ApplyImpulse,
+			ApplyTorque,
+			ApplyAngularImpulse,
+			SetVelocity,
+			SetAngularVelocity,
+			SetPosition,
+			SetRotation
+		};
+
+		struct PhysicsEvent
+		{
+			EventType type;
+			glm::vec2 vector_data{ 0.0f, 0.0f };  // For forces, impulses, velocities, positions
+			float scalar_data = 0.0f;             // For torques, angular values, rotations
+			bool wake_body = true;                // Whether to wake the body when applying
+		};
+
+		std::vector<PhysicsEvent> pending_events;
+
+		// Convenience methods for queueing events
+		void QueueForce( const glm::vec2& force, bool wake = true )
+		{
+			pending_events.push_back({ EventType::ApplyForce, force, 0.0f, wake });
+		}
+
+		void QueueImpulse( const glm::vec2& impulse, bool wake = true )
+		{
+			pending_events.push_back({ EventType::ApplyImpulse, impulse, 0.0f, wake });
+		}
+
+		void QueueTorque( float torque, bool wake = true )
+		{
+			pending_events.push_back({ EventType::ApplyTorque, glm::vec2(0.0f), torque, wake });
+		}
+
+		void QueueAngularImpulse( float angular_impulse, bool wake = true )
+		{
+			pending_events.push_back({ EventType::ApplyAngularImpulse, glm::vec2(0.0f), angular_impulse, wake });
+		}
+
+		void QueueSetVelocity( const glm::vec2& velocity )
+		{
+			pending_events.push_back({ EventType::SetVelocity, velocity, 0.0f, true });
+		}
+
+		void QueueSetAngularVelocity( float angular_velocity )
+		{
+			pending_events.push_back({ EventType::SetAngularVelocity, glm::vec2(0.0f), angular_velocity, true });
+		}
+
+		void QueueSetPosition( const glm::vec2& position )
+		{
+			pending_events.push_back({ EventType::SetPosition, position, 0.0f, false });
+		}
+
+		void QueueSetRotation( float rotation_radians )
+		{
+			pending_events.push_back({ EventType::SetRotation, glm::vec2(0.0f), rotation_radians, false });
+		}
+
+		void ClearEvents()
+		{
+			pending_events.clear();
+		}
 	};
 
 	struct BoxColliderComponent 

@@ -64,12 +64,6 @@ namespace eage::ecs
 		}
 	};
 
-	struct Velocity2DComponent
-	{
- 		glm::vec3 velocity = glm::vec3(0.0f);
-		float angular_velocity = 0.0f; // In degrees per second
-	};
-
 	struct SceneGraphComponment
 	{
 		uint64_t parent_entity = 0; // 0 means no parent

@@ -183,9 +183,6 @@ MainScene::CreatePlayerEntity()
 	PlayerComponent player;
 	mECSRegistry.AddComponent( mPlayerEntity, std::move( player ) );
 	
-	// Velocity component
-	mECSRegistry.AddComponent( mPlayerEntity, eage::ecs::Velocity2DComponent{} );
-	
 	// Transform component
 	mECSRegistry.AddComponent( mPlayerEntity, eage::ecs::TransformComponent{} );
 
@@ -193,6 +190,7 @@ MainScene::CreatePlayerEntity()
 	eage::ecs::PhysicsComponent player_physics;
 	player_physics.body_type = eage::ecs::PhysicsComponent::BodyType::DYNAMIC;
 	player_physics.is_sensor = true;
+	player_physics.sync_transform_from_body = true;
 	mECSRegistry.AddComponent( mPlayerEntity, std::move( player_physics ) );
 
 	eage::ecs::CircleColliderComponent player_collider;
