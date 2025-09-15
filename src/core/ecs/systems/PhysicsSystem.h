@@ -27,8 +27,19 @@ namespace eage::ecs
 		PhysicsSystem( ECSRegistry& ecs_registry );
 		~PhysicsSystem();
 
+		///
+		/// Initialize the physics system and world
+		///
 		void Initialize( glm::vec2 gravity );
+
+		///
+		/// Update the physics simulation and sync transforms
+		///
 		void Update();
+
+		///
+		/// Shutdown the physics system and clean up resources
+		///
 		void Shutdown();
 
 	private:

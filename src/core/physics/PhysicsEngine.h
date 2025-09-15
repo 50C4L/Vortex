@@ -29,18 +29,39 @@ namespace eage::physics
 		PhysicsEngine();
 		~PhysicsEngine();
 
+		///
+		/// Create a new physics world with specified gravity
+		///
 		void CreateWorld( glm::vec2 gravity = glm::vec2(0.0f, -9.81f) );
 
+		///
+		/// Create a new physics body in the world with specified body definition
+		///
 		std::unique_ptr<PhysicsBody> CreateBody( const b2BodyDef& body_def );
 
+		///
+		/// Add a circle collider to the specified body
+		///
 		void AddCircleColliderToBody( PhysicsBody& body, float radius, bool is_sensor, glm::vec2 offset = glm::vec2(0.0f, 0.0f) );
 
+		///
+		/// Add a box collider to the specified body
+		///
 		void AddBoxColliderToBody( PhysicsBody& body, float width, float height, bool is_sensor, glm::vec2 offset = glm::vec2(0.0f, 0.0f) );
 
+		///
+		/// Update the transform of the specified body
+		///
 		void UpdateBodyTransform( PhysicsBody& body, glm::vec2 position, b2Rot rotation );
 
+		///
+		/// Step the physics simulation forward
+		///
 		void Update();
 
+		///
+		/// Get the current transform of the specified body
+		///
 		struct PhysicsBodyTransform
 		{
 			glm::vec3 position = glm::vec3(0.0f);
