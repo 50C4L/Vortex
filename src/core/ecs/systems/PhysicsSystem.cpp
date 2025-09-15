@@ -35,8 +35,9 @@ PhysicsSystem::~PhysicsSystem()
 }
 
 void
-PhysicsSystem::Initialize( glm::vec2 gravity ) 
+PhysicsSystem::Initialize( glm::vec2 gravity, float pixels_per_meter ) 
 {
+	mPixelsPerMeter = pixels_per_meter;
 	mPhysicsEngine->CreateWorld( std::move( gravity ) );
 }
 
@@ -66,7 +67,10 @@ PhysicsSystem::Update()
 					switch( event.type )
 					{
 						case PhysicsComponent::EventType::ApplyForce:
-							b2Body_ApplyForceToCenter( body->mBodyId, b2Vec2{ event.vector_data.x, event.vector_data.y }, event.wake_body );
+						{
+							glm::vec2 physics_force = PixelsToMeters( event.vector_data );
+							b2Body_ApplyForceToCenter( body->mBodyId, b2Vec2{ physics_force.x, physics_force.y }, event.wake_body );
+						}
 							break;
 						case PhysicsComponent::EventType::ApplyImpulse:
 							b2Body_ApplyLinearImpulseToCenter( body->mBodyId, b2Vec2{ event.vector_data.x, event.vector_data.y }, event.wake_body );
@@ -127,6 +131,9 @@ PhysicsSystem::CreateCollisionBodyFromComponents( uint64_t entity )
 	auto& physics = mECSRegistry.GetComponent<PhysicsComponent>( entity );
 	auto& transform = mECSRegistry.GetComponent<TransformComponent>( entity );
 
+	// Convert pixel position to meters for Box2D
+	glm::vec2 physics_position = PixelsToMeters( glm::vec2(transform.position.x, transform.position.y) );
+
 	// Create Box2D body definition
 	b2BodyDef body_def = b2DefaultBodyDef();
 	switch( physics.body_type )
@@ -145,7 +152,7 @@ PhysicsSystem::CreateCollisionBodyFromComponents( uint64_t entity )
 			body_def.type = b2_staticBody;
 			break;
 	}
-	body_def.position = b2Vec2{ transform.position.x, transform.position.y };
+	body_def.position = b2Vec2{ physics_position.x, physics_position.y };
 	body_def.rotation = quat_to_b2rot( transform.rotation );
 
 	// Store entity ID in userData by casting it to a pointer
@@ -157,14 +164,21 @@ PhysicsSystem::CreateCollisionBodyFromComponents( uint64_t entity )
 	if( mECSRegistry.HasComponent<CircleColliderComponent>( entity ) )
 	{
 		auto& circle_collider = mECSRegistry.GetComponent<CircleColliderComponent>( entity );
-		mPhysicsEngine->AddCircleColliderToBody( *physics_body, circle_collider.radius, physics.is_sensor, circle_collider.offset );
+		float physics_radius = PixelsToMeters( circle_collider.radius );
+		glm::vec2 physics_offset = PixelsToMeters( circle_collider.offset );
+
+		mPhysicsEngine->AddCircleColliderToBody( *physics_body, physics_radius, physics.is_sensor, physics_offset );
 	}
 
 	// Add box collider
 	if( mECSRegistry.HasComponent<BoxColliderComponent>( entity ) )
 	{
 		auto& box_collider = mECSRegistry.GetComponent<BoxColliderComponent>( entity );
-		mPhysicsEngine->AddBoxColliderToBody( *physics_body, box_collider.width, box_collider.height, physics.is_sensor, box_collider.offset );
+		float physics_width = PixelsToMeters( box_collider.width );
+		float physics_height = PixelsToMeters( box_collider.height );
+		glm::vec2 physics_offset = PixelsToMeters( box_collider.offset );
+
+		mPhysicsEngine->AddBoxColliderToBody( *physics_body, physics_width, physics_height, physics.is_sensor, physics_offset );
 	}
 
 	// @todo more collider types
@@ -194,7 +208,9 @@ PhysicsSystem::SyncTransformFromBodies( uint64_t entity )
 	}
 
 	auto body_transform = mPhysicsEngine->GetBodyTransform( *body );
+	// Convert meters back to pixels for rendering
+	glm::vec3 pixel_position = MetersToPixels( body_transform.position );
 
-	transform.SetPosition( body_transform.position );
+	transform.SetPosition( pixel_position );
 	transform.SetRotation( body_transform.rotation );
 }

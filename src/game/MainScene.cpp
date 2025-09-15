@@ -189,7 +189,7 @@ MainScene::CreatePlayerEntity()
 	// Physics component
 	eage::ecs::PhysicsComponent player_physics;
 	player_physics.body_type = eage::ecs::PhysicsComponent::BodyType::DYNAMIC;
-	player_physics.is_sensor = true;
+	// player_physics.is_sensor = true;
 	player_physics.sync_transform_from_body = true;
 	mECSRegistry.AddComponent( mPlayerEntity, std::move( player_physics ) );
 
@@ -303,13 +303,12 @@ MainScene::CreateScreenZoneEntities()
 
 	// Collision component
 	eage::ecs::PhysicsComponent physics;
+	physics.is_sensor = true;
 	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( physics ) );
 
 	// Box collider component
 	eage::ecs::BoxColliderComponent box_collider;
-	// box_collider.width = static_cast<float>( config::DesignResolution::WIDTH );
-	// box_collider.height = static_cast<float>( config::DesignResolution::HEIGHT );
-	box_collider.width = 100.0f;
-	box_collider.height = 100.0f;
+	box_collider.width = static_cast<float>( config::DesignResolution::WIDTH );
+	box_collider.height = static_cast<float>( config::DesignResolution::HEIGHT );
 	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( box_collider ) );
 }
