@@ -23,6 +23,13 @@ namespace vortex
 			PLAYER_ROTATE_RIGHT,
 			PLAYER_THRUST,
 		};
+
+		enum PhysicsCategoryBits : uint16_t
+		{
+			PHYSX_CAT_DEFAULT = 0x0001,
+			PHYSX_CAT_PLAYER = 0x0002,
+			PHYSX_CAT_SCREEN_ZONE = 0x0003,
+		};
 	}
 }
 

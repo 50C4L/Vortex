@@ -26,6 +26,14 @@ namespace eage::physics
 	class PhysicsEngine
 	{
 	public:
+		struct CollisionFilter
+		{
+			uint16_t category_bits = 0x0001; // Which category this collider belongs to
+			uint16_t mask_bits = 0xFFFF;     // Which categories this collider collides with
+			int16_t group_index = 0;         // Collision filtering group. Colliders with the same positive group index always collide,
+											 // those with the same negative group index never collide. 0 means no group.
+		};
+
 		PhysicsEngine();
 		~PhysicsEngine();
 
@@ -42,12 +50,12 @@ namespace eage::physics
 		///
 		/// Add a circle collider to the specified body
 		///
-		void AddCircleColliderToBody( PhysicsBody& body, float radius, bool is_sensor, glm::vec2 offset = glm::vec2(0.0f, 0.0f) );
+		void AddCircleColliderToBody( PhysicsBody& body, CollisionFilter filter, float radius, bool is_sensor, glm::vec2 offset = glm::vec2(0.0f, 0.0f) );
 
 		///
 		/// Add a box collider to the specified body
 		///
-		void AddBoxColliderToBody( PhysicsBody& body, float width, float height, bool is_sensor, glm::vec2 offset = glm::vec2(0.0f, 0.0f) );
+		void AddBoxColliderToBody( PhysicsBody& body, CollisionFilter filter, float width, float height, bool is_sensor, glm::vec2 offset = glm::vec2(0.0f, 0.0f) );
 
 		///
 		/// Update the transform of the specified body

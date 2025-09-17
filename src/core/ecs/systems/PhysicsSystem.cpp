@@ -167,7 +167,9 @@ PhysicsSystem::CreateCollisionBodyFromComponents( uint64_t entity )
 		float physics_radius = PixelsToMeters( circle_collider.radius );
 		glm::vec2 physics_offset = PixelsToMeters( circle_collider.offset );
 
-		mPhysicsEngine->AddCircleColliderToBody( *physics_body, physics_radius, physics.is_sensor, physics_offset );
+		mPhysicsEngine->AddCircleColliderToBody( 
+			*physics_body, { circle_collider.category_bits, circle_collider.mask_bits, circle_collider.group_index },
+			physics_radius, physics.is_sensor, physics_offset );
 	}
 
 	// Add box collider
@@ -178,7 +180,9 @@ PhysicsSystem::CreateCollisionBodyFromComponents( uint64_t entity )
 		float physics_height = PixelsToMeters( box_collider.height );
 		glm::vec2 physics_offset = PixelsToMeters( box_collider.offset );
 
-		mPhysicsEngine->AddBoxColliderToBody( *physics_body, physics_width, physics_height, physics.is_sensor, physics_offset );
+		mPhysicsEngine->AddBoxColliderToBody(
+			*physics_body, { box_collider.category_bits, box_collider.mask_bits, box_collider.group_index },
+			physics_width, physics_height, physics.is_sensor, physics_offset );
 	}
 
 	// @todo more collider types

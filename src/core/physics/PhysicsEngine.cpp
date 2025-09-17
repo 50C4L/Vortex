@@ -92,7 +92,7 @@ PhysicsEngine::CreateBody( const b2BodyDef& body_def )
 }
 
 void
-PhysicsEngine::AddCircleColliderToBody( PhysicsBody& body, float radius, bool is_sensor, glm::vec2 offset )
+PhysicsEngine::AddCircleColliderToBody( PhysicsBody& body, CollisionFilter filter, float radius, bool is_sensor, glm::vec2 offset )
 {
 	b2Circle circle;
 	circle.center = b2Vec2{ offset.x, offset.y };
@@ -101,11 +101,14 @@ PhysicsEngine::AddCircleColliderToBody( PhysicsBody& body, float radius, bool is
 	b2ShapeDef def = b2DefaultShapeDef();
 	def.isSensor = is_sensor;
 	def.enableSensorEvents = true;
+	def.filter.categoryBits = filter.category_bits;
+	def.filter.maskBits = filter.mask_bits;
+	def.filter.groupIndex = filter.group_index;
 	b2CreateCircleShape( body.mBodyId, &def, &circle );
 }
 
 void 
-PhysicsEngine::AddBoxColliderToBody( PhysicsBody& body, float width, float height, bool is_sensor, glm::vec2 offset )
+PhysicsEngine::AddBoxColliderToBody( PhysicsBody& body, CollisionFilter filter, float width, float height, bool is_sensor, glm::vec2 offset )
 {
 	b2Polygon box;
 	if( offset == glm::vec2(0.0f, 0.0f) )
@@ -120,6 +123,9 @@ PhysicsEngine::AddBoxColliderToBody( PhysicsBody& body, float width, float heigh
 	b2ShapeDef def = b2DefaultShapeDef();
 	def.isSensor = is_sensor;
 	def.enableSensorEvents = true;
+	def.filter.categoryBits = filter.category_bits;
+	def.filter.maskBits = filter.mask_bits;
+	def.filter.groupIndex = filter.group_index;
 	b2CreatePolygonShape( body.mBodyId, &def, &box );
 }
 

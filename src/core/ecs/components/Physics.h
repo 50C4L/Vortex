@@ -23,10 +23,6 @@ namespace eage::ecs
 		// If false, the TransformComponent will only be used to set the initial position of the body
 		bool sync_transform_from_body = false;
 
-		uint16_t category_bits = 0x0001;
-		uint16_t mask_bits = 0xFFFF;
-		int16_t group_index = 0;
-
 		// Physics Events
 		enum class EventType
 		{
@@ -102,12 +98,22 @@ namespace eage::ecs
 		float width = 1.0f;
 		float height = 1.0f;
 		glm::vec2 offset{ 0.0f, 0.0f };
+
+		uint16_t category_bits = 0x0001;	// Which category this collider belongs to
+		uint16_t mask_bits = 0xFFFF;		// Which categories this collider collides with
+		int16_t group_index = 0;			// Collision filtering group. Colliders with the same positive group index always collide,
+											// those with the same negative group index never collide. 0 means no group.
 	};
 
 	struct CircleColliderComponent 
 	{
 		float radius = 0.5f;
 		glm::vec2 offset{ 0.0f, 0.0f };
+
+		uint16_t category_bits = 0x0001;	// Which category this collider belongs to
+		uint16_t mask_bits = 0xFFFF;		// Which categories this collider collides with
+		int16_t group_index = 0;			// Collision filtering group. Colliders with the same positive group index always collide,
+											// those with the same negative group index never collide. 0 means no group.
 	};
 }
 

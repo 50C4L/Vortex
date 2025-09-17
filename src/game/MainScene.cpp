@@ -31,6 +31,7 @@
 #include "components/PlayerComponents.h"
 
 using namespace vortex;
+using namespace vortex::config;
 using namespace utility;
 
 namespace
@@ -195,6 +196,8 @@ MainScene::CreatePlayerEntity()
 
 	eage::ecs::CircleColliderComponent player_collider;
 	player_collider.radius = 25.f; // Approximate radius of the ship
+	player_collider.category_bits = PHYSX_CAT_PLAYER;
+	player_collider.mask_bits = PHYSX_CAT_SCREEN_ZONE;
 	mECSRegistry.AddComponent( mPlayerEntity, std::move( player_collider ) );
 
 	// Render component
@@ -310,5 +313,7 @@ MainScene::CreateScreenZoneEntities()
 	eage::ecs::BoxColliderComponent box_collider;
 	box_collider.width = static_cast<float>( config::DesignResolution::WIDTH );
 	box_collider.height = static_cast<float>( config::DesignResolution::HEIGHT );
+	box_collider.category_bits = PHYSX_CAT_SCREEN_ZONE;
+	box_collider.mask_bits = PHYSX_CAT_PLAYER;
 	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( box_collider ) );
 }
