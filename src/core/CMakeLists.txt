@@ -117,6 +117,7 @@ add_library(eage_core STATIC
 
 	./physics/PhysicsEngine.h
 	./physics/PhysicsEngine.cpp
+	./physics/PhysicsEventListener.h
 
 	./utility/Filesystem.h
 	./utility/Pointers.h

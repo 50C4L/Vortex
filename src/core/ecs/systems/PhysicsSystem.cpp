@@ -39,6 +39,7 @@ PhysicsSystem::Initialize( glm::vec2 gravity, float pixels_per_meter )
 {
 	mPixelsPerMeter = pixels_per_meter;
 	mPhysicsEngine->CreateWorld( std::move( gravity ) );
+	mPhysicsEngine->SetEventListener( this );
 }
 
 void
@@ -123,6 +124,68 @@ void
 PhysicsSystem::Shutdown()
 {
 	// Cleanup logic would go here
+	mBodyManager.Clear();
+	mPhysicsEngine->ClearEventListener();
+}
+
+void
+PhysicsSystem::RegisterObserver( Observer* observer )
+{
+	mObservers.insert( observer );
+}
+
+void
+PhysicsSystem::UnregisterObserver( Observer* observer )
+{
+	mObservers.erase( observer );
+}
+
+void
+PhysicsSystem::OnSensorEnter( physics::PhysicsBody* sensor, physics::PhysicsBody* visitor )
+{
+	if( !sensor || !visitor )
+	{
+		return;
+	}
+
+	auto sensor_data = mPhysicsEngine->GetUserData( *sensor );
+	auto visitor_data = mPhysicsEngine->GetUserData( *visitor );
+	if( !sensor_data || !visitor_data )
+	{
+		LOG_ERROR() << "Sensor or visitor body has no associated entity.";
+		return;
+	}
+
+	for( auto* observer : mObservers )
+	{
+		uint64_t sensor_entity = reinterpret_cast<uint64_t>( sensor_data );
+		uint64_t visitor_entity = reinterpret_cast<uint64_t>( visitor_data );
+		observer->OnSensorEnter( sensor_entity, visitor_entity );
+	}
+}
+
+void
+PhysicsSystem::OnSensorExit( physics::PhysicsBody* sensor, physics::PhysicsBody* visitor )
+{
+	if( !sensor || !visitor )
+	{
+		return;
+	}
+
+	auto sensor_data = mPhysicsEngine->GetUserData( *sensor );
+	auto visitor_data = mPhysicsEngine->GetUserData( *visitor );
+	if( !sensor_data || !visitor_data )
+	{
+		LOG_ERROR() << "Sensor or visitor body has no associated entity.";
+		return;
+	}
+
+	for( auto* observer : mObservers )
+	{
+		uint64_t sensor_entity = reinterpret_cast<uint64_t>( sensor_data );
+		uint64_t visitor_entity = reinterpret_cast<uint64_t>( visitor_data );
+		observer->OnSensorExit( sensor_entity, visitor_entity );
+	}
 }
 
 void

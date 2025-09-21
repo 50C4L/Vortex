@@ -1,5 +1,6 @@
 #include "PhysicsEngine.h"
 
+#include <physics/PhysicsEventListener.h>
 #include <utility/Logger.h>
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -104,6 +105,7 @@ PhysicsEngine::AddCircleColliderToBody( PhysicsBody& body, CollisionFilter filte
 	def.filter.categoryBits = filter.category_bits;
 	def.filter.maskBits = filter.mask_bits;
 	def.filter.groupIndex = filter.group_index;
+	def.userData = &body;
 	b2CreateCircleShape( body.mBodyId, &def, &circle );
 }
 
@@ -126,6 +128,7 @@ PhysicsEngine::AddBoxColliderToBody( PhysicsBody& body, CollisionFilter filter, 
 	def.filter.categoryBits = filter.category_bits;
 	def.filter.maskBits = filter.mask_bits;
 	def.filter.groupIndex = filter.group_index;
+	def.userData = &body;
 	b2CreatePolygonShape( body.mBodyId, &def, &box );
 }
 
@@ -175,6 +178,30 @@ PhysicsEngine::GetBodyTransform( const PhysicsBody& body )
 }
 
 void
+PhysicsEngine::SetEventListener( PhysicsEventListener* listener )
+{
+	mEventListener = listener;
+}
+
+void
+PhysicsEngine::ClearEventListener()
+{
+	mEventListener = nullptr;
+}
+
+void*
+PhysicsEngine::GetUserData( const PhysicsBody& body ) const
+{
+	if( B2_IS_NULL( body.mBodyId ) )
+	{
+		LOG_ERROR() << "Cannot get body user data: Body is not valid.";
+		return nullptr;
+	}
+
+	return b2Body_GetUserData( body.mBodyId );
+}
+
+void
 PhysicsEngine::ProcessSensorEvents()
 {
 	b2SensorEvents sensor_events = b2World_GetSensorEvents( mWorldId );
@@ -192,5 +219,32 @@ PhysicsEngine::ProcessSensorEvents()
 		b2SensorEndTouchEvent event = sensor_events.endEvents[i];
 		LOG() << "Sensor End Touch: SensorShapeId=" << event.sensorShapeId.index1
 			  << " VisitorShapeId=" << event.visitorShapeId.index1;
+	}
+
+	if( mEventListener )
+	{
+		// Process begin touch events
+		for( int i = 0; i < sensor_events.beginCount; ++i )
+		{
+			b2SensorBeginTouchEvent event = sensor_events.beginEvents[i];
+			PhysicsBody* sensor_body = static_cast<PhysicsBody*>( b2Shape_GetUserData( event.sensorShapeId ) );
+			PhysicsBody* visitor_body = static_cast<PhysicsBody*>( b2Shape_GetUserData( event.visitorShapeId ) );
+			if( sensor_body && visitor_body )
+			{
+				mEventListener->OnSensorEnter( sensor_body, visitor_body );
+			}
+		}
+
+		// Process end touch events
+		for( int i = 0; i < sensor_events.endCount; ++i )
+		{
+			b2SensorEndTouchEvent event = sensor_events.endEvents[i];
+			PhysicsBody* sensor_body = static_cast<PhysicsBody*>( b2Shape_GetUserData( event.sensorShapeId ) );
+			PhysicsBody* visitor_body = static_cast<PhysicsBody*>( b2Shape_GetUserData( event.visitorShapeId ) );
+			if( sensor_body && visitor_body )
+			{
+				mEventListener->OnSensorExit( sensor_body, visitor_body );
+			}
+		}
 	}
 }

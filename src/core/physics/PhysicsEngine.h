@@ -10,6 +10,8 @@
 
 namespace eage::physics
 {
+	class PhysicsEventListener;
+
 	class PhysicsBody
 	{
 	public:
@@ -77,12 +79,24 @@ namespace eage::physics
 		};
 		PhysicsBodyTransform GetBodyTransform( const PhysicsBody& body );
 
+		///
+		/// Set the event listener for physics events
+		///
+		/// Caller is responsible for ensuring the listener remains valid while set
+		///
+		void SetEventListener( PhysicsEventListener* listener );
+		void ClearEventListener();
+
+		void* GetUserData( const PhysicsBody& body ) const;
+
 	private:
 		void ProcessSensorEvents();
 
 		b2WorldId mWorldId;
 		b2DebugDraw mDebugDraw;
 		std::chrono::time_point<std::chrono::steady_clock> mLastUpdateTime;
+
+		PhysicsEventListener* mEventListener = nullptr;
 	};
 }
 

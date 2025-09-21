@@ -3,10 +3,12 @@
 
 #include <memory>
 #include <cstdint>
+#include <unordered_set>
 
 #include <glm/glm.hpp>
 
 #include <ecs/ResourceManager.h>
+#include <physics/PhysicsEventListener.h>
 
 namespace eage::physics
 {
@@ -21,9 +23,16 @@ namespace eage::ecs
 	///
 	/// PhysicsSystem: Manages physics bodies and collision components
 	///
-	class PhysicsSystem
+	class PhysicsSystem final : public eage::physics::PhysicsEventListener
 	{
 	public:
+		class Observer
+		{
+		public:
+			virtual void OnSensorEnter( uint64_t sensor, uint64_t visitor ) = 0;
+			virtual void OnSensorExit( uint64_t sensor, uint64_t visitor ) = 0;
+		};
+
 		PhysicsSystem( ECSRegistry& ecs_registry );
 		~PhysicsSystem();
 
@@ -42,6 +51,13 @@ namespace eage::ecs
 		///
 		void Shutdown();
 
+		void RegisterObserver( Observer* observer );
+		void UnregisterObserver( Observer* observer );
+
+		// PhysicsEventListener interface
+		void OnSensorEnter( physics::PhysicsBody* sensor, physics::PhysicsBody* visitor ) override;
+		void OnSensorExit( physics::PhysicsBody* sensor, physics::PhysicsBody* visitor ) override;
+
 	private:
 		void CreateCollisionBodyFromComponents( uint64_t entity );
 		void SyncTransformFromBodies( uint64_t entity );
@@ -57,6 +73,8 @@ namespace eage::ecs
 		std::unique_ptr<eage::physics::PhysicsEngine> mPhysicsEngine;
 		ResourceManager<std::unique_ptr<eage::physics::PhysicsBody>> mBodyManager;
 		float mPixelsPerMeter = 1.f;
+
+		std::unordered_set<Observer*> mObservers;
 	};
 }
 

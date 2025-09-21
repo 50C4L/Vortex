@@ -126,7 +126,7 @@ VortexGame::Init()
 
 	// Initialize PhysicsSystem
 	mPhysicsSystem = std::make_unique<eage::ecs::PhysicsSystem>( *mECSRegistry );
-	mPhysicsSystem->Initialize( { 0.f, 0.f }, 25.f ); // No gravity in space
+	mPhysicsSystem->Initialize( { 0.f, 0.f }, 100.f ); // No gravity in space
 
 	// Initialize SceneController
 	mSceneController = std::make_unique<SceneController>();
