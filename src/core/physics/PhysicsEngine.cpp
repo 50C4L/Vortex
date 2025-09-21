@@ -205,21 +205,6 @@ void
 PhysicsEngine::ProcessSensorEvents()
 {
 	b2SensorEvents sensor_events = b2World_GetSensorEvents( mWorldId );
-	// Process begin touch events
-	for( int i = 0; i < sensor_events.beginCount; ++i )
-	{
-		b2SensorBeginTouchEvent event = sensor_events.beginEvents[i];
-		LOG() << "Sensor Begin Touch: SensorShapeId=" << event.sensorShapeId.index1
-			  << " VisitorShapeId=" << event.visitorShapeId.index1;
-	}
-
-	// Process end touch events
-	for( int i = 0; i < sensor_events.endCount; ++i )
-	{
-		b2SensorEndTouchEvent event = sensor_events.endEvents[i];
-		LOG() << "Sensor End Touch: SensorShapeId=" << event.sensorShapeId.index1
-			  << " VisitorShapeId=" << event.visitorShapeId.index1;
-	}
 
 	if( mEventListener )
 	{

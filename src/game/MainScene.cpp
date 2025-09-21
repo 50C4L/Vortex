@@ -251,6 +251,9 @@ MainScene::CreatePlayerEntity()
 	mECSRegistry.AddComponent( mPlayerEntity, std::move(thrust_audio) );
 	mECSRegistry.AddComponent( mPlayerEntity, AudioEventComponent{}) ;
 
+	// Gameplay components
+	mECSRegistry.AddComponent( mPlayerEntity, WarpComponent{} );
+
 	// Create Thruster entity - child of ship
 	auto thruster_entity = mECSRegistry.CreateEntity();
 
@@ -293,9 +296,6 @@ MainScene::CreatePlayerEntity()
 		thrust_uniform_buffer_id, 
 		thrust_descriptor_id 
 	} );
-
-	// Gameplay components
-	mECSRegistry.AddComponent( thruster_entity, WarpComponent{} );
 }
 
 void 
@@ -325,6 +325,14 @@ MainScene::CreateScreenZoneEntities()
 	box_collider.category_bits = PHYSX_CAT_SCREEN_ZONE;
 	box_collider.mask_bits = PHYSX_CAT_PLAYER;
 	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( box_collider ) );
+
+	// Gameplay component
+	WarpBoundaryComponent warp_boundary;
+	warp_boundary.left = -static_cast<float>( config::DesignResolution::WIDTH ) * 0.5f;
+	warp_boundary.right = static_cast<float>( config::DesignResolution::WIDTH ) * 0.5f;
+	warp_boundary.top = static_cast<float>( config::DesignResolution::HEIGHT ) * 0.5f;
+	warp_boundary.bottom = -static_cast<float>( config::DesignResolution::HEIGHT ) * 0.5f;
+	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( warp_boundary ) );
 
 	mWarpSystem->SetScreenEntity( mOnScreenZoneEntity );
 }

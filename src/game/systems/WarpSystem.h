@@ -10,6 +10,8 @@ namespace eage::ecs
 
 namespace vortex
 {
+	struct WarpBoundaryComponent;
+
 	///
 	/// WarpSystem: Handles warping entities with WarpComponent when they exit screen bounds
 	///
@@ -27,6 +29,8 @@ namespace vortex
 		void OnSensorExit( uint64_t sensor, uint64_t visitor ) override;
 		
 	private:
+		glm::vec2 CalculateWrapPosition( const glm::vec2& exit_pos, const WarpBoundaryComponent& boundary );
+
 		eage::ecs::ECSRegistry& mRegistry;
 		eage::ecs::PhysicsSystem& mPhysicsSystem;
 

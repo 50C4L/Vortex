@@ -9,6 +9,16 @@ namespace vortex
 	struct WarpComponent
 	{
 	};
+
+	struct WarpBoundaryComponent
+	{
+		// Pixels
+		float left = -400.0f;
+		float right = 400.0f;
+		float top = 300.0f;
+		float bottom = -300.0f;
+		float wrap_offset = 2.0f;  // How far inside the opposite edge to place warped objects
+	};
 }
 
 #endif // _VORTEX_GAME_GENERIC_COMPONENTS_H_

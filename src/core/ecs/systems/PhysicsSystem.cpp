@@ -91,7 +91,8 @@ PhysicsSystem::Update()
 						case PhysicsComponent::EventType::SetPosition:
 						{
 							auto current_rot = b2Body_GetRotation( body->mBodyId );
-							b2Body_SetTransform( body->mBodyId, b2Vec2{ event.vector_data.x, event.vector_data.y }, current_rot );
+							glm::vec2 physics_position = PixelsToMeters( event.vector_data );
+							b2Body_SetTransform( body->mBodyId, b2Vec2{ physics_position.x, physics_position.y }, current_rot );
 							break;
 						}
 						case PhysicsComponent::EventType::SetRotation:
