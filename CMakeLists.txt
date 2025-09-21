@@ -17,11 +17,14 @@ add_executable(Vortex
 	./src/game/GameConfig.h
 	./src/game/MainScene.h
 	./src/game/MainScene.cpp
+	./src/game/components/GameGenericComponents.h
 	./src/game/components/PlayerComponents.h
 	./src/game/systems/PlayerInputSystem.h
 	./src/game/systems/PlayerInputSystem.cpp
 	./src/game/systems/PlayerGameplaySystem.h
 	./src/game/systems/PlayerGameplaySystem.cpp
+	./src/game/systems/WarpSystem.h
+	./src/game/systems/WarpSystem.cpp
 )
 
 target_link_libraries(Vortex PRIVATE

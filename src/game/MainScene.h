@@ -30,6 +30,7 @@ namespace eage::ecs
 {
 	class AudioSystem;
 	class ECSRegistry;
+	class PhysicsSystem;
 	class RenderSystem;
 }
 
@@ -38,13 +39,14 @@ namespace vortex
 	class Player;
 	class PlayerInputSystem;
 	class PlayerGameplaySystem;
+	class WarpSystem;
 
 	class MainScene : public AbstractScene
 	{
 	public:
 		MainScene( eage::graphics::Renderer& renderer, events::InputController& input_controller, 
-				   eage::ecs::ECSRegistry& ecs_registry,
-				   eage::ecs::AudioSystem& audio_system, eage::ecs::RenderSystem& render_system );
+				   eage::ecs::ECSRegistry& ecs_registry, eage::ecs::AudioSystem& audio_system, 
+				   eage::ecs::RenderSystem& render_system, eage::ecs::PhysicsSystem& physics_system );
 		virtual ~MainScene();
 
 		virtual void OnEnter() override;
@@ -52,12 +54,12 @@ namespace vortex
 		virtual void OnExit() override;
 		virtual void Update() override;
 
-		void PrepareMeshes();
-		void PrepareMaterials();
-
 	private:
 		void DrawDebugGUI();
 
+		void InitializeGenericSystems();
+		void PrepareMeshes();
+		void PrepareMaterials();
 		void CreateSceneRoot();
 		void CreatePlayerEntity();
 		void CreateScreenZoneEntities();
@@ -67,9 +69,11 @@ namespace vortex
 		eage::ecs::ECSRegistry& mECSRegistry;
 		eage::ecs::AudioSystem& mAudioSystem;
 		eage::ecs::RenderSystem& mRenderSystem;
+		eage::ecs::PhysicsSystem& mPhysicsSystem;
 
 		std::unique_ptr<PlayerInputSystem> mPlayerInputSystem;
 		std::unique_ptr<PlayerGameplaySystem> mPlayerGameplaySystem;
+		std::unique_ptr<WarpSystem> mWarpSystem;
 
 		std::shared_ptr<eage::graphics::OrthographicCamera> mCamera;
 

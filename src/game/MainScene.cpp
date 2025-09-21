@@ -28,6 +28,8 @@
 #include "GameConfig.h"
 #include "systems/PlayerInputSystem.h"
 #include "systems/PlayerGameplaySystem.h"
+#include "systems/WarpSystem.h"
+#include "components/GameGenericComponents.h"
 #include "components/PlayerComponents.h"
 
 using namespace vortex;
@@ -47,12 +49,14 @@ namespace
 }
 
 MainScene::MainScene( eage::graphics::Renderer& renderer, events::InputController& input_controller,
-					  eage::ecs::ECSRegistry& ecs_registry, eage::ecs::AudioSystem& audio_system, eage::ecs::RenderSystem& render_system )
+					  eage::ecs::ECSRegistry& ecs_registry, eage::ecs::AudioSystem& audio_system, eage::ecs::RenderSystem& render_system,
+					  eage::ecs::PhysicsSystem& physics_system )
 	: mRenderer( renderer )
 	, mInputController( input_controller )
 	, mECSRegistry( ecs_registry )
 	, mAudioSystem( audio_system )
 	, mRenderSystem( render_system )
+	, mPhysicsSystem( physics_system )
 	, mLastUpdateTime( std::chrono::high_resolution_clock::now() )
 {
 }
@@ -68,6 +72,8 @@ MainScene::OnEnter()
 
 	// Set the ImGUI render function
 	mRenderer.SetImGUIRenderFunction( [&](){ DrawDebugGUI(); } );
+
+	InitializeGenericSystems();
 
 	PrepareMeshes();
 
@@ -287,6 +293,9 @@ MainScene::CreatePlayerEntity()
 		thrust_uniform_buffer_id, 
 		thrust_descriptor_id 
 	} );
+
+	// Gameplay components
+	mECSRegistry.AddComponent( thruster_entity, WarpComponent{} );
 }
 
 void 
@@ -316,4 +325,12 @@ MainScene::CreateScreenZoneEntities()
 	box_collider.category_bits = PHYSX_CAT_SCREEN_ZONE;
 	box_collider.mask_bits = PHYSX_CAT_PLAYER;
 	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( box_collider ) );
+
+	mWarpSystem->SetScreenEntity( mOnScreenZoneEntity );
+}
+
+void
+MainScene::InitializeGenericSystems()
+{
+	mWarpSystem = std::make_unique<WarpSystem>( mECSRegistry, mPhysicsSystem );
 }
