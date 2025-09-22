@@ -102,6 +102,30 @@ PhysicsSystem::Update()
 							b2Body_SetTransform( body->mBodyId, current_pos, new_rot );
 							break;
 						}
+						case PhysicsComponent::EventType::AddVelocity:
+						{
+							// Get current velocity
+							auto current_vel_b2 = b2Body_GetLinearVelocity( body->mBodyId );
+							glm::vec2 current_velocity = MetersToPixels( glm::vec2(current_vel_b2.x, current_vel_b2.y) );
+							
+							// Add velocity change
+							glm::vec2 new_velocity = current_velocity + event.vector_data;
+							
+							// Clamp to max speed
+							if( physics.max_linear_velocity > 0.0f )
+							{
+								float new_speed = glm::length( new_velocity );
+								if( new_speed > physics.max_linear_velocity )
+								{
+									new_velocity = glm::normalize( new_velocity ) * physics.max_linear_velocity;
+								}
+							}
+							
+							// Set final velocity
+							glm::vec2 physics_velocity = PixelsToMeters( new_velocity );
+							b2Body_SetLinearVelocity( body->mBodyId, b2Vec2{ physics_velocity.x, physics_velocity.y } );
+							break;
+						}
 						default:
 							LOG_ERROR() << "Unknown physics event type for entity " << entity;
 							break;

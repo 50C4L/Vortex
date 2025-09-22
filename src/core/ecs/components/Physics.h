@@ -23,6 +23,9 @@ namespace eage::ecs
 		// If false, the TransformComponent will only be used to set the initial position of the body
 		bool sync_transform_from_body = false;
 
+		// Maximum linear velocity in pixels/second. 0 means no limit.
+		float max_linear_velocity = 0.0f;
+
 		// Physics Events
 		enum class EventType
 		{
@@ -33,7 +36,8 @@ namespace eage::ecs
 			SetVelocity,
 			SetAngularVelocity,
 			SetPosition,
-			SetRotation
+			SetRotation,
+			AddVelocity
 		};
 
 		struct PhysicsEvent
@@ -85,6 +89,11 @@ namespace eage::ecs
 		void QueueSetRotation( float rotation_radians )
 		{
 			pending_events.push_back({ EventType::SetRotation, glm::vec2(0.0f), rotation_radians, false });
+		}
+
+		void QueueAddVelocity( const glm::vec2& velocity_change )
+		{
+			pending_events.push_back({ EventType::AddVelocity, velocity_change, 0.0f, true });
 		}
 
 		void ClearEvents()

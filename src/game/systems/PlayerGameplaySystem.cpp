@@ -83,7 +83,7 @@ PlayerGameplaySystem::UpdatePlayerMovement( PlayerComponent& player_comp,
 	// Thrust
 	if( player_comp.thruster_on )
 	{
-		glm::vec2 thrust_force = glm::vec2(forward.x, forward.y) * player_comp.thrust_acceleration;
-		physics_comp.QueueForce( thrust_force );
+		glm::vec2 velocity_change = glm::vec2( forward.x, forward.y ) * player_comp.thrust_acceleration * delta_time_sec;
+		physics_comp.QueueAddVelocity( velocity_change );
 	}
 }
