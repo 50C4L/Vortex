@@ -4,12 +4,17 @@
 #include <chrono>
 #include <imgui/imgui.h>
 
+namespace eage::graphics
+{
+	class Renderer;
+}
+
 namespace eage::profiling
 {
 	class PerformanceTracker
 	{
 	public:
-		PerformanceTracker();
+		PerformanceTracker( graphics::Renderer& renderer );
 		
 		void Update();
 		void DrawDebugGUI();
@@ -22,6 +27,8 @@ namespace eage::profiling
 		float GetGPUFrameTime() const { return mGPUFrameTime; }
 		
 	private:
+		graphics::Renderer& mRenderer;
+
 		bool mEnabled = true;
 		float mFPS = 0.0f;
 		float mCPUFrameTime = 0.0f;

@@ -1,9 +1,12 @@
 #include "PerformanceTracker.h"
 
+#include <graphics/Renderer.h>
+
 using namespace eage::profiling;
 
-PerformanceTracker::PerformanceTracker()
-	: mLastFrameTime(std::chrono::steady_clock::now())
+PerformanceTracker::PerformanceTracker( graphics::Renderer& renderer )
+	: mRenderer( renderer )
+	, mLastFrameTime(std::chrono::steady_clock::now())
 {
 }
 
@@ -27,8 +30,8 @@ PerformanceTracker::Update()
 	mCPUFrameTime = total_frame_time / FRAME_HISTORY_SIZE;
 	mFPS = 1000.0f / mCPUFrameTime;
 	
-	// TODO: Get actual GPU frame time from renderer
-	mGPUFrameTime = mCPUFrameTime * 0.8f; // Placeholder estimate
+	// Get actual GPU frame time from renderer
+	mGPUFrameTime = mRenderer.GetGPUFrameTime();
 }
 
 void
@@ -40,8 +43,7 @@ PerformanceTracker::DrawDebugGUI()
 							ImGuiWindowFlags_NoResize | 
 							ImGuiWindowFlags_NoMove | 
 							ImGuiWindowFlags_NoSavedSettings |
-							ImGuiWindowFlags_AlwaysAutoResize |
-							ImGuiWindowFlags_NoBackground;
+							ImGuiWindowFlags_AlwaysAutoResize;
 	
 	ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
 	
@@ -50,10 +52,16 @@ PerformanceTracker::DrawDebugGUI()
 		ImGui::Text("FPS: %.1f", mFPS);
 		ImGui::Text("CPU frame time: %.1f ms", mCPUFrameTime);
 		ImGui::Text("GPU frame time: %.1f ms", mGPUFrameTime);
+
+		// Set green color for plot lines
+		ImGui::PushStyleColor(ImGuiCol_PlotLines, IM_COL32(0, 255, 0, 255)); // Bright green
 		
-		// Optional: Add frame time graph
+		// Add frame time graph
 		ImGui::PlotLines( "Frame Time", mFrameTimeHistory, static_cast<int>( FRAME_HISTORY_SIZE ), 
 						  static_cast<int>( mFrameHistoryIndex ), nullptr, 0.0f, 33.33f, ImVec2(200, 50) );
+
+		// Restore original colors
+		ImGui::PopStyleColor(1);
 	}
 	ImGui::End();
 }

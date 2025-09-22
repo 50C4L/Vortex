@@ -140,7 +140,7 @@ VortexGame::Init()
 	mSceneGraphSystem->SetSceneRoot( mSceneController->GetCurrentSceneRoot() );
 
 	// Initialize PerformanceTracker
-	mPerformanceTracker = std::make_unique<eage::profiling::PerformanceTracker>();
+	mPerformanceTracker = std::make_unique<eage::profiling::PerformanceTracker>( *mRenderer );
 	mRenderer->SetImGUIRenderFunction([this]() {
 		// // Call current scene's GUI if it exists
 		// if( auto scene = mSceneController->GetCurrentScene() )
