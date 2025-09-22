@@ -29,7 +29,6 @@ using namespace utility;
 
 namespace
 {
-	const uint32_t MAX_FRAMES_IN_FLIGHT = 2u; // Double buffering
 	const uint32_t DEFAULT_DESCRIPTOR_SET_COUNT = 1000u;
 
 	vk::SubmitInfo2 create_submit_info( vk::CommandBufferSubmitInfo cmd_submit_info, std::optional<vk::SemaphoreSubmitInfo> semaphore_wait_info, std::optional<vk::SemaphoreSubmitInfo> semaphore_signal_info )
@@ -146,6 +145,9 @@ Renderer::Init()
 	// Init IMGUI
 	InitImGUI();
 
+	// Initialize GPU timing
+	InitGPUTiming();
+
 	return true;
 }
 
@@ -161,6 +163,15 @@ Renderer::Render()
 	frame.command_context->WaitForCompletion();
 	frame.command_context->Reset();
 	frame.command_context->Begin();
+
+	// GPU timing: Record start timestamp
+	if( mTimestampQuerySupported )
+	{
+		uint32_t query_index = static_cast<uint32_t>( GetCurrentFrameIndex() ) * 2u; // Start timestamp
+		// Reset the current frame's queries before using them
+		cmd.resetQueryPool( mTimestampQueryPool.get(), query_index, 2 ); // Reset both start and end queries
+		cmd.writeTimestamp( vk::PipelineStageFlagBits::eTopOfPipe, mTimestampQueryPool.get(), query_index );
+	}
 
 	// Transition the main render image to a general layout
 	transition_image( cmd, mRenderImage->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral );
@@ -196,9 +207,19 @@ Renderer::Render()
 	// Transition the swapchain image back to the present layout
 	transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR );
 
+	// GPU timing: Record end timestamp
+	if( mTimestampQuerySupported )
+	{
+		uint32_t query_index = static_cast<uint32_t>( GetCurrentFrameIndex() ) * 2u + 1u; // End timestamp
+		cmd.writeTimestamp( vk::PipelineStageFlagBits::eBottomOfPipe, mTimestampQueryPool.get(), query_index );
+	}
+	
 	frame.command_context->End();
 
 	Submit();
+
+	// Update GPU timing after submission
+	UpdateGPUTiming();
 
 	Present( next_image_index );
 
@@ -605,4 +626,90 @@ Renderer::DrawRenderQueue( vk::CommandBuffer& cmd )
 	}
 
 	cmd.endRendering();
+}
+
+void
+Renderer::InitGPUTiming()
+{
+	// Check if timestamp queries are supported
+	auto queue_family_props = mContext->physical_device.getQueueFamilyProperties();
+	mTimestampQuerySupported = queue_family_props[*mContext->queue_indices.graphics_family].timestampValidBits > 0;
+	
+	if( !mTimestampQuerySupported )
+	{
+		LOG_ERROR() << "Timestamp queries not supported on this device";
+		return;
+	}
+	
+	// Create query pool for timestamps
+	vk::QueryPoolCreateInfo query_pool_info{};
+	query_pool_info.queryType = vk::QueryType::eTimestamp;
+	query_pool_info.queryCount = MAX_FRAMES_IN_FLIGHT * 2; // Start and end per frame
+	
+	mTimestampQueryPool = mContext->logical_device->createQueryPoolUnique(query_pool_info);
+	
+	// Reset the query pool
+	auto& cmd = mImmidiateCommandContext->GetPrimaryBuffer();
+	mImmidiateCommandContext->Reset();
+	mImmidiateCommandContext->Begin();
+	cmd.resetQueryPool(mTimestampQueryPool.get(), 0, MAX_FRAMES_IN_FLIGHT * 2);
+	mImmidiateCommandContext->End();
+	
+	auto submit_info = create_submit_info(
+		mImmidiateCommandContext->GetSubmitInfo(), std::nullopt, std::nullopt
+	);
+	mContext->graphics_queue.submit2(submit_info, mImmidiateCommandContext->GetFence());
+	mImmidiateCommandContext->WaitForCompletion();
+	
+	LOG() << "GPU timing initialized successfully";
+}
+
+void
+Renderer::UpdateGPUTiming()
+{
+	if( !mTimestampQuerySupported )
+	{
+		mGPUFrameTime = 0.0f;
+		return;
+	}
+	
+	// Get timestamps from the previous frame (avoid reading current frame's incomplete results)
+	uint32_t prev_frame_index = (GetCurrentFrameIndex() + MAX_FRAMES_IN_FLIGHT - 1) % MAX_FRAMES_IN_FLIGHT;
+	uint32_t start_query = prev_frame_index * 2;
+	uint32_t end_query = prev_frame_index * 2 + 1;
+	
+	try
+	{
+		// Read timestamp results
+		auto result = mContext->logical_device->getQueryPoolResults(
+			mTimestampQueryPool.get(),
+			start_query,
+			2, // Read 2 queries (start and end)
+			sizeof(uint64_t) * 2,
+			&mTimestampResults[start_query],
+			sizeof(uint64_t),
+			vk::QueryResultFlagBits::e64
+		);
+		
+		if( result == vk::Result::eSuccess )
+		{
+			uint64_t start_timestamp = mTimestampResults[start_query];
+			uint64_t end_timestamp = mTimestampResults[end_query];
+			
+			if( end_timestamp > start_timestamp )
+			{
+				// Convert to milliseconds
+				auto physical_device_props = mContext->physical_device.getProperties();
+				float timestamp_period = physical_device_props.limits.timestampPeriod; // In nanoseconds
+				
+				uint64_t elapsed_ticks = end_timestamp - start_timestamp;
+				mGPUFrameTime = (elapsed_ticks * timestamp_period) / 1000000.0f; // Convert to milliseconds
+			}
+		}
+	}
+	catch( const vk::SystemError& )
+	{
+		// Query results not ready yet - keep previous value
+		// This is normal during the first few frames
+	}
 }

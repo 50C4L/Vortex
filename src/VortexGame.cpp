@@ -16,6 +16,7 @@
 #include <ecs/systems/PhysicsSystem.h>
 #include <ecs/systems/RenderSystem.h>
 #include <ecs/systems/SceneGraphSystem.h>
+#include <profiling/PerformanceTracker.h>
 
 #include "SceneController.h"
 #include "game/MainScene.h"
@@ -55,6 +56,9 @@ VortexGame::Run()
 				mInputController->Handle( event );
 			}
 		}
+
+		// Update performance tracker
+		mPerformanceTracker->Update();
 
 		// @todo: delta time should be calulated here and pass down
 		mSceneController->Update();
@@ -134,6 +138,19 @@ VortexGame::Init()
 		std::make_unique<MainScene>( *mRenderer, *mInputController, *mECSRegistry, *mAudioSystem, *mRenderSystem, *mPhysicsSystem ) );
 	mSceneController->ChangeScene( static_cast<int>( config::SceneID::MAIN_SCENE ) );
 	mSceneGraphSystem->SetSceneRoot( mSceneController->GetCurrentSceneRoot() );
+
+	// Initialize PerformanceTracker
+	mPerformanceTracker = std::make_unique<eage::profiling::PerformanceTracker>();
+	mRenderer->SetImGUIRenderFunction([this]() {
+		// // Call current scene's GUI if it exists
+		// if( auto scene = mSceneController->GetCurrentScene() )
+		// {
+		// 	scene->DrawDebugGUI();
+		// }
+		
+		// Always draw performance overlay
+		mPerformanceTracker->DrawDebugGUI();
+	});
 
 	return true;
 }

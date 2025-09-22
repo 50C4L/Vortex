@@ -38,6 +38,8 @@ namespace eage::graphics
 			std::unique_ptr<DynamicDescriptorAllocator> descriptor_allocator;
 		};
 
+		static const int MAX_FRAMES_IN_FLIGHT = 2;
+
 		///
 		/// Constructor
 		///
@@ -117,6 +119,8 @@ namespace eage::graphics
 		///
 		void SetImGUIRenderFunction( std::function<void()> render_function );
 
+		float GetGPUFrameTime() const { return mGPUFrameTime; }
+
 	private:
 		Frame& GetCurrentFrame();
 		
@@ -133,6 +137,9 @@ namespace eage::graphics
 		void PrepareImGUI();
 
 		void DrawRenderQueue( vk::CommandBuffer& cmd );
+
+		void InitGPUTiming();
+		void UpdateGPUTiming();
 
 		SDL_Window& mWindow;
 		std::unique_ptr<VulkanContext>		mContext;
@@ -155,6 +162,12 @@ namespace eage::graphics
 
 		// The queue shold be clear first when destorying the renderer
 		std::vector<RenderInfo> mRenderQueue;
+
+		// GPU frame timing
+		vk::UniqueQueryPool mTimestampQueryPool;
+		std::array<uint64_t, MAX_FRAMES_IN_FLIGHT * 2> mTimestampResults = {}; // Start and end timestamps per frame
+		float mGPUFrameTime = 0.0f;
+		bool mTimestampQuerySupported = false;
 	};
 }
 

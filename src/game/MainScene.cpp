@@ -70,9 +70,6 @@ MainScene::OnEnter()
 {
 	LOG( "MainScene::OnEnter" );
 
-	// Set the ImGUI render function
-	mRenderer.SetImGUIRenderFunction( [&](){ DrawDebugGUI(); } );
-
 	InitializeGenericSystems();
 
 	PrepareMeshes();
@@ -145,18 +142,6 @@ MainScene::PrepareMaterials()
 		.Build();
 
 	mSpriteMaterialId = mRenderSystem.CreateMaterial(material_property);
-}
-
-void
-MainScene::DrawDebugGUI()
-{
-	ImGuiStyle * style = &ImGui::GetStyle();
-
-	style->WindowBorderSize = 0.0f;
-
-	ImGui::Begin( "FPS Counter", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings );
-	ImGui::Text( "FPS: %.1f", ImGui::GetIO().Framerate );
-	ImGui::End();
 }
 
 void 

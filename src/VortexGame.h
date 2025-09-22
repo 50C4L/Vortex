@@ -29,6 +29,11 @@ namespace eage::ecs
 	class SceneGraphSystem;
 }
 
+namespace eage::profiling
+{
+	class PerformanceTracker;
+}
+
 namespace vortex
 {
 	class SceneController;
@@ -54,6 +59,7 @@ namespace vortex
 		std::unique_ptr<eage::ecs::SceneGraphSystem> mSceneGraphSystem;
 		std::unique_ptr<eage::ecs::RenderSystem> mRenderSystem;
 		std::unique_ptr<eage::ecs::PhysicsSystem> mPhysicsSystem;
+		std::unique_ptr<eage::profiling::PerformanceTracker> mPerformanceTracker;
 	};
 }
 

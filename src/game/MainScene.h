@@ -55,8 +55,6 @@ namespace vortex
 		virtual void Update() override;
 
 	private:
-		void DrawDebugGUI();
-
 		void InitializeGenericSystems();
 		void PrepareMeshes();
 		void PrepareMaterials();
