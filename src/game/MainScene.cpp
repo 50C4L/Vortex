@@ -26,6 +26,7 @@
 #include <ecs/components/Render.h>
 
 #include "GameConfig.h"
+#include "systems/AsteroidGameplaySystem.h"
 #include "systems/PlayerInputSystem.h"
 #include "systems/PlayerGameplaySystem.h"
 #include "systems/WarpSystem.h"
@@ -82,6 +83,8 @@ MainScene::OnEnter()
 
 	CreateScreenZoneEntities();
 
+	CreateEnemyEntities();
+
 	float half_width = static_cast<float>( config::DesignResolution::WIDTH ) / 2.f;
 	float half_height = static_cast<float>( config::DesignResolution::HEIGHT ) / 2.f;
 	mCamera = std::make_shared<eage::graphics::OrthographicCamera>( half_width * -1.f, half_width, half_height * -1.f, half_height, 0.1f, 100.0f );
@@ -129,6 +132,7 @@ MainScene::PrepareMeshes()
 void
 MainScene::PrepareMaterials()
 {
+	// Create player material
 	mRenderSystem.CreateImageBuffer( "./resources/textures/ship/ship_texatlas.png" );
 
 	// Create sprite material using the new MaterialBuilder and RenderSystem
@@ -141,7 +145,7 @@ MainScene::PrepareMaterials()
 		.EnableDepthTest(true)
 		.Build();
 
-	mSpriteMaterialId = mRenderSystem.CreateMaterial(material_property);
+	mPlayerMaterialId = mRenderSystem.CreateMaterial(material_property);
 }
 
 void 
@@ -224,7 +228,7 @@ MainScene::CreatePlayerEntity()
 	// Add ECS RenderComponent with the new resource IDs
 	mECSRegistry.AddComponent( mPlayerEntity, eage::ecs::RenderComponent{ 
 		ship_mesh_id, 
-		mSpriteMaterialId, 
+		mPlayerMaterialId, 
 		ship_uniform_buffer_id, 
 		ship_descriptor_id 
 	} );
@@ -278,7 +282,7 @@ MainScene::CreatePlayerEntity()
 	// Add ECS RenderComponent with the new resource IDs
 	mECSRegistry.AddComponent( thruster_entity, eage::ecs::RenderComponent{ 
 		thrust_mesh_id, 
-		mSpriteMaterialId, 
+		mPlayerMaterialId, 
 		thrust_uniform_buffer_id, 
 		thrust_descriptor_id 
 	} );
@@ -327,4 +331,11 @@ void
 MainScene::InitializeGenericSystems()
 {
 	mWarpSystem = std::make_unique<WarpSystem>( mECSRegistry, mPhysicsSystem );
+}
+
+void
+MainScene::CreateEnemyEntities()
+{
+	mAsteroidGameplaySystem = std::make_unique<AsteroidGameplaySystem>( mECSRegistry, mRenderSystem, mRenderer );
+	mAsteroidGameplaySystem->PrepareAsteroids( 1, mSceneRootEntity );
 }

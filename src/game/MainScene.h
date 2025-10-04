@@ -36,7 +36,7 @@ namespace eage::ecs
 
 namespace vortex
 {
-	class Player;
+	class AsteroidGameplaySystem;
 	class PlayerInputSystem;
 	class PlayerGameplaySystem;
 	class WarpSystem;
@@ -61,6 +61,7 @@ namespace vortex
 		void CreateSceneRoot();
 		void CreatePlayerEntity();
 		void CreateScreenZoneEntities();
+		void CreateEnemyEntities();
 
 		eage::graphics::Renderer& mRenderer;
 		events::InputController& mInputController;
@@ -72,10 +73,11 @@ namespace vortex
 		std::unique_ptr<PlayerInputSystem> mPlayerInputSystem;
 		std::unique_ptr<PlayerGameplaySystem> mPlayerGameplaySystem;
 		std::unique_ptr<WarpSystem> mWarpSystem;
+		std::unique_ptr<AsteroidGameplaySystem> mAsteroidGameplaySystem;
 
 		std::shared_ptr<eage::graphics::OrthographicCamera> mCamera;
 
-		eage::ecs::ResourceId mSpriteMaterialId;
+		eage::ecs::ResourceId mPlayerMaterialId = 0;
 
 		uint64_t mSceneRootEntity = 0;
 		uint64_t mPlayerEntity = 0;
