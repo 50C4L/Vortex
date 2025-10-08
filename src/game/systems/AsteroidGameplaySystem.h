@@ -2,6 +2,7 @@
 #define _VORTEX_ASTEROID_GAMEPLAY_SYSTEM_H_
 
 #include <deque>
+#include <glm/glm.hpp>
 
 #include <ecs/ResourceManager.h>
 
@@ -31,6 +32,9 @@ namespace vortex
 		///
 		void PrepareAsteroids( int count, uint64_t root_entity );
 
+		void SpawnAsteroid( int count );
+		void DespawnAsteroid( uint64_t asteroid_entity );
+
 		void Update();
 
 	private:
@@ -41,6 +45,9 @@ namespace vortex
 		eage::ecs::ResourceId mAsteroidMeshId = 0;
 
 		std::deque<uint64_t> mAvailableAsteroids;
+
+		glm::vec2 mScreenTopLeft;
+		glm::vec2 mScreenBottomRight;
 	};
 }
 

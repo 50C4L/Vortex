@@ -17,6 +17,7 @@ SceneGraphSystem::~SceneGraphSystem()
 void
 SceneGraphSystem::SetSceneRoot( uint64_t entity )
 {
+	// @todo SceneGraphSystem should create the root entity itself, and provide a getter
 	mSceneRootEntity = entity;
 }
 

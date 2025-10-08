@@ -37,7 +37,8 @@ namespace eage::ecs
 			SetAngularVelocity,
 			SetPosition,
 			SetRotation,
-			AddVelocity
+			AddVelocity,
+			SetSleep
 		};
 
 		struct PhysicsEvent
@@ -94,6 +95,11 @@ namespace eage::ecs
 		void QueueAddVelocity( const glm::vec2& velocity_change )
 		{
 			pending_events.push_back({ EventType::AddVelocity, velocity_change, 0.0f, true });
+		}
+
+		void QueueSleep( bool is_sleep )
+		{
+			pending_events.push_back({ EventType::SetSleep, glm::vec2(0.0f), is_sleep ? 1.0f : 0.0f, false });
 		}
 
 		void ClearEvents()

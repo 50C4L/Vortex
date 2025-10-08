@@ -2,6 +2,7 @@
 
 #include <ecs/ECS.h>
 #include <ecs/components/Basics.h>
+#include <ecs/components/Physics.h>
 #include <ecs/components/Render.h>
 #include <ecs/systems/RenderSystem.h>
 #include <graphics/BuiltInMeshes.h>
@@ -10,7 +11,16 @@
 #include <graphics/Renderer.h>
 #include <assets/TextureAtlas.h>
 
+#include "../GameConfig.h"
+#include "../components/GameGenericComponents.h"
+
 using namespace vortex;
+
+namespace
+{
+	constexpr float INACTIVE_OFFSET = 1000.0f; // Offset to move inactive asteroids off-screen
+	constexpr float SPAWN_AREA_PADDING = 100.0f; // Padding from screen edges for spawning asteroids
+}
 
 AsteroidGameplaySystem::AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry, eage::ecs::RenderSystem& render_system, 
 												eage::graphics::Renderer& renderer )
@@ -18,13 +28,18 @@ AsteroidGameplaySystem::AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry
 	, mRenderSystem( render_system )
 	, mRenderer( renderer )
 {
+	float half_width = static_cast<float>( config::DesignResolution::WIDTH) * 0.5f;
+	float half_height = static_cast<float>( config::DesignResolution::HEIGHT) * 0.5f;
+	mScreenTopLeft = glm::vec2( -half_width, half_height );
+	mScreenBottomRight = glm::vec2( half_width, -half_height );
 }
 
 AsteroidGameplaySystem::~AsteroidGameplaySystem()
 {
 }
 
-void AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
+void
+AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
 {
 	// Create asteroid material
 	mRenderSystem.CreateImageBuffer( "./resources/textures/asteroid/asteroid.png" );
@@ -73,11 +88,27 @@ void AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
 		relationship.parent_entity = root_entity;
 		mECSRegistry.AddComponent( asteroid, std::move( relationship ) );
 		
-		// Transform component
+		// Transform component, initial position off-screen right-bottom corner + offset
 		eage::ecs::TransformComponent transform;
-		transform.SetPosition( glm::vec3( rand() % 800 - 400, rand() % 600 - 300, 0.0f ) );
-		transform.SetScale( glm::vec3( 1.0f + (rand() % 100) / 100.f ) ); // Random scale between 1.0 and 2.0
+		transform.SetPosition( glm::vec3( mScreenBottomRight + glm::vec2( INACTIVE_OFFSET, INACTIVE_OFFSET * -1.f ), 0.0f ) );
 		mECSRegistry.AddComponent( asteroid, std::move( transform ) );
+
+		// Physics component
+		eage::ecs::PhysicsComponent physics_cmp;
+		physics_cmp.body_type = eage::ecs::PhysicsComponent::BodyType::DYNAMIC;
+		physics_cmp.sync_transform_from_body = true;
+		physics_cmp.max_linear_velocity = 300.0f;
+		physics_cmp.QueueSleep( true ); // Start asleep
+		mECSRegistry.AddComponent( asteroid, std::move( physics_cmp ) );
+
+		eage::ecs::CircleColliderComponent collider;
+		collider.radius = 25.f; // Approximate radius of the ship
+		collider.category_bits = config::PHYSX_CAT_WARPABLE;
+		collider.mask_bits = config::PHYSX_CAT_SCREEN_ZONE;
+		mECSRegistry.AddComponent( asteroid, std::move( collider ) );
+
+		// Gameplay components
+		mECSRegistry.AddComponent( asteroid, WarpComponent{} );
 
 		// Render component
 		auto asteroid_uniform_buffer_id = mRenderSystem.CreateDynamicUniformBuffer( sizeof(eage::graphics::MeshUniformData) );
@@ -95,11 +126,93 @@ void AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
 			mAsteroidMeshId, 
 			mAsteroidMaterialId, 
 			asteroid_uniform_buffer_id, 
-			asteroid_descriptor_id 
+			asteroid_descriptor_id,
+			false
 		} );
 	}
 }
 
-void AsteroidGameplaySystem::Update()
+void
+AsteroidGameplaySystem::SpawnAsteroid( int count )
+{
+	for( int i = 0; i < count; ++i )
+	{
+		if( mAvailableAsteroids.empty() )
+		{
+			break; // No more available asteroids to spawn
+		}
+		auto asteroid = mAvailableAsteroids.front();
+		mAvailableAsteroids.pop_front();
+
+		auto& render_cmp = mECSRegistry.GetComponent<eage::ecs::RenderComponent>( asteroid );
+		render_cmp.visible = true;
+
+		// Spawn at random position just outside screen bounds + SPAWN_AREA_PADDING
+		auto& transform = mECSRegistry.GetComponent<eage::ecs::TransformComponent>( asteroid );
+		float x_pos = 0.0f;
+		float y_pos = 0.0f;
+		int side = rand() % 4; // 0: left, 1: right, 2: top, 3: bottom
+		switch( side )
+		{
+			case 0: // Left
+			{
+				x_pos = mScreenTopLeft.x - SPAWN_AREA_PADDING;
+				y_pos = mScreenTopLeft.y + static_cast<float>( rand() % static_cast<int>( (mScreenBottomRight.y - mScreenTopLeft.y) ) );
+			}
+				break;
+			case 1: // Right
+			{
+				x_pos = mScreenBottomRight.x + SPAWN_AREA_PADDING;
+				y_pos = mScreenTopLeft.y + static_cast<float>( rand() % static_cast	<int>( (mScreenBottomRight.y - mScreenTopLeft.y) ) );
+			}
+				break;
+			case 2: // Top
+			{
+				x_pos = mScreenTopLeft.x + static_cast<float>( rand() % static_cast<int>( (mScreenBottomRight.x - mScreenTopLeft.x) ) );
+				y_pos = mScreenTopLeft.y + SPAWN_AREA_PADDING;
+			}
+				break;
+			case 3: // Bottom
+			{
+				x_pos = mScreenTopLeft.x + static_cast<float>( rand() % static_cast<int>( (mScreenBottomRight.x - mScreenTopLeft.x) ) );
+				y_pos = mScreenBottomRight.y - SPAWN_AREA_PADDING;
+			}
+				break;
+		}
+		transform.SetPosition( glm::vec3( x_pos, y_pos, 0.0f ) );
+		transform.SetScale( glm::vec3( 1.0f + (rand() % 100) / 100.f ) ); // Random scale between 1.0 and 2.0
+
+		// Physics
+		auto& physics_cmp = mECSRegistry.GetComponent<eage::ecs::PhysicsComponent>( asteroid );
+		// Wake up physics body 
+		physics_cmp.QueueSleep( false ); // Wake up
+		// Set a constant velocity towards a random point on screen
+		glm::vec2 target_point;
+		target_point.x = mScreenTopLeft.x + static_cast<float>( rand() % static_cast<int>( (mScreenBottomRight.x - mScreenTopLeft.x) ) );
+		target_point.y = mScreenBottomRight.y + static_cast<float>( rand() % static_cast<int>( (mScreenTopLeft.y - mScreenBottomRight.y) ) );
+		glm::vec2 direction = glm::normalize( target_point - glm::vec2( transform.position.x, transform.position.y ) );
+		float speed = 100.0f + static_cast<float>( rand() % 200 ); // Random speed between 100 and 300
+		physics_cmp.QueueAddVelocity( direction * speed );
+		// Random angular velocity
+		float angular_speed = (rand() % 20) - 10.f; // Random angular speed between -10 and 10
+		physics_cmp.QueueSetAngularVelocity( angular_speed );
+	}
+}
+
+void
+AsteroidGameplaySystem::DespawnAsteroid( uint64_t asteroid_entity )
+{
+	if( !mECSRegistry.HasComponent<eage::ecs::RenderComponent>( asteroid_entity ) )
+	{
+		return; // Not a valid asteroid entity
+	}
+	auto& render_cmp = mECSRegistry.GetComponent<eage::ecs::RenderComponent>( asteroid_entity );
+	render_cmp.visible = false;
+
+	mAvailableAsteroids.push_back( asteroid_entity );
+}
+
+void 
+AsteroidGameplaySystem::Update()
 {
 }

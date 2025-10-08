@@ -83,7 +83,10 @@ PhysicsSystem::Update()
 							b2Body_ApplyAngularImpulse( body->mBodyId, event.scalar_data, event.wake_body );
 							break;
 						case PhysicsComponent::EventType::SetVelocity:
-							b2Body_SetLinearVelocity( body->mBodyId, b2Vec2{ event.vector_data.x, event.vector_data.y } );
+						{
+							glm::vec2 physics_velocity = PixelsToMeters( event.vector_data );
+							b2Body_SetLinearVelocity( body->mBodyId, b2Vec2{ physics_velocity.x, physics_velocity.y } );
+						}
 							break;
 						case PhysicsComponent::EventType::SetAngularVelocity:
 							b2Body_SetAngularVelocity( body->mBodyId, event.scalar_data );
@@ -126,6 +129,19 @@ PhysicsSystem::Update()
 							b2Body_SetLinearVelocity( body->mBodyId, b2Vec2{ physics_velocity.x, physics_velocity.y } );
 							break;
 						}
+						case PhysicsComponent::EventType::SetSleep:
+							if( event.scalar_data > 0.5f )
+							{
+								b2Body_SetAwake( body->mBodyId, false );
+								// Set velocity to zero when sleeping
+								b2Body_SetLinearVelocity( body->mBodyId, b2Vec2{ 0.0f, 0.0f } );
+								b2Body_SetAngularVelocity( body->mBodyId, 0.0f );
+							}
+							else
+							{
+								b2Body_SetAwake( body->mBodyId, true );
+							}
+							break;
 						default:
 							LOG_ERROR() << "Unknown physics event type for entity " << entity;
 							break;
