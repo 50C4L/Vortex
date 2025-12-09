@@ -10,11 +10,13 @@
 #include <graphics/MaterialBuilder.h>
 #include <graphics/Renderer.h>
 #include <assets/TextureAtlas.h>
+#include <utility/Logger.h>
 
 #include "../GameConfig.h"
 #include "../components/GameGenericComponents.h"
 
 using namespace vortex;
+using namespace utility;
 
 namespace
 {
@@ -180,12 +182,10 @@ AsteroidGameplaySystem::SpawnAsteroid( int count )
 				break;
 		}
 		transform.SetPosition( glm::vec3( x_pos, y_pos, 0.0f ) );
-		transform.SetScale( glm::vec3( 1.0f + (rand() % 100) / 100.f ) ); // Random scale between 1.0 and 2.0
 
 		// Physics
 		auto& physics_cmp = mECSRegistry.GetComponent<eage::ecs::PhysicsComponent>( asteroid );
-		// Wake up physics body 
-		physics_cmp.QueueSleep( false ); // Wake up
+		physics_cmp.QueueSetPosition( glm::vec2( x_pos, y_pos ) );
 		// Set a constant velocity towards a random point on screen
 		glm::vec2 target_point;
 		target_point.x = mScreenTopLeft.x + static_cast<float>( rand() % static_cast<int>( (mScreenBottomRight.x - mScreenTopLeft.x) ) );
@@ -196,18 +196,31 @@ AsteroidGameplaySystem::SpawnAsteroid( int count )
 		// Random angular velocity
 		float angular_speed = (rand() % 20) - 10.f; // Random angular speed between -10 and 10
 		physics_cmp.QueueSetAngularVelocity( angular_speed );
+		// Wake up physics body 
+		physics_cmp.QueueSleep( false ); // Wake up
 	}
 }
 
 void
 AsteroidGameplaySystem::DespawnAsteroid( uint64_t asteroid_entity )
 {
-	if( !mECSRegistry.HasComponent<eage::ecs::RenderComponent>( asteroid_entity ) )
+	if( !mECSRegistry.HasComponent<eage::ecs::RenderComponent>( asteroid_entity ) ||
+		!mECSRegistry.HasComponent<eage::ecs::TransformComponent>( asteroid_entity ) ||
+		!mECSRegistry.HasComponent<eage::ecs::PhysicsComponent>( asteroid_entity ) )
 	{
+		LOG() << "Attempted to despawn invalid asteroid entity: " << asteroid_entity;
 		return; // Not a valid asteroid entity
 	}
+
+	// Disable rendering
 	auto& render_cmp = mECSRegistry.GetComponent<eage::ecs::RenderComponent>( asteroid_entity );
 	render_cmp.visible = false;
+
+	// Disable physics and move off-screen
+	auto& physics_cmp = mECSRegistry.GetComponent<eage::ecs::PhysicsComponent>( asteroid_entity );
+	// Stop all movement
+	physics_cmp.QueueSetPosition( mScreenBottomRight + glm::vec2( INACTIVE_OFFSET, INACTIVE_OFFSET * -1.f ) );
+	physics_cmp.QueueSleep( true );
 
 	mAvailableAsteroids.push_back( asteroid_entity );
 }

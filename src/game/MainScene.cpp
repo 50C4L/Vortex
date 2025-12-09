@@ -337,7 +337,7 @@ void
 MainScene::CreateEnemyEntities()
 {
 	mAsteroidGameplaySystem = std::make_unique<AsteroidGameplaySystem>( mECSRegistry, mRenderSystem, mRenderer );
-	mAsteroidGameplaySystem->PrepareAsteroids( 10, mSceneRootEntity );
+	mAsteroidGameplaySystem->PrepareAsteroids( 100, mSceneRootEntity );
 
 	mAsteroidGameplaySystem->SpawnAsteroid( 5 );
 }

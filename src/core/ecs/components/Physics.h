@@ -26,6 +26,9 @@ namespace eage::ecs
 		// Maximum linear velocity in pixels/second. 0 means no limit.
 		float max_linear_velocity = 0.0f;
 
+		// Do not set this directly, use QueueSleep() instead
+		bool enabled = true;
+
 		// Physics Events
 		enum class EventType
 		{

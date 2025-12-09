@@ -47,9 +47,14 @@ PhysicsSystem::Update()
 {
 	for( auto& [entity, physics] : mECSRegistry.GetComponentMap<PhysicsComponent>() )
 	{
+		if( !physics.enabled )
+		{
+			continue; // Skip disabled physics components
+		}
+
 		if( !mECSRegistry.HasComponent<TransformComponent>( entity ) )
 		{
-			continue; // No collider component found
+			continue; // No transform component found
 		}
 
 		if( physics.body_id == INVALID_ID )
@@ -67,6 +72,7 @@ PhysicsSystem::Update()
 				{
 					switch( event.type )
 					{
+						// @todo: Calls to b2Body_ functions should be wrapped in PhysicsEngine methods
 						case PhysicsComponent::EventType::ApplyForce:
 						{
 							glm::vec2 physics_force = PixelsToMeters( event.vector_data );
@@ -132,6 +138,7 @@ PhysicsSystem::Update()
 						case PhysicsComponent::EventType::SetSleep:
 							if( event.scalar_data > 0.5f )
 							{
+								physics.enabled = false;
 								b2Body_SetAwake( body->mBodyId, false );
 								// Set velocity to zero when sleeping
 								b2Body_SetLinearVelocity( body->mBodyId, b2Vec2{ 0.0f, 0.0f } );
@@ -139,6 +146,7 @@ PhysicsSystem::Update()
 							}
 							else
 							{
+								physics.enabled = true;
 								b2Body_SetAwake( body->mBodyId, true );
 							}
 							break;
