@@ -55,7 +55,7 @@ namespace
 	{
 		for( const auto& format : available_formats )
 		{
-			if( format.format == vk::Format::eA8B8G8R8SrgbPack32 && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear )
+			if( format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear )
 			{
 				return format;
 			}
