@@ -17,8 +17,6 @@ namespace eage::ecs
 			KINEMATIC
 		} body_type = BodyType::STATIC;
 
-		bool is_sensor = false;
-
 		// If true, the TransformComponent will be updated from the physics body each frame
 		// If false, the TransformComponent will only be used to set the initial position of the body
 		bool sync_transform_from_body = false;
@@ -116,6 +114,7 @@ namespace eage::ecs
 		float width = 1.0f;
 		float height = 1.0f;
 		glm::vec2 offset{ 0.0f, 0.0f };
+		bool is_sensor = false;
 
 		uint16_t category_bits = 0x0001;	// Which category this collider belongs to
 		uint16_t mask_bits = 0xFFFF;		// Which categories this collider collides with
@@ -127,6 +126,7 @@ namespace eage::ecs
 	{
 		float radius = 0.5f;
 		glm::vec2 offset{ 0.0f, 0.0f };
+		bool is_sensor = false;
 
 		uint16_t category_bits = 0x0001;	// Which category this collider belongs to
 		uint16_t mask_bits = 0xFFFF;		// Which categories this collider collides with

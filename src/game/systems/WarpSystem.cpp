@@ -107,3 +107,13 @@ WarpSystem::CalculateWrapPosition( const glm::vec2& exit_pos, const WarpBoundary
 	
 	return new_pos;
 }
+
+void
+WarpSystem::OnCollideBegin( uint64_t entityA, uint64_t entityB )
+{
+}
+
+void
+WarpSystem::OnCollideEnd( uint64_t entityA, uint64_t entityB )
+{
+}

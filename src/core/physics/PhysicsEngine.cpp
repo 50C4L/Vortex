@@ -102,6 +102,7 @@ PhysicsEngine::AddCircleColliderToBody( PhysicsBody& body, CollisionFilter filte
 	b2ShapeDef def = b2DefaultShapeDef();
 	def.isSensor = is_sensor;
 	def.enableSensorEvents = true;
+	def.enableContactEvents = !is_sensor;
 	def.filter.categoryBits = filter.category_bits;
 	def.filter.maskBits = filter.mask_bits;
 	def.filter.groupIndex = filter.group_index;
@@ -125,6 +126,7 @@ PhysicsEngine::AddBoxColliderToBody( PhysicsBody& body, CollisionFilter filter, 
 	b2ShapeDef def = b2DefaultShapeDef();
 	def.isSensor = is_sensor;
 	def.enableSensorEvents = true;
+	def.enableContactEvents = !is_sensor;
 	def.filter.categoryBits = filter.category_bits;
 	def.filter.maskBits = filter.mask_bits;
 	def.filter.groupIndex = filter.group_index;
@@ -157,6 +159,7 @@ PhysicsEngine::Update()
 	mLastUpdateTime = std::chrono::steady_clock::now();
 
 	ProcessSensorEvents();
+	ProcessContactEvents();
 
 	b2World_Draw( mWorldId, &mDebugDraw );
 }
@@ -229,6 +232,39 @@ PhysicsEngine::ProcessSensorEvents()
 			if( sensor_body && visitor_body )
 			{
 				mEventListener->OnSensorExit( sensor_body, visitor_body );
+			}
+		}
+	}
+}
+
+void
+PhysicsEngine::ProcessContactEvents()
+{
+	b2ContactEvents contact_events = b2World_GetContactEvents( mWorldId );
+
+	if( mEventListener )
+	{
+		// Process begin touch events
+		for( int i = 0; i < contact_events.beginCount; ++i )
+		{
+			b2ContactBeginTouchEvent event = contact_events.beginEvents[i];
+			PhysicsBody* body_a = static_cast<PhysicsBody*>( b2Shape_GetUserData( event.shapeIdA ) );
+			PhysicsBody* body_b = static_cast<PhysicsBody*>( b2Shape_GetUserData( event.shapeIdB ) );
+			if( body_a && body_b )
+			{
+				mEventListener->OnCollideBegin( body_a, body_b );
+			}
+		}
+
+		// Process end touch events
+		for( int i = 0; i < contact_events.endCount; ++i )
+		{
+			b2ContactEndTouchEvent event = contact_events.endEvents[i];
+			PhysicsBody* body_a = static_cast<PhysicsBody*>( b2Shape_GetUserData( event.shapeIdA ) );
+			PhysicsBody* body_b = static_cast<PhysicsBody*>( b2Shape_GetUserData( event.shapeIdB ) );
+			if( body_a && body_b )
+			{
+				mEventListener->OnCollideEnd( body_a, body_b );
 			}
 		}
 	}

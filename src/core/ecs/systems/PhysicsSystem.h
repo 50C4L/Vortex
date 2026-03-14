@@ -31,6 +31,9 @@ namespace eage::ecs
 		public:
 			virtual void OnSensorEnter( uint64_t sensor, uint64_t visitor ) = 0;
 			virtual void OnSensorExit( uint64_t sensor, uint64_t visitor ) = 0;
+
+			virtual void OnCollideBegin( uint64_t entityA, uint64_t entityB ) = 0;
+			virtual void OnCollideEnd( uint64_t entityA, uint64_t entityB ) = 0;
 		};
 
 		PhysicsSystem( ECSRegistry& ecs_registry );
@@ -57,6 +60,8 @@ namespace eage::ecs
 		// PhysicsEventListener interface
 		void OnSensorEnter( physics::PhysicsBody* sensor, physics::PhysicsBody* visitor ) override;
 		void OnSensorExit( physics::PhysicsBody* sensor, physics::PhysicsBody* visitor ) override;
+		void OnCollideBegin( physics::PhysicsBody* bodyA, physics::PhysicsBody* bodyB ) override;
+		void OnCollideEnd( physics::PhysicsBody* bodyA, physics::PhysicsBody* bodyB ) override;
 
 	private:
 		void CreateCollisionBodyFromComponents( uint64_t entity );

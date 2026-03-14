@@ -30,6 +30,7 @@ namespace vortex
 			PHYSX_CAT_PLAYER = 0x0002,
 			PHYSX_CAT_SCREEN_ZONE = 0x0003,
 			PHYSX_CAT_WARPABLE = 0x0004,
+			PHYSX_CAT_ENEMY = 0x0005
 		};
 	}
 }

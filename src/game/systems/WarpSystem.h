@@ -27,6 +27,8 @@ namespace vortex
 		// PhysicsSystem::Observer interface
 		void OnSensorEnter( uint64_t sensor, uint64_t visitor ) override;
 		void OnSensorExit( uint64_t sensor, uint64_t visitor ) override;
+		void OnCollideBegin( uint64_t entityA, uint64_t entityB ) override;
+		void OnCollideEnd( uint64_t entityA, uint64_t entityB ) override;
 		
 	private:
 		glm::vec2 CalculateWrapPosition( const glm::vec2& exit_pos, const WarpBoundaryComponent& boundary );

@@ -91,6 +91,7 @@ namespace eage::physics
 
 	private:
 		void ProcessSensorEvents();
+		void ProcessContactEvents();
 
 		b2WorldId mWorldId;
 		b2DebugDraw mDebugDraw;

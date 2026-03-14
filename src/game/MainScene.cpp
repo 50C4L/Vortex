@@ -192,7 +192,7 @@ MainScene::CreatePlayerEntity()
 
 	eage::ecs::CircleColliderComponent player_collider;
 	player_collider.radius = 25.f; // Approximate radius of the ship
-	player_collider.category_bits = PHYSX_CAT_WARPABLE;
+	player_collider.category_bits = PHYSX_CAT_WARPABLE | PHYSX_CAT_PLAYER;
 	player_collider.mask_bits = PHYSX_CAT_SCREEN_ZONE;
 	mECSRegistry.AddComponent( mPlayerEntity, std::move( player_collider ) );
 
@@ -305,13 +305,13 @@ MainScene::CreateScreenZoneEntities()
 
 	// Collision component
 	eage::ecs::PhysicsComponent physics;
-	physics.is_sensor = true;
 	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( physics ) );
 
 	// Box collider component
 	eage::ecs::BoxColliderComponent box_collider;
 	box_collider.width = static_cast<float>( config::DesignResolution::WIDTH );
 	box_collider.height = static_cast<float>( config::DesignResolution::HEIGHT );
+	box_collider.is_sensor = true;
 	box_collider.category_bits = PHYSX_CAT_SCREEN_ZONE;
 	box_collider.mask_bits = PHYSX_CAT_WARPABLE;
 	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( box_collider ) );
@@ -331,12 +331,12 @@ void
 MainScene::InitializeGenericSystems()
 {
 	mWarpSystem = std::make_unique<WarpSystem>( mECSRegistry, mPhysicsSystem );
+	mAsteroidGameplaySystem = std::make_unique<AsteroidGameplaySystem>( mECSRegistry, mRenderSystem, mRenderer, mPhysicsSystem );
 }
 
 void
 MainScene::CreateEnemyEntities()
 {
-	mAsteroidGameplaySystem = std::make_unique<AsteroidGameplaySystem>( mECSRegistry, mRenderSystem, mRenderer );
 	mAsteroidGameplaySystem->PrepareAsteroids( 100, mSceneRootEntity );
 
 	mAsteroidGameplaySystem->SpawnAsteroid( 5 );

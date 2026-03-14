@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 
 #include <ecs/ResourceManager.h>
+#include <ecs/systems/PhysicsSystem.h>
 
 namespace eage::ecs
 {
@@ -19,11 +20,11 @@ namespace eage::graphics
 
 namespace vortex
 {
-	class AsteroidGameplaySystem
+	class AsteroidGameplaySystem : public eage::ecs::PhysicsSystem::Observer
 	{
 	public:
 		AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry, eage::ecs::RenderSystem& render_system,
-								eage::graphics::Renderer& renderer );
+								eage::graphics::Renderer& renderer, eage::ecs::PhysicsSystem& physics_system );
 		~AsteroidGameplaySystem();
 
 		///
@@ -37,10 +38,18 @@ namespace vortex
 
 		void Update();
 
+		// PhysicsSystem::Observer interface
+		void OnSensorEnter( uint64_t sensor, uint64_t visitor ) override;
+		void OnSensorExit( uint64_t sensor, uint64_t visitor ) override;
+		void OnCollideBegin( uint64_t entityA, uint64_t entityB ) override;
+		void OnCollideEnd( uint64_t entityA, uint64_t entityB ) override;
+
 	private:
 		eage::ecs::ECSRegistry& mECSRegistry;
 		eage::ecs::RenderSystem& mRenderSystem;
 		eage::graphics::Renderer& mRenderer;
+		eage::ecs::PhysicsSystem& mPhysicsSystem;
+
 		eage::ecs::ResourceId mAsteroidMaterialId = 0;
 		eage::ecs::ResourceId mAsteroidMeshId = 0;
 

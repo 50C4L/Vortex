@@ -14,6 +14,7 @@
 
 #include "../GameConfig.h"
 #include "../components/GameGenericComponents.h"
+#include "../components/PlayerComponents.h"
 
 using namespace vortex;
 using namespace utility;
@@ -25,11 +26,13 @@ namespace
 }
 
 AsteroidGameplaySystem::AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry, eage::ecs::RenderSystem& render_system, 
-												eage::graphics::Renderer& renderer )
+												eage::graphics::Renderer& renderer, eage::ecs::PhysicsSystem& physics_system )
 	: mECSRegistry( registry )
 	, mRenderSystem( render_system )
 	, mRenderer( renderer )
+	, mPhysicsSystem( physics_system )
 {
+	mPhysicsSystem.RegisterObserver( this );
 	float half_width = static_cast<float>( config::DesignResolution::WIDTH) * 0.5f;
 	float half_height = static_cast<float>( config::DesignResolution::HEIGHT) * 0.5f;
 	mScreenTopLeft = glm::vec2( -half_width, half_height );
@@ -38,6 +41,7 @@ AsteroidGameplaySystem::AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry
 
 AsteroidGameplaySystem::~AsteroidGameplaySystem()
 {
+	mPhysicsSystem.UnregisterObserver( this );
 }
 
 void
@@ -105,8 +109,10 @@ AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
 
 		eage::ecs::CircleColliderComponent collider;
 		collider.radius = 25.f; // Approximate radius of the ship
-		collider.category_bits = config::PHYSX_CAT_WARPABLE;
-		collider.mask_bits = config::PHYSX_CAT_SCREEN_ZONE;
+		// collider.is_sensor = true;
+		collider.category_bits = config::PHYSX_CAT_WARPABLE | config::PHYSX_CAT_ENEMY;
+		collider.mask_bits = config::PHYSX_CAT_SCREEN_ZONE | config::PHYSX_CAT_PLAYER;
+		collider.group_index = -1; // Negative group index = never collide with same group
 		mECSRegistry.AddComponent( asteroid, std::move( collider ) );
 
 		// Gameplay components
@@ -227,5 +233,33 @@ AsteroidGameplaySystem::DespawnAsteroid( uint64_t asteroid_entity )
 
 void 
 AsteroidGameplaySystem::Update()
+{
+}
+
+void
+AsteroidGameplaySystem::OnSensorEnter( uint64_t sensor, uint64_t visitor )
+{
+}
+
+void
+AsteroidGameplaySystem::OnSensorExit( uint64_t sensor, uint64_t visitor )
+{
+}
+
+void
+AsteroidGameplaySystem::OnCollideBegin( uint64_t entityA, uint64_t entityB )
+{
+	// Deal damage to player ship if asteroid collides with it
+	if( !mECSRegistry.HasComponent<PlayerComponent>( entityA ) && !mECSRegistry.HasComponent<PlayerComponent>( entityB ) )
+	{
+		return; // Not the player ship
+	}
+
+	// For simplicity, just log damage event
+	LOG() << "Player ship hit by asteroid!";
+}
+
+void
+AsteroidGameplaySystem::OnCollideEnd( uint64_t entityA, uint64_t entityB )
 {
 }

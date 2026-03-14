@@ -238,6 +238,54 @@ PhysicsSystem::OnSensorExit( physics::PhysicsBody* sensor, physics::PhysicsBody*
 }
 
 void
+PhysicsSystem::OnCollideBegin( physics::PhysicsBody* bodyA, physics::PhysicsBody* bodyB )
+{
+	if( !bodyA || !bodyB )
+	{
+		return;
+	}
+
+	auto data_a = mPhysicsEngine->GetUserData( *bodyA );
+	auto data_b = mPhysicsEngine->GetUserData( *bodyB );
+	if( !data_a || !data_b )
+	{
+		LOG_ERROR() << "Colliding body has no associated entity.";
+		return;
+	}
+
+	for( auto* observer : mObservers )
+	{
+		uint64_t entity_a = reinterpret_cast<uint64_t>( data_a );
+		uint64_t entity_b = reinterpret_cast<uint64_t>( data_b );
+		observer->OnCollideBegin( entity_a, entity_b );
+	}
+}
+
+void
+PhysicsSystem::OnCollideEnd( physics::PhysicsBody* bodyA, physics::PhysicsBody* bodyB )
+{
+	if( !bodyA || !bodyB )
+	{
+		return;
+	}
+
+	auto data_a = mPhysicsEngine->GetUserData( *bodyA );
+	auto data_b = mPhysicsEngine->GetUserData( *bodyB );
+	if( !data_a || !data_b )
+	{
+		LOG_ERROR() << "Colliding body has no associated entity.";
+		return;
+	}
+
+	for( auto* observer : mObservers )
+	{
+		uint64_t entity_a = reinterpret_cast<uint64_t>( data_a );
+		uint64_t entity_b = reinterpret_cast<uint64_t>( data_b );
+		observer->OnCollideEnd( entity_a, entity_b );
+	}
+}
+
+void
 PhysicsSystem::CreateCollisionBodyFromComponents( uint64_t entity )
 {
 	auto& physics = mECSRegistry.GetComponent<PhysicsComponent>( entity );
@@ -281,7 +329,7 @@ PhysicsSystem::CreateCollisionBodyFromComponents( uint64_t entity )
 
 		mPhysicsEngine->AddCircleColliderToBody( 
 			*physics_body, { circle_collider.category_bits, circle_collider.mask_bits, circle_collider.group_index },
-			physics_radius, physics.is_sensor, physics_offset );
+			physics_radius, circle_collider.is_sensor, physics_offset );
 	}
 
 	// Add box collider
@@ -294,7 +342,7 @@ PhysicsSystem::CreateCollisionBodyFromComponents( uint64_t entity )
 
 		mPhysicsEngine->AddBoxColliderToBody(
 			*physics_body, { box_collider.category_bits, box_collider.mask_bits, box_collider.group_index },
-			physics_width, physics_height, physics.is_sensor, physics_offset );
+			physics_width, physics_height, box_collider.is_sensor, physics_offset );
 	}
 
 	// @todo more collider types
