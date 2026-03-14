@@ -14,6 +14,7 @@
 
 #include "../GameConfig.h"
 #include "../components/GameGenericComponents.h"
+#include "../components/HealthComponent.h"
 #include "../components/PlayerComponents.h"
 
 using namespace vortex;
@@ -249,14 +250,17 @@ AsteroidGameplaySystem::OnSensorExit( uint64_t sensor, uint64_t visitor )
 void
 AsteroidGameplaySystem::OnCollideBegin( uint64_t entityA, uint64_t entityB )
 {
-	// Deal damage to player ship if asteroid collides with it
-	if( !mECSRegistry.HasComponent<PlayerComponent>( entityA ) && !mECSRegistry.HasComponent<PlayerComponent>( entityB ) )
+	auto applyDamage = [&]( uint64_t entity )
 	{
-		return; // Not the player ship
-	}
+		if( mECSRegistry.HasComponent<PlayerComponent>( entity ) &&
+			mECSRegistry.HasComponent<HealthComponent>( entity ) )
+		{
+			mECSRegistry.GetComponent<HealthComponent>( entity ).pending_damage += 50.f;
+		}
+	};
 
-	// For simplicity, just log damage event
-	LOG() << "Player ship hit by asteroid!";
+	applyDamage( entityA );
+	applyDamage( entityB );
 }
 
 void

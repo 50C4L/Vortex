@@ -31,6 +31,7 @@
 #include "systems/PlayerGameplaySystem.h"
 #include "systems/WarpSystem.h"
 #include "components/GameGenericComponents.h"
+#include "components/HealthComponent.h"
 #include "components/PlayerComponents.h"
 
 using namespace vortex;
@@ -178,6 +179,9 @@ MainScene::CreatePlayerEntity()
 	// Player component with all player-specific data
 	PlayerComponent player;
 	mECSRegistry.AddComponent( mPlayerEntity, std::move( player ) );
+
+	// Health component
+	mECSRegistry.AddComponent( mPlayerEntity, HealthComponent{} );
 	
 	// Transform component
 	mECSRegistry.AddComponent( mPlayerEntity, eage::ecs::TransformComponent{} );

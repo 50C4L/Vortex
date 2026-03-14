@@ -7,6 +7,8 @@ namespace vortex
 {
 	struct PlayerComponent
 	{
+		enum class State { Alive, Dead };
+
 		// Movement state
 		bool turning_left = false;
 		bool turning_right = false;
@@ -18,6 +20,8 @@ namespace vortex
 		float rotation_speed = 3.f; // degrees per second
 
 		uint64_t thruster_fx_entity = 0; // Entity ID of the thruster effect
+
+		State state = State::Alive;
 	};
 }
 

@@ -31,7 +31,8 @@ namespace vortex
 								   eage::ecs::PhysicsComponent& physics_comp,
 								   eage::ecs::TransformComponent& transform_comp,
 								   float delta_time_sec );
-		
+		void UpdateThrusterFX( const PlayerComponent& player_comp, uint64_t entity );
+
 		eage::ecs::ECSRegistry& mRegistry;
 	};
 }

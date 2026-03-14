@@ -4,10 +4,14 @@
 #include <ecs/components/Basics.h>
 #include <ecs/components/Physics.h>
 #include <ecs/components/Render.h>
+#include <utility/Logger.h>
 
+#include "../components/HealthComponent.h"
 #include "../components/PlayerComponents.h"
 
 using namespace vortex;
+using namespace utility;
+
 
 PlayerGameplaySystem::PlayerGameplaySystem( eage::ecs::ECSRegistry& registry )
 	: mRegistry(registry)
@@ -24,6 +28,41 @@ PlayerGameplaySystem::Update( float delta_time_sec )
 	// Get only entities with PlayerComponent (much smaller set)
 	for( auto& [entity, player] : mRegistry.GetComponentMap<PlayerComponent>() )
 	{
+		// Process incoming damage
+		if( mRegistry.HasComponent<HealthComponent>( entity ) )
+		{
+			auto& health = mRegistry.GetComponent<HealthComponent>( entity );
+			if( health.pending_damage > 0.f )
+			{
+				health.health -= health.pending_damage;
+				health.pending_damage = 0.f;
+				LOG() << "Player health: " << health.health;
+
+				if( health.IsDead() && player.state == PlayerComponent::State::Alive )
+				{
+					player.state = PlayerComponent::State::Dead;
+					player.thruster_on = false;
+					LOG() << "Player has died.";
+
+					// Zero out physics velocity
+					if( mRegistry.HasComponent<eage::ecs::PhysicsComponent>( entity ) )
+					{
+						auto& physics = mRegistry.GetComponent<eage::ecs::PhysicsComponent>( entity );
+						physics.QueueSetVelocity( glm::vec2( 0.f, 0.f ) );
+						physics.QueueSetAngularVelocity( 0.f );
+					}
+				}
+			}
+		}
+
+		UpdateThrusterFX( player, entity );
+
+		// Skip movement and FX when dead
+		if( player.state == PlayerComponent::State::Dead )
+		{
+			continue;
+		}
+
 		// We know this entity has PlayerComponent, now check for others
 		if( mRegistry.HasComponent<eage::ecs::PhysicsComponent>( entity ) &&
 			mRegistry.HasComponent<eage::ecs::TransformComponent>( entity ) )
@@ -32,29 +71,25 @@ PlayerGameplaySystem::Update( float delta_time_sec )
 			auto& transform = mRegistry.GetComponent<eage::ecs::TransformComponent>( entity );
 			
 			UpdatePlayerMovement( player, physics, transform, delta_time_sec );
-
-			if( player.thruster_fx_entity != 0 &&
-			 	mRegistry.HasComponent<eage::ecs::RenderComponent>( player.thruster_fx_entity ) )
-			{
-				auto& thruster_render = mRegistry.GetComponent<eage::ecs::RenderComponent>( player.thruster_fx_entity );
-				thruster_render.visible = player.thruster_on;
-			}
-
-			// Audio logic specific to player thrust
-			if( mRegistry.HasComponent<AudioEventComponent>( entity ) )
-			{
-				auto& audio_event = mRegistry.GetComponent<AudioEventComponent>( entity );
-				
-				if( player.thruster_on )
-				{
-					audio_event.QueueEvent( AudioEventComponent::EventType::Play );
-				}
-				else
-				{
-					audio_event.QueueEvent( AudioEventComponent::EventType::Stop );
-				}
-			}
 		}
+	}
+}
+
+void
+PlayerGameplaySystem::UpdateThrusterFX( const PlayerComponent& player_comp, uint64_t entity )
+{
+	if( player_comp.thruster_fx_entity != 0 &&
+		mRegistry.HasComponent<eage::ecs::RenderComponent>( player_comp.thruster_fx_entity ) )
+	{
+		mRegistry.GetComponent<eage::ecs::RenderComponent>( player_comp.thruster_fx_entity ).visible = player_comp.thruster_on;
+	}
+
+	if( mRegistry.HasComponent<AudioEventComponent>( entity ) )
+	{
+		auto& audio_event = mRegistry.GetComponent<AudioEventComponent>( entity );
+		audio_event.QueueEvent( player_comp.thruster_on
+			? AudioEventComponent::EventType::Play
+			: AudioEventComponent::EventType::Stop );
 	}
 }
 
