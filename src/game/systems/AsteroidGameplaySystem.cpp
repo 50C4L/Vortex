@@ -5,10 +5,7 @@
 #include <ecs/components/Physics.h>
 #include <ecs/components/Render.h>
 #include <ecs/systems/RenderSystem.h>
-#include <graphics/BuiltInMeshes.h>
-#include <graphics/BuiltInUniforms.h>
 #include <graphics/MaterialBuilder.h>
-#include <graphics/Renderer.h>
 #include <assets/TextureAtlas.h>
 #include <utility/Logger.h>
 
@@ -26,11 +23,10 @@ namespace
 	constexpr float SPAWN_AREA_PADDING = 100.0f; // Padding from screen edges for spawning asteroids
 }
 
-AsteroidGameplaySystem::AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry, eage::ecs::RenderSystem& render_system, 
-												eage::graphics::Renderer& renderer, eage::ecs::PhysicsSystem& physics_system )
+AsteroidGameplaySystem::AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry, eage::ecs::RenderSystem& render_system,
+												eage::ecs::PhysicsSystem& physics_system )
 	: mECSRegistry( registry )
 	, mRenderSystem( render_system )
-	, mRenderer( renderer )
 	, mPhysicsSystem( physics_system )
 {
 	mPhysicsSystem.RegisterObserver( this );
@@ -68,19 +64,8 @@ AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
 	texture_atlas.Flip();
 	const auto& asteroid_tex = texture_atlas.GetSubTexture( "asteroid_L_0.png" );
 
-	// Create mesh once - THIS CAN BE REUSED
-	auto rect = eage::graphics::made_rect_vertices({0, 0, 0}, 50, 50);
-	rect.vertices[0].uv_x = asteroid_tex.uv_max.x;
-	rect.vertices[0].uv_y = asteroid_tex.uv_min.y;
-	rect.vertices[1].uv_x = asteroid_tex.uv_max.x;
-	rect.vertices[1].uv_y = asteroid_tex.uv_max.y;
-	rect.vertices[2].uv_x = asteroid_tex.uv_min.x;
-	rect.vertices[2].uv_y = asteroid_tex.uv_min.y;
-	rect.vertices[3].uv_x = asteroid_tex.uv_min.x;
-	rect.vertices[3].uv_y = asteroid_tex.uv_max.y;
-
 	// Create shared mesh - ALL ASTEROIDS CAN USE THIS
-	mAsteroidMeshId = mRenderSystem.CreateMeshBuffer(rect.indices, rect.vertices, 0, 6, 0);
+	mAsteroidMeshId = mRenderSystem.CreateSpriteMesh( 50.f, 50.f, asteroid_tex.uv_min, asteroid_tex.uv_max );
 
 	// Create given number of asteroids
 	for( int i = 0; i < count; ++i )
@@ -120,24 +105,7 @@ AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
 		mECSRegistry.AddComponent( asteroid, WarpComponent{} );
 
 		// Render component
-		auto asteroid_uniform_buffer_id = mRenderSystem.CreateDynamicUniformBuffer( sizeof(eage::graphics::MeshUniformData) );
-		auto asteroid_descriptor_id = mRenderSystem.CreateDynamicDescriptorSet( mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() );
-		
-		// Set up the descriptor binding for the asteroid (this should be done once at creation time)
-		mRenderSystem.GetDescriptorSet( asteroid_descriptor_id )->WriteBuffer(
-			0, // binding
-			vk::DescriptorType::eUniformBufferDynamic,
-			mRenderSystem.GetUniformBuffer( asteroid_uniform_buffer_id )->buffer,
-			sizeof(eage::graphics::MeshUniformData) );
-
-		// Add ECS RenderComponent with the new resource IDs
-		mECSRegistry.AddComponent( asteroid, eage::ecs::RenderComponent{ 
-			mAsteroidMeshId, 
-			mAsteroidMaterialId, 
-			asteroid_uniform_buffer_id, 
-			asteroid_descriptor_id,
-			false
-		} );
+		mRenderSystem.AttachRenderable( asteroid, mAsteroidMeshId, mAsteroidMaterialId, false );
 	}
 }
 

@@ -13,18 +13,13 @@ namespace eage::ecs
 	class RenderSystem;
 }
 
-namespace eage::graphics
-{
-	class Renderer;
-}
-
 namespace vortex
 {
 	class AsteroidGameplaySystem : public eage::ecs::PhysicsSystem::Observer
 	{
 	public:
 		AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry, eage::ecs::RenderSystem& render_system,
-								eage::graphics::Renderer& renderer, eage::ecs::PhysicsSystem& physics_system );
+								eage::ecs::PhysicsSystem& physics_system );
 		~AsteroidGameplaySystem();
 
 		///
@@ -47,7 +42,6 @@ namespace vortex
 	private:
 		eage::ecs::ECSRegistry& mECSRegistry;
 		eage::ecs::RenderSystem& mRenderSystem;
-		eage::graphics::Renderer& mRenderer;
 		eage::ecs::PhysicsSystem& mPhysicsSystem;
 
 		eage::ecs::ResourceId mAsteroidMaterialId = 0;

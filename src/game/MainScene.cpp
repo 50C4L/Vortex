@@ -1,10 +1,7 @@
 #include "MainScene.h"
 
 #include <utility/Logger.h>
-#include <graphics/BuiltInMeshes.h>
 #include <graphics/Renderer.h>
-#include <graphics/BuiltInUniforms.h>
-#include <graphics/VulkanDescriptor.h>
 #include <graphics/VulkanMesh.h>
 #include <graphics/VulkanPipeline.h>
 #include <graphics/VulkanShader.h>
@@ -203,39 +200,8 @@ MainScene::CreatePlayerEntity()
 	// Render component
 	assets::TextureAtlas texture_atlas( "./resources/textures/ship/ship_texatlas.json" );
 	texture_atlas.Flip();
-	const auto& ship_tex = texture_atlas.GetSubTexture( "player_ship.png" ); 
-
-	auto rect = eage::graphics::made_rect_vertices( { 0, 0, 0 }, 50, 50 );
-	rect.vertices[0].uv_x = ship_tex.uv_max.x;
-	rect.vertices[0].uv_y = ship_tex.uv_min.y;
-	rect.vertices[1].uv_x = ship_tex.uv_max.x;
-	rect.vertices[1].uv_y = ship_tex.uv_max.y;
-	rect.vertices[2].uv_x = ship_tex.uv_min.x;
-	rect.vertices[2].uv_y = ship_tex.uv_min.y;
-	rect.vertices[3].uv_x = ship_tex.uv_min.x;
-	rect.vertices[3].uv_y = ship_tex.uv_max.y;
-
-	// Create ship mesh through RenderSystem
-	auto ship_mesh_id = mRenderSystem.CreateMeshBuffer( rect.indices, rect.vertices, 0, 6, 0 );
-
-	// Create uniform buffer and descriptor for mesh data
-	auto ship_uniform_buffer_id = mRenderSystem.CreateDynamicUniformBuffer( sizeof(eage::graphics::MeshUniformData) );
-	auto ship_descriptor_id = mRenderSystem.CreateDynamicDescriptorSet( mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() );
-	
-	// Set up the descriptor binding for the ship (this should be done once at creation time)
-	mRenderSystem.GetDescriptorSet( ship_descriptor_id )->WriteBuffer(
-		0, // binding
-		vk::DescriptorType::eUniformBufferDynamic,
-		mRenderSystem.GetUniformBuffer( ship_uniform_buffer_id )->buffer,
-		sizeof(eage::graphics::MeshUniformData) );
-
-	// Add ECS RenderComponent with the new resource IDs
-	mECSRegistry.AddComponent( mPlayerEntity, eage::ecs::RenderComponent{ 
-		ship_mesh_id, 
-		mPlayerMaterialId, 
-		ship_uniform_buffer_id, 
-		ship_descriptor_id 
-	} );
+	const auto& ship_tex = texture_atlas.GetSubTexture( "player_ship.png" );
+	mRenderSystem.AttachSprite( mPlayerEntity, mPlayerMaterialId, 50.f, 50.f, ship_tex.uv_min, ship_tex.uv_max );
 
 	// Audio components
 	AudioSourceComponent thrust_audio;
@@ -264,32 +230,7 @@ MainScene::CreatePlayerEntity()
 	mECSRegistry.AddComponent( thruster_entity, std::move(thruster_transform) );
 
 	const auto& thrust_tex = texture_atlas.GetSubTexture( "ship_thrust_fx.png" );
-	rect.vertices[0].uv_x = thrust_tex.uv_max.x;
-	rect.vertices[0].uv_y = thrust_tex.uv_min.y;
-	rect.vertices[1].uv_x = thrust_tex.uv_max.x;
-	rect.vertices[1].uv_y = thrust_tex.uv_max.y;
-	rect.vertices[2].uv_x = thrust_tex.uv_min.x;
-	rect.vertices[2].uv_y = thrust_tex.uv_min.y;
-	rect.vertices[3].uv_x = thrust_tex.uv_min.x;
-	rect.vertices[3].uv_y = thrust_tex.uv_max.y;
-
-	// Create thruster mesh through RenderSystem
-	auto thrust_mesh_id = mRenderSystem.CreateMeshBuffer( rect.indices, rect.vertices, 0, 6, 0 );
-	auto thrust_uniform_buffer_id = mRenderSystem.CreateDynamicUniformBuffer( sizeof(eage::graphics::MeshUniformData) );
-	auto thrust_descriptor_id = mRenderSystem.CreateDynamicDescriptorSet( mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() );
-	mRenderSystem.GetDescriptorSet( thrust_descriptor_id )->WriteBuffer(
-		0, // binding
-		vk::DescriptorType::eUniformBufferDynamic,
-		mRenderSystem.GetUniformBuffer( thrust_uniform_buffer_id )->buffer,
-		sizeof(eage::graphics::MeshUniformData) );
-
-	// Add ECS RenderComponent with the new resource IDs
-	mECSRegistry.AddComponent( thruster_entity, eage::ecs::RenderComponent{ 
-		thrust_mesh_id, 
-		mPlayerMaterialId, 
-		thrust_uniform_buffer_id, 
-		thrust_descriptor_id 
-	} );
+	mRenderSystem.AttachSprite( thruster_entity, mPlayerMaterialId, 50.f, 50.f, thrust_tex.uv_min, thrust_tex.uv_max );
 }
 
 void 
@@ -335,7 +276,7 @@ void
 MainScene::InitializeGenericSystems()
 {
 	mWarpSystem = std::make_unique<WarpSystem>( mECSRegistry, mPhysicsSystem );
-	mAsteroidGameplaySystem = std::make_unique<AsteroidGameplaySystem>( mECSRegistry, mRenderSystem, mRenderer, mPhysicsSystem );
+	mAsteroidGameplaySystem = std::make_unique<AsteroidGameplaySystem>( mECSRegistry, mRenderSystem, mPhysicsSystem );
 }
 
 void

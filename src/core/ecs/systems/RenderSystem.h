@@ -47,6 +47,17 @@ namespace eage::ecs
 		ResourceId CreateDynamicDescriptorSet( vk::DescriptorSetLayout layout );
 		ResourceId CreateSampler( vk::Filter min_filter, vk::Filter mag_filter );
 
+		///
+		/// Facade methods: create a UV-mapped rect mesh buffer
+		///
+		ResourceId CreateSpriteMesh( float width, float height, glm::vec2 uv_min, glm::vec2 uv_max );
+
+		///
+		/// Facade methods: allocate UBO + descriptor + RenderComponent for an entity in one call
+		///
+		void AttachRenderable( eage::ecs::Entity entity, ResourceId mesh_id, ResourceId material_id, bool visible = true );
+		void AttachSprite( eage::ecs::Entity entity, ResourceId material_id, float width, float height, glm::vec2 uv_min, glm::vec2 uv_max, bool visible = true );
+
 		// Resource accessors
 		eage::graphics::ManagedBuffer* GetGlobalUniformBuffer();
 		eage::graphics::ManagedImage* GetImageBuffer( ResourceId id );

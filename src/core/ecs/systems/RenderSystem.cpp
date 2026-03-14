@@ -3,6 +3,7 @@
 #include <assets/ImageLoader.h>
 #include <ecs/components/Basics.h>
 #include <ecs/components/Render.h>
+#include <graphics/BuiltInMeshes.h>
 #include <graphics/BuiltInUniforms.h>
 #include <graphics/Renderer.h>
 #include <graphics/VulkanMesh.h>
@@ -229,6 +230,38 @@ RenderSystem::CreateSampler( vk::Filter min_filter, vk::Filter mag_filter )
 	mSamplerCache[hash] = sampler_id;
 	
 	return sampler_id;
+}
+
+ResourceId
+RenderSystem::CreateSpriteMesh( float width, float height, glm::vec2 uv_min, glm::vec2 uv_max )
+{
+	auto rect = eage::graphics::made_rect_vertices( { 0, 0, 0 }, width, height );
+	rect.vertices[0].uv_x = uv_max.x; rect.vertices[0].uv_y = uv_min.y;
+	rect.vertices[1].uv_x = uv_max.x; rect.vertices[1].uv_y = uv_max.y;
+	rect.vertices[2].uv_x = uv_min.x; rect.vertices[2].uv_y = uv_min.y;
+	rect.vertices[3].uv_x = uv_min.x; rect.vertices[3].uv_y = uv_max.y;
+	return CreateMeshBuffer( rect.indices, rect.vertices, 0, 6, 0 );
+}
+
+void
+RenderSystem::AttachRenderable( eage::ecs::Entity entity, ResourceId mesh_id, ResourceId material_id, bool visible )
+{
+	auto ubo_id = CreateDynamicUniformBuffer( sizeof( eage::graphics::MeshUniformData ) );
+	auto descriptor_id = CreateDynamicDescriptorSet( mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() );
+	GetDescriptorSet( descriptor_id )->WriteBuffer(
+		PER_OBJECT_MESH_DATA_BINDING,
+		vk::DescriptorType::eUniformBufferDynamic,
+		GetUniformBuffer( ubo_id )->buffer,
+		sizeof( eage::graphics::MeshUniformData ) );
+	mECSRegistry.AddComponent( entity, eage::ecs::RenderComponent{
+		mesh_id, material_id, ubo_id, descriptor_id, visible } );
+}
+
+void
+RenderSystem::AttachSprite( eage::ecs::Entity entity, ResourceId material_id, float width, float height, glm::vec2 uv_min, glm::vec2 uv_max, bool visible )
+{
+	auto mesh_id = CreateSpriteMesh( width, height, uv_min, uv_max );
+	AttachRenderable( entity, mesh_id, material_id, visible );
 }
 
 eage::graphics::ManagedBuffer*
