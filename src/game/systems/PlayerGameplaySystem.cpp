@@ -76,8 +76,9 @@ PlayerGameplaySystem::Update( float delta_time_sec )
 }
 
 void
-PlayerGameplaySystem::UpdateThrusterFX( const PlayerComponent& player_comp, uint64_t entity )
+PlayerGameplaySystem::UpdateThrusterFX( PlayerComponent& player_comp, uint64_t entity )
 {
+	player_comp.thruster_on = player_comp.thruster_on && player_comp.state == PlayerComponent::State::Alive;
 	if( player_comp.thruster_fx_entity != 0 &&
 		mRegistry.HasComponent<eage::ecs::RenderComponent>( player_comp.thruster_fx_entity ) )
 	{
