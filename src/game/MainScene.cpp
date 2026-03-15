@@ -8,13 +8,10 @@
 #include <graphics/Camera.h>
 #include <graphics/ManagedVulkanResources.h>
 #include <graphics/VMAWrapper.h>
-#include <graphics/Material.h>
-#include <graphics/MaterialBuilder.h>
 #include <imgui/imgui.h>
 #include <events/InputController.h>
 #include <audio/AudioMixer.h>
 #include <assets/ImageLoader.h>
-#include <assets/TextureAtlas.h>
 
 #include <ecs/systems/AudioSystem.h>
 #include <ecs/systems/RenderSystem.h>
@@ -29,8 +26,6 @@
 #include "systems/PlayerGameplaySystem.h"
 #include "systems/WarpSystem.h"
 #include "components/GameGenericComponents.h"
-#include "components/HealthComponent.h"
-#include "components/PlayerComponents.h"
 
 using namespace vortex;
 using namespace vortex::config;
@@ -133,20 +128,6 @@ MainScene::PrepareMeshes()
 void
 MainScene::PrepareMaterials()
 {
-	// Create player material
-	mRenderSystem.CreateImageBuffer( "./resources/textures/ship/ship_texatlas.png" );
-
-	// Create sprite material using the new MaterialBuilder and RenderSystem
-	auto material_property = eage::graphics::MaterialBuilder()
-		.SetShaders("./src/shaders/compiled/colored_triangle_mesh.vert.spv", 
-					"./src/shaders/compiled/colored_triangle.frag.spv")
-		.AddTexture(0, "./resources/textures/ship/ship_texatlas.png", 
-					vk::Filter::eNearest, vk::Filter::eNearest)
-		.SetAlphaBlending()
-		.EnableDepthTest(true)
-		.Build();
-
-	mPlayerMaterialId = mRenderSystem.CreateMaterial(material_property);
 }
 
 void 
@@ -165,101 +146,8 @@ void
 MainScene::CreatePlayerEntity()
 {
 	mPlayerInputSystem = std::make_unique<PlayerInputSystem>( mECSRegistry, mInputController );
-	// PlayerGameplaySystem is created at the end of this function after the bullet pool is prepared
-
-	mPlayerEntity = mECSRegistry.CreateEntity();
-
-	// Set parent-child relationship with scene root
-	auto& root = mECSRegistry.GetComponent<eage::ecs::SceneGraphComponment>( mSceneRootEntity );
-	root.children_entities.push_back( mPlayerEntity );
-	eage::ecs::SceneGraphComponment player_relationship;
-	player_relationship.parent_entity = mSceneRootEntity;
-	mECSRegistry.AddComponent( mPlayerEntity, std::move( player_relationship ) );
-
-	// Player component with all player-specific data
-	PlayerComponent player;
-	mECSRegistry.AddComponent( mPlayerEntity, std::move( player ) );
-
-	// Health component
-	mECSRegistry.AddComponent( mPlayerEntity, HealthComponent{} );
-	
-	// Transform component
-	mECSRegistry.AddComponent( mPlayerEntity, eage::ecs::TransformComponent{} );
-
-	// Physics component
-	eage::ecs::PhysicsComponent player_physics;
-	player_physics.body_type = eage::ecs::PhysicsComponent::BodyType::DYNAMIC;
-	// player_physics.is_sensor = true;
-	player_physics.sync_transform_from_body = true;
-	player_physics.max_linear_velocity = 400.0f;
-	mECSRegistry.AddComponent( mPlayerEntity, std::move( player_physics ) );
-
-	eage::ecs::CircleColliderComponent player_collider;
-	player_collider.radius = 25.f; // Approximate radius of the ship
-	player_collider.category_bits = PHYSX_CAT_WARPABLE | PHYSX_CAT_PLAYER;
-	player_collider.mask_bits = PHYSX_CAT_SCREEN_ZONE;
-	mECSRegistry.AddComponent( mPlayerEntity, std::move( player_collider ) );
-
-	// Render component
-	assets::TextureAtlas texture_atlas( "./resources/textures/ship/ship_texatlas.json" );
-	texture_atlas.Flip();
-	const auto& ship_tex = texture_atlas.GetSubTexture( "player_ship.png" );
-	mRenderSystem.AttachSprite( mPlayerEntity, mPlayerMaterialId, 50.f, 50.f, ship_tex.uv_min, ship_tex.uv_max );
-
-	// Audio components
-	AudioSourceComponent thrust_audio;
-	thrust_audio.sound_path = "./resources/sounds/thruster.mp3";
-	thrust_audio.sound_resource_id = mAudioSystem.LoadSound( thrust_audio.sound_path );
-	thrust_audio.should_loop = true;
-	mECSRegistry.AddComponent( mPlayerEntity, std::move(thrust_audio) );
-	mECSRegistry.AddComponent( mPlayerEntity, AudioEventComponent{}) ;
-
-	// Gameplay components
-	mECSRegistry.AddComponent( mPlayerEntity, WarpComponent{} );
-
-	// Create Thruster entity - child of ship
-	auto thruster_entity = mECSRegistry.CreateEntity();
-
-	// Set parent-child relationship with player entity
-	auto& player_scene = mECSRegistry.GetComponent<eage::ecs::SceneGraphComponment>( mPlayerEntity );
-	player_scene.children_entities.push_back( thruster_entity );
-	auto& player_cmp = mECSRegistry.GetComponent<PlayerComponent>( mPlayerEntity );
-	player_cmp.thruster_fx_entity = thruster_entity;
-
-	// Thruster transform component
-	eage::ecs::TransformComponent thruster_transform;
-	thruster_transform.SetPosition( glm::vec3(0.0f, -30.f, 0.0f) ); // Behind ship in local space
-	thruster_transform.SetScale( glm::vec3( 1 / 5.f ) );
-	mECSRegistry.AddComponent( thruster_entity, std::move(thruster_transform) );
-
-	const auto& thrust_tex = texture_atlas.GetSubTexture( "ship_thrust_fx.png" );
-	mRenderSystem.AttachSprite( thruster_entity, mPlayerMaterialId, 50.f, 50.f, thrust_tex.uv_min, thrust_tex.uv_max );
-
-	// Create bullet launcher entity - child of player, positioned at ship tip
-	auto launcher_entity = mECSRegistry.CreateEntity();
-	player_scene.children_entities.push_back( launcher_entity );
-	player_cmp.bullet_launcher_entity = launcher_entity;
-
-	eage::ecs::SceneGraphComponment launcher_relationship;
-	launcher_relationship.parent_entity = mPlayerEntity;
-	mECSRegistry.AddComponent( launcher_entity, std::move( launcher_relationship ) );
-
-	eage::ecs::TransformComponent launcher_transform;
-	launcher_transform.SetPosition( glm::vec3( 0.f, 25.f, 0.f ) ); // Ship tip (sprite is 50px tall)
-	mECSRegistry.AddComponent( launcher_entity, std::move( launcher_transform ) );
-
-	// Prepare player bullet pool
-	BulletPoolConfig bullet_config;
-	bullet_config.damage = 10.f;
-	bullet_config.collider_radius = 5.f;
-	bullet_config.mesh_width = 10.f;
-	bullet_config.mesh_height = 10.f;
-	bullet_config.material_id = mPlayerMaterialId;
-	bullet_config.category_bits = config::PHYSX_CAT_BULLET;
-	bullet_config.mask_bits = config::PHYSX_CAT_ENEMY;
-	mPlayerBulletPoolId = mBulletSystem->PreparePool( bullet_config, 20, mSceneRootEntity );
-
-	mPlayerGameplaySystem = std::make_unique<PlayerGameplaySystem>( mECSRegistry, *mBulletSystem, mPlayerBulletPoolId );
+	mPlayerGameplaySystem = std::make_unique<PlayerGameplaySystem>( mECSRegistry, *mBulletSystem, mRenderSystem, mAudioSystem );
+	mPlayerGameplaySystem->PreparePlayer( mSceneRootEntity );
 }
 
 void 

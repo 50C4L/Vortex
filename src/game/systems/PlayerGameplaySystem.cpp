@@ -4,20 +4,146 @@
 #include <ecs/components/Basics.h>
 #include <ecs/components/Physics.h>
 #include <ecs/components/Render.h>
+#include <ecs/ResourceManager.h>
+#include <ecs/systems/AudioSystem.h>
+#include <ecs/systems/RenderSystem.h>
+#include <assets/TextureAtlas.h>
+#include <graphics/MaterialBuilder.h>
 #include <utility/Logger.h>
 
+#include <vulkan/vulkan.hpp>
+
+#include "BulletSystem.h"
+#include "../GameConfig.h"
+#include "../components/GameGenericComponents.h"
 #include "../components/HealthComponent.h"
 #include "../components/PlayerComponents.h"
 
+
 using namespace vortex;
+using namespace vortex::config;
 using namespace utility;
 
 
-PlayerGameplaySystem::PlayerGameplaySystem( eage::ecs::ECSRegistry& registry, BulletSystem& bullet_system, BulletPoolId player_bullet_pool_id )
-	: mRegistry(registry)
-	, mBulletSystem(bullet_system)
-	, mPlayerBulletPoolId(player_bullet_pool_id)
+PlayerGameplaySystem::PlayerGameplaySystem( eage::ecs::ECSRegistry& registry, BulletSystem& bullet_system,
+											eage::ecs::RenderSystem& render_system, eage::ecs::AudioSystem& audio_system )
+	: mRegistry( registry )
+	, mBulletSystem( bullet_system )
+	, mRenderSystem( render_system )
+	, mAudioSystem( audio_system )
 {
+}
+
+void
+PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
+{
+	// ------------------------------------------------------------------
+	// Material
+	// ------------------------------------------------------------------
+	mRenderSystem.CreateImageBuffer( "./resources/textures/ship/ship_texatlas.png" );
+
+	auto material_property = eage::graphics::MaterialBuilder()
+		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",
+					 "./src/shaders/compiled/colored_triangle.frag.spv" )
+		.AddTexture( 0, "./resources/textures/ship/ship_texatlas.png",
+					 vk::Filter::eNearest, vk::Filter::eNearest )
+		.SetAlphaBlending()
+		.EnableDepthTest( true )
+		.Build();
+
+	mPlayerMaterialId = mRenderSystem.CreateMaterial( material_property );
+
+	assets::TextureAtlas texture_atlas( "./resources/textures/ship/ship_texatlas.json" );
+	texture_atlas.Flip();
+
+	// ------------------------------------------------------------------
+	// Player entity
+	// ------------------------------------------------------------------
+	auto player_entity = mRegistry.CreateEntity();
+
+	auto& root = mRegistry.GetComponent<eage::ecs::SceneGraphComponment>( root_entity );
+	root.children_entities.push_back( player_entity );
+	eage::ecs::SceneGraphComponment player_relationship;
+	player_relationship.parent_entity = root_entity;
+	mRegistry.AddComponent( player_entity, std::move( player_relationship ) );
+
+	PlayerComponent player;
+	mRegistry.AddComponent( player_entity, std::move( player ) );
+
+	mRegistry.AddComponent( player_entity, HealthComponent{} );
+
+	mRegistry.AddComponent( player_entity, eage::ecs::TransformComponent{} );
+
+	eage::ecs::PhysicsComponent player_physics;
+	player_physics.body_type = eage::ecs::PhysicsComponent::BodyType::DYNAMIC;
+	player_physics.sync_transform_from_body = true;
+	player_physics.max_linear_velocity = 400.0f;
+	mRegistry.AddComponent( player_entity, std::move( player_physics ) );
+
+	eage::ecs::CircleColliderComponent player_collider;
+	player_collider.radius = 25.f;
+	player_collider.category_bits = PHYSX_CAT_WARPABLE | PHYSX_CAT_PLAYER;
+	player_collider.mask_bits = PHYSX_CAT_SCREEN_ZONE;
+	mRegistry.AddComponent( player_entity, std::move( player_collider ) );
+
+	const auto& ship_tex = texture_atlas.GetSubTexture( "player_ship.png" );
+	mRenderSystem.AttachSprite( player_entity, mPlayerMaterialId, 50.f, 50.f, ship_tex.uv_min, ship_tex.uv_max );
+
+	AudioSourceComponent thrust_audio;
+	thrust_audio.sound_path = "./resources/sounds/thruster.mp3";
+	thrust_audio.sound_resource_id = mAudioSystem.LoadSound( thrust_audio.sound_path );
+	thrust_audio.should_loop = true;
+	mRegistry.AddComponent( player_entity, std::move( thrust_audio ) );
+	mRegistry.AddComponent( player_entity, AudioEventComponent{} );
+
+	mRegistry.AddComponent( player_entity, WarpComponent{} );
+
+	// ------------------------------------------------------------------
+	// Thruster child entity
+	// ------------------------------------------------------------------
+	auto thruster_entity = mRegistry.CreateEntity();
+
+	auto& player_scene = mRegistry.GetComponent<eage::ecs::SceneGraphComponment>( player_entity );
+	player_scene.children_entities.push_back( thruster_entity );
+
+	auto& player_cmp = mRegistry.GetComponent<PlayerComponent>( player_entity );
+	player_cmp.thruster_fx_entity = thruster_entity;
+
+	eage::ecs::TransformComponent thruster_transform;
+	thruster_transform.SetPosition( glm::vec3( 0.0f, -30.f, 0.0f ) );
+	thruster_transform.SetScale( glm::vec3( 1 / 5.f ) );
+	mRegistry.AddComponent( thruster_entity, std::move( thruster_transform ) );
+
+	const auto& thrust_tex = texture_atlas.GetSubTexture( "ship_thrust_fx.png" );
+	mRenderSystem.AttachSprite( thruster_entity, mPlayerMaterialId, 50.f, 50.f, thrust_tex.uv_min, thrust_tex.uv_max );
+
+	// ------------------------------------------------------------------
+	// Bullet launcher child entity
+	// ------------------------------------------------------------------
+	auto launcher_entity = mRegistry.CreateEntity();
+	player_scene.children_entities.push_back( launcher_entity );
+	player_cmp.bullet_launcher_entity = launcher_entity;
+
+	eage::ecs::SceneGraphComponment launcher_relationship;
+	launcher_relationship.parent_entity = player_entity;
+	mRegistry.AddComponent( launcher_entity, std::move( launcher_relationship ) );
+
+	eage::ecs::TransformComponent launcher_transform;
+	launcher_transform.SetPosition( glm::vec3( 0.f, 25.f, 0.f ) );
+	mRegistry.AddComponent( launcher_entity, std::move( launcher_transform ) );
+
+	// ------------------------------------------------------------------
+	// Bullet pool
+	// ------------------------------------------------------------------
+	BulletPoolConfig bullet_config;
+	bullet_config.damage = 10.f;
+	bullet_config.collider_radius = 5.f;
+	bullet_config.mesh_width = 10.f;
+	bullet_config.mesh_height = 10.f;
+	bullet_config.material_id = mPlayerMaterialId;
+	bullet_config.category_bits = PHYSX_CAT_BULLET;
+	bullet_config.mask_bits = PHYSX_CAT_ENEMY;
+	mPlayerBulletPoolId = mBulletSystem.PreparePool( bullet_config, 20, root_entity );
 }
 
 PlayerGameplaySystem::~PlayerGameplaySystem() 

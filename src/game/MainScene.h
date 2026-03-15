@@ -3,7 +3,6 @@
 
 #include "../AbstractScene.h"
 #include <ecs/ResourceManager.h>
-#include "systems/BulletSystem.h"
 
 #include <vulkan/vulkan.hpp>
 
@@ -37,6 +36,7 @@ namespace eage::ecs
 
 namespace vortex
 {
+	class AsteroidGameplaySystem;
 	class AsteroidGameplaySystem;
 	class BulletSystem;
 	class PlayerInputSystem;
@@ -80,11 +80,7 @@ namespace vortex
 
 		std::shared_ptr<eage::graphics::OrthographicCamera> mCamera;
 
-		eage::ecs::ResourceId mPlayerMaterialId = 0;
-		BulletPoolId mPlayerBulletPoolId = 0;
-
 		uint64_t mSceneRootEntity = 0;
-		uint64_t mPlayerEntity = 0;
 		uint64_t mOnScreenZoneEntity = 0;
 
 		std::chrono::time_point<std::chrono::steady_clock> mLastUpdateTime;

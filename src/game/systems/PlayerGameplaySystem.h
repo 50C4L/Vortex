@@ -5,26 +5,31 @@
 
 #include <glm/glm.hpp>
 
-#include "BulletSystem.h"
-
 namespace eage::ecs
 {
+	class AudioSystem;
+	class RenderSystem;
 	struct PhysicsComponent;
 	struct TransformComponent;
 }
 
 namespace vortex
 {
+	class BulletSystem;
 	struct PlayerComponent;
 
 	///
-	/// PlayerGameplaySystem: Updates player movement and gameplay logic
+	/// PlayerGameplaySystem: Updates player movement and gameplay logic.
+	/// Call PreparePlayer() after construction to create all player entities and resources.
 	///
 	class PlayerGameplaySystem 
 	{
 	public:
-		PlayerGameplaySystem( eage::ecs::ECSRegistry& registry, BulletSystem& bullet_system, BulletPoolId player_bullet_pool_id );
+		PlayerGameplaySystem( eage::ecs::ECSRegistry& registry, BulletSystem& bullet_system,
+							  eage::ecs::RenderSystem& render_system, eage::ecs::AudioSystem& audio_system );
 		~PlayerGameplaySystem();
+
+		void PreparePlayer( uint64_t root_entity );
 		
 		void Update( float delta_time );
 		
@@ -40,7 +45,11 @@ namespace vortex
 
 		eage::ecs::ECSRegistry& mRegistry;
 		BulletSystem& mBulletSystem;
-		BulletPoolId mPlayerBulletPoolId;
+		eage::ecs::RenderSystem& mRenderSystem;
+		eage::ecs::AudioSystem& mAudioSystem;
+
+		uint32_t mPlayerMaterialId = 0;
+		uint32_t mPlayerBulletPoolId = 0;
 	};
 }
 
