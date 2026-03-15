@@ -284,5 +284,5 @@ MainScene::CreateEnemyEntities()
 {
 	mAsteroidGameplaySystem->PrepareAsteroids( 100, mSceneRootEntity );
 
-	mAsteroidGameplaySystem->SpawnAsteroid( 5 );
+	mAsteroidGameplaySystem->SpawnAsteroid( 10 );
 }
