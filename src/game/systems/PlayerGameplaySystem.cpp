@@ -13,8 +13,10 @@ using namespace vortex;
 using namespace utility;
 
 
-PlayerGameplaySystem::PlayerGameplaySystem( eage::ecs::ECSRegistry& registry )
+PlayerGameplaySystem::PlayerGameplaySystem( eage::ecs::ECSRegistry& registry, BulletSystem& bullet_system, BulletPoolId player_bullet_pool_id )
 	: mRegistry(registry)
+	, mBulletSystem(bullet_system)
+	, mPlayerBulletPoolId(player_bullet_pool_id)
 {
 }
 
@@ -71,6 +73,7 @@ PlayerGameplaySystem::Update( float delta_time_sec )
 			auto& transform = mRegistry.GetComponent<eage::ecs::TransformComponent>( entity );
 			
 			UpdatePlayerMovement( player, physics, transform, delta_time_sec );
+			UpdateWeapon( player, physics, transform );
 		}
 	}
 }
@@ -122,4 +125,34 @@ PlayerGameplaySystem::UpdatePlayerMovement( PlayerComponent& player_comp,
 		glm::vec2 velocity_change = glm::vec2( forward.x, forward.y ) * player_comp.thrust_acceleration * delta_time_sec;
 		physics_comp.QueueAddVelocity( velocity_change );
 	}
+}
+
+void
+PlayerGameplaySystem::UpdateWeapon( PlayerComponent& player_comp,
+									eage::ecs::PhysicsComponent& physics_comp,
+									eage::ecs::TransformComponent& transform_comp )
+{
+	if( !player_comp.main_weapon_firing )
+	{
+		return;
+	}
+
+	// Consume the fire input (single-shot per key press)
+	player_comp.main_weapon_firing = false;
+
+	if( player_comp.bullet_launcher_entity == 0 ||
+		!mRegistry.HasComponent<eage::ecs::TransformComponent>( player_comp.bullet_launcher_entity ) )
+	{
+		return;
+	}
+
+	auto& launcher_transform = mRegistry.GetComponent<eage::ecs::TransformComponent>( player_comp.bullet_launcher_entity );
+	glm::vec2 spawn_pos = glm::vec2( launcher_transform.world_matrix[3] );
+
+	glm::vec3 forward = transform_comp.rotation * player_comp.forward;
+	glm::vec2 fire_dir = glm::normalize( glm::vec2( forward.x, forward.y ) );
+
+	float bullet_speed = physics_comp.max_linear_velocity + 20.f;
+
+	mBulletSystem.Fire( mPlayerBulletPoolId, spawn_pos, fire_dir, bullet_speed );
 }

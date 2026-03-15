@@ -24,6 +24,7 @@
 
 #include "GameConfig.h"
 #include "systems/AsteroidGameplaySystem.h"
+#include "systems/BulletSystem.h"
 #include "systems/PlayerInputSystem.h"
 #include "systems/PlayerGameplaySystem.h"
 #include "systems/WarpSystem.h"
@@ -111,6 +112,8 @@ MainScene::Update()
 	// player input
 	mPlayerGameplaySystem->Update( delta_time_ms.count() / 1000.f );
 
+	mBulletSystem->Update();
+
 	// Update camera
 	auto current_frame = mRenderer.GetCurrentFrameIndex();
 	{
@@ -162,7 +165,7 @@ void
 MainScene::CreatePlayerEntity()
 {
 	mPlayerInputSystem = std::make_unique<PlayerInputSystem>( mECSRegistry, mInputController );
-	mPlayerGameplaySystem = std::make_unique<PlayerGameplaySystem>( mECSRegistry );
+	// PlayerGameplaySystem is created at the end of this function after the bullet pool is prepared
 
 	mPlayerEntity = mECSRegistry.CreateEntity();
 
@@ -231,6 +234,32 @@ MainScene::CreatePlayerEntity()
 
 	const auto& thrust_tex = texture_atlas.GetSubTexture( "ship_thrust_fx.png" );
 	mRenderSystem.AttachSprite( thruster_entity, mPlayerMaterialId, 50.f, 50.f, thrust_tex.uv_min, thrust_tex.uv_max );
+
+	// Create bullet launcher entity - child of player, positioned at ship tip
+	auto launcher_entity = mECSRegistry.CreateEntity();
+	player_scene.children_entities.push_back( launcher_entity );
+	player_cmp.bullet_launcher_entity = launcher_entity;
+
+	eage::ecs::SceneGraphComponment launcher_relationship;
+	launcher_relationship.parent_entity = mPlayerEntity;
+	mECSRegistry.AddComponent( launcher_entity, std::move( launcher_relationship ) );
+
+	eage::ecs::TransformComponent launcher_transform;
+	launcher_transform.SetPosition( glm::vec3( 0.f, 25.f, 0.f ) ); // Ship tip (sprite is 50px tall)
+	mECSRegistry.AddComponent( launcher_entity, std::move( launcher_transform ) );
+
+	// Prepare player bullet pool
+	BulletPoolConfig bullet_config;
+	bullet_config.damage = 10.f;
+	bullet_config.collider_radius = 5.f;
+	bullet_config.mesh_width = 10.f;
+	bullet_config.mesh_height = 10.f;
+	bullet_config.material_id = mPlayerMaterialId;
+	bullet_config.category_bits = config::PHYSX_CAT_BULLET;
+	bullet_config.mask_bits = config::PHYSX_CAT_ENEMY;
+	mPlayerBulletPoolId = mBulletSystem->PreparePool( bullet_config, 20, mSceneRootEntity );
+
+	mPlayerGameplaySystem = std::make_unique<PlayerGameplaySystem>( mECSRegistry, *mBulletSystem, mPlayerBulletPoolId );
 }
 
 void 
@@ -276,6 +305,7 @@ void
 MainScene::InitializeGenericSystems()
 {
 	mWarpSystem = std::make_unique<WarpSystem>( mECSRegistry, mPhysicsSystem );
+	mBulletSystem = std::make_unique<BulletSystem>( mECSRegistry, mRenderSystem, mPhysicsSystem );
 	mAsteroidGameplaySystem = std::make_unique<AsteroidGameplaySystem>( mECSRegistry, mRenderSystem, mPhysicsSystem );
 }
 

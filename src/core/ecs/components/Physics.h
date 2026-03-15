@@ -24,6 +24,9 @@ namespace eage::ecs
 		// Maximum linear velocity in pixels/second. 0 means no limit.
 		float max_linear_velocity = 0.0f;
 
+		// If true, enables continuous collision detection (CCD) to prevent tunneling at high speed.
+		bool is_bullet = false;
+
 		// Do not set this directly, use QueueSleep() instead
 		bool enabled = true;
 

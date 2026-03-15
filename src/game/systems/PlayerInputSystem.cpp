@@ -14,6 +14,7 @@ PlayerInputSystem::PlayerInputSystem( eage::ecs::ECSRegistry& registry, events::
 	mInputController.Subscribe( static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_LEFT ), this );
 	mInputController.Subscribe( static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_RIGHT ), this );
 	mInputController.Subscribe( static_cast<uint64_t>( GameEvents::PLAYER_THRUST ), this );
+	mInputController.Subscribe( static_cast<uint64_t>( GameEvents::PLAYER_SHOOT ), this );
 }
 
 PlayerInputSystem::~PlayerInputSystem() 
@@ -21,6 +22,7 @@ PlayerInputSystem::~PlayerInputSystem()
 	mInputController.Unsubscribe( static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_LEFT ), this );
 	mInputController.Unsubscribe( static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_RIGHT ), this );
 	mInputController.Unsubscribe( static_cast<uint64_t>( GameEvents::PLAYER_THRUST ), this );
+	mInputController.Unsubscribe( static_cast<uint64_t>( GameEvents::PLAYER_SHOOT ), this );
 }
 
 void
@@ -40,6 +42,11 @@ PlayerInputSystem::OnInputEvent( uint64_t event_id, bool on )
 				break;
 			case GameEvents::PLAYER_THRUST:
 				player.thruster_on = on;
+				break;
+			case GameEvents::PLAYER_SHOOT:
+				player.main_weapon_firing = on;
+				break;
+			default:
 				break;
 		}
 	}

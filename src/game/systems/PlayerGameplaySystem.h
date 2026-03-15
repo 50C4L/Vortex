@@ -5,6 +5,8 @@
 
 #include <glm/glm.hpp>
 
+#include "BulletSystem.h"
+
 namespace eage::ecs
 {
 	struct PhysicsComponent;
@@ -21,7 +23,7 @@ namespace vortex
 	class PlayerGameplaySystem 
 	{
 	public:
-		PlayerGameplaySystem( eage::ecs::ECSRegistry& registry );
+		PlayerGameplaySystem( eage::ecs::ECSRegistry& registry, BulletSystem& bullet_system, BulletPoolId player_bullet_pool_id );
 		~PlayerGameplaySystem();
 		
 		void Update( float delta_time );
@@ -32,8 +34,13 @@ namespace vortex
 								   eage::ecs::TransformComponent& transform_comp,
 								   float delta_time_sec );
 		void UpdateThrusterFX( PlayerComponent& player_comp, uint64_t entity );
+		void UpdateWeapon( PlayerComponent& player_comp,
+						   eage::ecs::PhysicsComponent& physics_comp,
+						   eage::ecs::TransformComponent& transform_comp );
 
 		eage::ecs::ECSRegistry& mRegistry;
+		BulletSystem& mBulletSystem;
+		BulletPoolId mPlayerBulletPoolId;
 	};
 }
 

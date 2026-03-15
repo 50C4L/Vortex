@@ -314,6 +314,7 @@ PhysicsSystem::CreateCollisionBodyFromComponents( uint64_t entity )
 	}
 	body_def.position = b2Vec2{ physics_position.x, physics_position.y };
 	body_def.rotation = quat_to_b2rot( transform.rotation );
+	body_def.isBullet = physics.is_bullet;
 
 	// Store entity ID in userData by casting it to a pointer
 	body_def.userData = reinterpret_cast<void*>( static_cast<uintptr_t>( entity ) );
