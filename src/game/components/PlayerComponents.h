@@ -7,8 +7,6 @@ namespace vortex
 {
 	struct PlayerComponent
 	{
-		enum class State { Alive, Dead };
-
 		// Movement state
 		bool turning_left = false;
 		bool turning_right = false;
@@ -24,9 +22,6 @@ namespace vortex
 
 		uint64_t thruster_fx_entity = 0; // Entity ID of the thruster effect
 		uint64_t bullet_launcher_entity = 0; // Entity ID of the bullet spawn point (ship tip)
-
-		// Gameplay state
-		State state = State::Alive;
 	};
 }
 

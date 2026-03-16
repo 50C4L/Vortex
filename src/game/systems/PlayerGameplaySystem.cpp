@@ -152,7 +152,7 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 	const auto& default_bullet_tex = bullet_texture_atlas.GetSubTexture( "p_default_bullet.png" );
 
 	BulletPoolConfig bullet_config;
-	bullet_config.damage = 10.f;
+	bullet_config.damage = 1.f;
 	bullet_config.collider_radius = 5.f;
 	bullet_config.mesh_width = 10.f;
 	bullet_config.mesh_height = 10.f;
@@ -174,37 +174,40 @@ PlayerGameplaySystem::Update( float delta_time_sec )
 	// Get only entities with PlayerComponent (much smaller set)
 	for( auto& [entity, player] : mRegistry.GetComponentMap<PlayerComponent>() )
 	{
-		// Process incoming damage
-		if( mRegistry.HasComponent<HealthComponent>( entity ) )
+		if( !mRegistry.HasComponent<HealthComponent>( entity ) )
 		{
-			auto& health = mRegistry.GetComponent<HealthComponent>( entity );
-			if( health.pending_damage > 0.f )
+			LOG_ERROR() << "Player entity " << entity << " is missing HealthComponent.";
+			continue; // Shouldn't happen, but just in case
+		}
+
+		// Process incoming damage
+		auto& health = mRegistry.GetComponent<HealthComponent>( entity );
+		bool is_dead = health.IsDead();
+		if( health.pending_damage > 0.f )
+		{
+			health.health -= health.pending_damage;
+			health.pending_damage = 0.f;
+			LOG() << "Player health: " << health.health;
+
+			if( is_dead )
 			{
-				health.health -= health.pending_damage;
-				health.pending_damage = 0.f;
-				LOG() << "Player health: " << health.health;
+				player.thruster_on = false;
+				LOG() << "Player has died.";
 
-				if( health.IsDead() && player.state == PlayerComponent::State::Alive )
+				// Zero out physics velocity
+				if( mRegistry.HasComponent<eage::ecs::PhysicsComponent>( entity ) )
 				{
-					player.state = PlayerComponent::State::Dead;
-					player.thruster_on = false;
-					LOG() << "Player has died.";
-
-					// Zero out physics velocity
-					if( mRegistry.HasComponent<eage::ecs::PhysicsComponent>( entity ) )
-					{
-						auto& physics = mRegistry.GetComponent<eage::ecs::PhysicsComponent>( entity );
-						physics.QueueSetVelocity( glm::vec2( 0.f, 0.f ) );
-						physics.QueueSetAngularVelocity( 0.f );
-					}
+					auto& physics = mRegistry.GetComponent<eage::ecs::PhysicsComponent>( entity );
+					physics.QueueSetVelocity( glm::vec2( 0.f, 0.f ) );
+					physics.QueueSetAngularVelocity( 0.f );
 				}
 			}
 		}
 
 		UpdateThrusterFX( player, entity );
 
-		// Skip movement and FX when dead
-		if( player.state == PlayerComponent::State::Dead )
+		// Skip movement and weapon when dead
+		if( is_dead )
 		{
 			continue;
 		}
@@ -225,7 +228,10 @@ PlayerGameplaySystem::Update( float delta_time_sec )
 void
 PlayerGameplaySystem::UpdateThrusterFX( PlayerComponent& player_comp, uint64_t entity )
 {
-	player_comp.thruster_on = player_comp.thruster_on && player_comp.state == PlayerComponent::State::Alive;
+	if( mRegistry.HasComponent<HealthComponent>( entity ) )
+	{
+		player_comp.thruster_on = player_comp.thruster_on && !mRegistry.GetComponent<HealthComponent>( entity ).IsDead();
+	}
 	if( player_comp.thruster_fx_entity != 0 &&
 		mRegistry.HasComponent<eage::ecs::RenderComponent>( player_comp.thruster_fx_entity ) )
 	{

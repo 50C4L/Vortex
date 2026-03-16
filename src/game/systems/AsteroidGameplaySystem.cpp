@@ -97,12 +97,16 @@ AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
 		collider.radius = 25.f; // Approximate radius of the ship
 		// collider.is_sensor = true;
 		collider.category_bits = config::PHYSX_CAT_WARPABLE | config::PHYSX_CAT_ENEMY;
-		collider.mask_bits = config::PHYSX_CAT_SCREEN_ZONE | config::PHYSX_CAT_PLAYER;
+		collider.mask_bits = config::PHYSX_CAT_SCREEN_ZONE | config::PHYSX_CAT_PLAYER | config::PHYSX_CAT_BULLET;
 		collider.group_index = -1; // Negative group index = never collide with same group
 		mECSRegistry.AddComponent( asteroid, std::move( collider ) );
 
 		// Gameplay components
 		mECSRegistry.AddComponent( asteroid, WarpComponent{} );
+		mECSRegistry.AddComponent( asteroid, HealthComponent{ 1.f, 1.f, 0.f } );
+
+		// Track all asteroid entities for Update()
+		mAllAsteroids.insert( asteroid );
 
 		// Render component
 		mRenderSystem.AttachRenderable( asteroid, mAsteroidMeshId, mAsteroidMaterialId, false );
@@ -173,6 +177,11 @@ AsteroidGameplaySystem::SpawnAsteroid( int count )
 		physics_cmp.QueueSetAngularVelocity( angular_speed );
 		// Wake up physics body 
 		physics_cmp.QueueSleep( false ); // Wake up
+
+		// Reset health for reuse
+		auto& health = mECSRegistry.GetComponent<HealthComponent>( asteroid );
+		health.health = health.max_health;
+		health.pending_damage = 0.f;
 	}
 }
 
@@ -203,6 +212,27 @@ AsteroidGameplaySystem::DespawnAsteroid( uint64_t asteroid_entity )
 void 
 AsteroidGameplaySystem::Update()
 {
+	for( uint64_t entity : mAllAsteroids )
+	{
+		if( !mECSRegistry.HasComponent<HealthComponent>( entity ) )
+		{
+			continue;
+		}
+
+		auto& health = mECSRegistry.GetComponent<HealthComponent>( entity );
+		if( health.IsDead() || health.pending_damage <= 0.f )
+		{
+			continue;
+		}
+
+		health.health -= health.pending_damage;
+		health.pending_damage = 0.f;
+
+		if( health.IsDead() )
+		{
+			DespawnAsteroid( entity );
+		}
+	}
 }
 
 void

@@ -2,6 +2,7 @@
 #define _VORTEX_ASTEROID_GAMEPLAY_SYSTEM_H_
 
 #include <deque>
+#include <unordered_set>
 #include <glm/glm.hpp>
 
 #include <ecs/ResourceManager.h>
@@ -48,6 +49,7 @@ namespace vortex
 		eage::ecs::ResourceId mAsteroidMeshId = 0;
 
 		std::deque<uint64_t> mAvailableAsteroids;
+		std::unordered_set<uint64_t> mAllAsteroids;
 
 		glm::vec2 mScreenTopLeft;
 		glm::vec2 mScreenBottomRight;

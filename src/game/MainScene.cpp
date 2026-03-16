@@ -104,10 +104,10 @@ MainScene::Update()
 	std::chrono::duration<float, std::milli> delta_time_ms = current_time - mLastUpdateTime;
 	mLastUpdateTime = current_time;
 
-	// player input
+	// System update
 	mPlayerGameplaySystem->Update( delta_time_ms.count() / 1000.f );
-
 	mBulletSystem->Update();
+	mAsteroidGameplaySystem->Update();
 
 	// Update camera
 	auto current_frame = mRenderer.GetCurrentFrameIndex();
