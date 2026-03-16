@@ -1,0 +1,41 @@
+{
+  "meta": {
+    "version": "0.6.7"
+  },
+  "savePath": "C:\\Users\\Eric He\\Coding\\Repos\\Projects\\Vortex\\resources\\textures\\bullets",
+  "images": [
+    {
+      "name": "p_default_bullet.png",
+      "path": "C:/Users/Eric He/Coding/Repos/Projects/Vortex/resources/textures/bullets/p_default_bullet.png",
+      "folder": ""
+    }
+  ],
+  "folders": [],
+  "packOptions": {
+    "textureName": "player_bullets",
+    "textureFormat": "png",
+    "removeFileExtension": false,
+    "prependFolderName": true,
+    "base64Export": false,
+    "tinify": false,
+    "tinifyKey": "",
+    "scale": 1,
+    "filter": "none",
+    "exporter": "JSON (array)",
+    "fileName": "pack-result",
+    "savePath": "C:\\Users\\Eric He\\Coding\\Repos\\Projects\\Vortex\\resources\\textures\\bullets",
+    "width": 64,
+    "height": 64,
+    "fixedSize": false,
+    "powerOfTwo": true,
+    "padding": 0,
+    "extrude": 0,
+    "allowRotation": true,
+    "allowTrim": true,
+    "trimMode": "trim",
+    "alphaThreshold": "0",
+    "detectIdentical": true,
+    "packer": "MaxRectsBin",
+    "packerMethod": "BestShortSideFit"
+  }
+}
