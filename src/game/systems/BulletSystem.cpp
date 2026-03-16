@@ -43,6 +43,7 @@ BulletSystem::PreparePool( const BulletPoolConfig& config, int count, uint64_t r
 {
 	BulletPoolId pool_id = mNextPoolId++;
 	auto& pool = mPools[pool_id];
+	mPoolFireInterval[pool_id] = config.fire_interval;
 
 	glm::vec2 inactive_pos = mScreenBottomRight + glm::vec2( INACTIVE_OFFSET, -INACTIVE_OFFSET );
 
@@ -103,6 +104,23 @@ BulletSystem::Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 directio
 	if( pool_it == mPools.end() || pool_it->second.empty() )
 	{
 		return; // Pool exhausted or invalid - silent skip
+	}
+
+	// Rate limit check
+	float interval = mPoolFireInterval[pool_id];
+	if( interval > 0.f )
+	{
+		auto now = std::chrono::steady_clock::now();
+		auto last_it = mPoolLastFireTime.find( pool_id );
+		if( last_it != mPoolLastFireTime.end() )
+		{
+			float elapsed = std::chrono::duration<float>( now - last_it->second ).count();
+			if( elapsed < interval )
+			{
+				return;
+			}
+		}
+		mPoolLastFireTime[pool_id] = now;
 	}
 
 	auto& pool = pool_it->second;

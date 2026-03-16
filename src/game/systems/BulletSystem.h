@@ -1,6 +1,7 @@
 #ifndef _VORTEX_BULLET_SYSTEM_H_
 #define _VORTEX_BULLET_SYSTEM_H_
 
+#include <chrono>
 #include <cstdint>
 #include <deque>
 #include <unordered_map>
@@ -31,6 +32,7 @@ namespace vortex
 		uint16_t mask_bits = 0x0005;
 		glm::vec2 uv_min = glm::vec2( 0.f, 0.f );
 		glm::vec2 uv_max = glm::vec2( 1.f, 1.f );
+		float fire_interval = 0.f; // Minimum seconds between shots; 0 = unlimited
 	};
 
 	///
@@ -79,6 +81,8 @@ namespace vortex
 		BulletPoolId mNextPoolId = 1;
 		std::unordered_map<BulletPoolId, std::deque<uint64_t>> mPools;
 		std::unordered_map<uint64_t, BulletPoolId> mEntityToPool;
+		std::unordered_map<BulletPoolId, float> mPoolFireInterval;
+		std::unordered_map<BulletPoolId, std::chrono::steady_clock::time_point> mPoolLastFireTime;
 
 		glm::vec2 mScreenTopLeft;
 		glm::vec2 mScreenBottomRight;

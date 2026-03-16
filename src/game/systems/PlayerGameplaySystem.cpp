@@ -161,6 +161,7 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 	bullet_config.mask_bits = PHYSX_CAT_ENEMY;
 	bullet_config.uv_min = default_bullet_tex.uv_min;
 	bullet_config.uv_max = default_bullet_tex.uv_max;
+	bullet_config.fire_interval = 0.5f; // 2 bullets per second max
 	mDefaultBulletPoolId = mBulletSystem.PreparePool( bullet_config, 20, root_entity );
 }
 
