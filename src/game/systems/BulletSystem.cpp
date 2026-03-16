@@ -90,7 +90,7 @@ BulletSystem::PreparePool( const BulletPoolConfig& config, int count, uint64_t r
 		mRegistry.AddComponent( entity, BulletComponent{ false, config.damage } );
 
 		// Render
-		mRenderSystem.AttachRenderable( entity, mesh_id, config.material_id, false );
+		mRenderSystem.AttachSprite( entity, config.material_id, config.mesh_width, config.mesh_height, config.uv_min, config.uv_max );
 	}
 
 	return pool_id;
@@ -114,6 +114,11 @@ BulletSystem::Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 directio
 
 	auto& render = mRegistry.GetComponent<eage::ecs::RenderComponent>( entity );
 	render.visible = true;
+
+	// Update TransformComponent immediately so BulletSystem::Update()'s OOB check
+	// sees the spawn position in the same frame (QueueSetPosition only applies next physics tick).
+	auto& transform = mRegistry.GetComponent<eage::ecs::TransformComponent>( entity );
+	transform.SetPosition( glm::vec3( position, 0.f ) );
 
 	auto& physics = mRegistry.GetComponent<eage::ecs::PhysicsComponent>( entity );
 	physics.QueueSetPosition( position );
@@ -190,6 +195,7 @@ BulletSystem::OnCollideEnd( uint64_t entityA, uint64_t entityB )
 void
 BulletSystem::DespawnBullet( uint64_t entity )
 {
+	LOG() << "Despawning bullet entity " << entity;
 	auto& bullet = mRegistry.GetComponent<BulletComponent>( entity );
 	bullet.is_alive = false;
 

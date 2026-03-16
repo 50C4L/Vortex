@@ -41,8 +41,9 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 	// Material
 	// ------------------------------------------------------------------
 	mRenderSystem.CreateImageBuffer( "./resources/textures/ship/ship_texatlas.png" );
+	mRenderSystem.CreateImageBuffer( "./resources/textures/bullets/player_bullets.png" );
 
-	auto material_property = eage::graphics::MaterialBuilder()
+	auto ship_material_prop = eage::graphics::MaterialBuilder()
 		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",
 					 "./src/shaders/compiled/colored_triangle.frag.spv" )
 		.AddTexture( 0, "./resources/textures/ship/ship_texatlas.png",
@@ -51,10 +52,23 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 		.EnableDepthTest( true )
 		.Build();
 
-	mPlayerMaterialId = mRenderSystem.CreateMaterial( material_property );
+	mPlayerMaterialId = mRenderSystem.CreateMaterial( ship_material_prop );
+
+	auto bullet_material_prop = eage::graphics::MaterialBuilder()
+		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",
+					 "./src/shaders/compiled/colored_triangle.frag.spv" )
+		.AddTexture( 0, "./resources/textures/bullets/player_bullets.png",
+					 vk::Filter::eNearest, vk::Filter::eNearest )
+		.SetAlphaBlending()
+		.EnableDepthTest( true )
+		.Build();
+
+	mPlayerBulletMaterialId = mRenderSystem.CreateMaterial( bullet_material_prop );
 
 	assets::TextureAtlas texture_atlas( "./resources/textures/ship/ship_texatlas.json" );
 	texture_atlas.Flip();
+	assets::TextureAtlas bullet_texture_atlas( "./resources/textures/bullets/player_bullets.json" );
+	bullet_texture_atlas.Flip();
 
 	// ------------------------------------------------------------------
 	// Player entity
@@ -83,7 +97,7 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 	eage::ecs::CircleColliderComponent player_collider;
 	player_collider.radius = 25.f;
 	player_collider.category_bits = PHYSX_CAT_WARPABLE | PHYSX_CAT_PLAYER;
-	player_collider.mask_bits = PHYSX_CAT_SCREEN_ZONE;
+	player_collider.mask_bits = PHYSX_CAT_SCREEN_ZONE | PHYSX_CAT_ENEMY;
 	mRegistry.AddComponent( player_entity, std::move( player_collider ) );
 
 	const auto& ship_tex = texture_atlas.GetSubTexture( "player_ship.png" );
@@ -135,15 +149,19 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 	// ------------------------------------------------------------------
 	// Bullet pool
 	// ------------------------------------------------------------------
+	const auto& default_bullet_tex = bullet_texture_atlas.GetSubTexture( "p_default_bullet.png" );
+
 	BulletPoolConfig bullet_config;
 	bullet_config.damage = 10.f;
 	bullet_config.collider_radius = 5.f;
 	bullet_config.mesh_width = 10.f;
 	bullet_config.mesh_height = 10.f;
-	bullet_config.material_id = mPlayerMaterialId;
+	bullet_config.material_id = mPlayerBulletMaterialId;
 	bullet_config.category_bits = PHYSX_CAT_BULLET;
 	bullet_config.mask_bits = PHYSX_CAT_ENEMY;
-	mPlayerBulletPoolId = mBulletSystem.PreparePool( bullet_config, 20, root_entity );
+	bullet_config.uv_min = default_bullet_tex.uv_min;
+	bullet_config.uv_max = default_bullet_tex.uv_max;
+	mDefaultBulletPoolId = mBulletSystem.PreparePool( bullet_config, 20, root_entity );
 }
 
 PlayerGameplaySystem::~PlayerGameplaySystem() 
@@ -280,5 +298,5 @@ PlayerGameplaySystem::UpdateWeapon( PlayerComponent& player_comp,
 
 	float bullet_speed = physics_comp.max_linear_velocity + 20.f;
 
-	mBulletSystem.Fire( mPlayerBulletPoolId, spawn_pos, fire_dir, bullet_speed );
+	mBulletSystem.Fire( mDefaultBulletPoolId, spawn_pos, fire_dir, bullet_speed );
 }

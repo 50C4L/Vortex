@@ -47,11 +47,6 @@ PhysicsSystem::Update()
 {
 	for( auto& [entity, physics] : mECSRegistry.GetComponentMap<PhysicsComponent>() )
 	{
-		if( !physics.enabled )
-		{
-			continue; // Skip disabled physics components
-		}
-
 		if( !mECSRegistry.HasComponent<TransformComponent>( entity ) )
 		{
 			continue; // No transform component found
@@ -62,7 +57,7 @@ PhysicsSystem::Update()
 			CreateCollisionBodyFromComponents( entity );
 		}
 
-		// Process physics events
+		// Process physics events (always, even when disabled, so wake events can re-enable the body)
 		if( physics.body_id != INVALID_ID )
 		{
 			auto body = mBodyManager.Get( physics.body_id );
@@ -161,6 +156,11 @@ PhysicsSystem::Update()
 			{
 				LOG_ERROR() << "Invalid physic body in PhysicsComponent for entity " << entity;
 			}
+		}
+
+		if( !physics.enabled )
+		{
+			continue; // Body is sleeping, skip transform sync
 		}
 
 		SyncTransformFromBodies( entity );
@@ -347,8 +347,6 @@ PhysicsSystem::CreateCollisionBodyFromComponents( uint64_t entity )
 	}
 
 	// @todo more collider types
-
-	LOG() << "Created body " << physics_body->mBodyId.index1 << " for entity " << entity;
 
 	// Store the body in the resource manager and save the ID in the component
 	physics.body_id = mBodyManager.Store( std::move( physics_body ) );

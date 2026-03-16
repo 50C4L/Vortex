@@ -49,7 +49,8 @@ namespace vortex
 		eage::ecs::AudioSystem& mAudioSystem;
 
 		uint32_t mPlayerMaterialId = 0;
-		uint32_t mPlayerBulletPoolId = 0;
+		uint32_t mPlayerBulletMaterialId = 0;
+		uint32_t mDefaultBulletPoolId = 0;
 	};
 }
 
