@@ -19,7 +19,7 @@ namespace eage::audio
 	class SoundInstance
 	{
 	public:
-		SoundInstance( ma_engine& engine, const std::string sound_path );
+		SoundInstance( ma_engine& engine, const std::string sound_path, bool looping = true );
 		~SoundInstance();
 
 		SoundInstance( const SoundInstance& ) = delete;
@@ -30,6 +30,7 @@ namespace eage::audio
 
 		void Play();
 		void Stop();
+		void Restart(); // Seek to start and play; used for one-shot round-robin
 
 	private:
 		ma_engine& mEngine;
@@ -42,7 +43,7 @@ namespace eage::audio
 		AudioMixer();
 		~AudioMixer();
 
-		SoundInstance CreateSound( const std::string sound_path );
+		SoundInstance CreateSound( const std::string sound_path, bool looping = true );
 
 	private:
 		std::unique_ptr<ma_engine, std::function<void(ma_engine*)>> mEngine;

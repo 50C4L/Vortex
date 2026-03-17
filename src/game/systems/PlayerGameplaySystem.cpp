@@ -104,9 +104,7 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 	mRenderSystem.AttachSprite( player_entity, mPlayerMaterialId, 50.f, 50.f, ship_tex.uv_min, ship_tex.uv_max );
 
 	AudioSourceComponent thrust_audio;
-	thrust_audio.sound_path = "./resources/sounds/thruster.mp3";
-	thrust_audio.sound_resource_id = mAudioSystem.LoadSound( thrust_audio.sound_path );
-	thrust_audio.should_loop = true;
+	thrust_audio.sources["thruster"] = { mAudioSystem.LoadSound( { "./resources/sounds/thruster.mp3", 1, true } ) };
 	mRegistry.AddComponent( player_entity, std::move( thrust_audio ) );
 	mRegistry.AddComponent( player_entity, AudioEventComponent{} );
 
@@ -145,6 +143,11 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 	eage::ecs::TransformComponent launcher_transform;
 	launcher_transform.SetPosition( glm::vec3( 0.f, 25.f, 0.f ) );
 	mRegistry.AddComponent( launcher_entity, std::move( launcher_transform ) );
+
+	AudioSourceComponent launcher_audio;
+	launcher_audio.sources["fire"] = { mAudioSystem.LoadSound( { "./resources/sounds/laser.wav", 4, false } ) };
+	mRegistry.AddComponent( launcher_entity, std::move( launcher_audio ) );
+	mRegistry.AddComponent( launcher_entity, AudioEventComponent{} );
 
 	// ------------------------------------------------------------------
 	// Bullet pool
@@ -242,7 +245,7 @@ PlayerGameplaySystem::UpdateThrusterFX( PlayerComponent& player_comp, uint64_t e
 	if( mRegistry.HasComponent<AudioEventComponent>( entity ) )
 	{
 		auto& audio_event = mRegistry.GetComponent<AudioEventComponent>( entity );
-		audio_event.QueueEvent( player_comp.thruster_on
+		audio_event.QueueEvent( "thruster", player_comp.thruster_on
 			? AudioEventComponent::EventType::Play
 			: AudioEventComponent::EventType::Stop );
 	}
@@ -305,5 +308,11 @@ PlayerGameplaySystem::UpdateWeapon( PlayerComponent& player_comp,
 
 	float bullet_speed = physics_comp.max_linear_velocity + 20.f;
 
-	mBulletSystem.Fire( mDefaultBulletPoolId, spawn_pos, fire_dir, bullet_speed );
+	bool fired = mBulletSystem.Fire( mDefaultBulletPoolId, spawn_pos, fire_dir, bullet_speed );
+
+	if( fired && mRegistry.HasComponent<AudioEventComponent>( player_comp.bullet_launcher_entity ) )
+	{
+		auto& audio_event = mRegistry.GetComponent<AudioEventComponent>( player_comp.bullet_launcher_entity );
+		audio_event.QueueEvent( "fire", AudioEventComponent::EventType::Play );
+	}
 }

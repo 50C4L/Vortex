@@ -1,19 +1,24 @@
 #ifndef _EAGE_COMPONENTS_AUDIO_H_
 #define _EAGE_COMPONENTS_AUDIO_H_
 
+#include <ecs/ResourceManager.h>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
-struct AudioSourceComponent 
+// Stores named audio sources for an entity.
+// Each source is a ResourceId referencing a SoundPool in AudioSystem.
+// An entity may own multiple named sources (e.g. "thruster", "weapon_fire").
+struct AudioSourceComponent
 {
-	std::string sound_path;  // Path to sound file
-	uint32_t sound_resource_id = 0;  // Managed by AudioSystem
-	float volume = 1.0f;
-	bool should_loop = false;
-	bool is_playing = false;
+	struct Source
+	{
+		eage::ecs::ResourceId sound_id = 0;
+	};
+	std::unordered_map<std::string, Source> sources;
 };
 
-struct AudioEventComponent 
+struct AudioEventComponent
 {
 	enum class EventType
 	{
@@ -23,11 +28,17 @@ struct AudioEventComponent
 		Resume
 	};
 
-	std::vector<EventType> pending_events;  // Queue of events to process
-
-	void QueueEvent( EventType event )
+	struct Event
 	{
-		pending_events.push_back( event );
+		std::string source_name; // Key into AudioSourceComponent::sources
+		EventType type;
+	};
+
+	std::vector<Event> pending_events;
+
+	void QueueEvent( const std::string& source_name, EventType type )
+	{
+		pending_events.push_back( { source_name, type } );
 	}
 };
 

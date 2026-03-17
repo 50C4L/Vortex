@@ -97,13 +97,13 @@ BulletSystem::PreparePool( const BulletPoolConfig& config, int count, uint64_t r
 	return pool_id;
 }
 
-void
+bool
 BulletSystem::Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 direction, float speed )
 {
 	auto pool_it = mPools.find( pool_id );
 	if( pool_it == mPools.end() || pool_it->second.empty() )
 	{
-		return; // Pool exhausted or invalid - silent skip
+		return false; // Pool exhausted or invalid
 	}
 
 	// Rate limit check
@@ -117,7 +117,7 @@ BulletSystem::Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 directio
 			float elapsed = std::chrono::duration<float>( now - last_it->second ).count();
 			if( elapsed < interval )
 			{
-				return;
+				return false; // Rate-limited
 			}
 		}
 		mPoolLastFireTime[pool_id] = now;
@@ -142,6 +142,7 @@ BulletSystem::Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 directio
 	physics.QueueSetPosition( position );
 	physics.QueueSetVelocity( direction * speed );
 	physics.QueueSleep( false );
+	return true;
 }
 
 void

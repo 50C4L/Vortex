@@ -56,9 +56,9 @@ namespace vortex
 
 		///
 		/// Fire a bullet from the given pool at the given world position and direction.
-		/// Silently skips if the pool is exhausted.
+		/// Returns true if a bullet was spawned, false if rate-limited or pool exhausted.
 		///
-		void Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 direction, float speed );
+		bool Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 direction, float speed );
 
 		///
 		/// Per-frame update: checks alive bullets for out-of-bounds and despawns them.

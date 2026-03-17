@@ -20,96 +20,105 @@ AudioSystem::Update( float delta_time )
 }
 
 eage::ecs::ResourceId
-AudioSystem::LoadSound( const std::string& sound_path )
+AudioSystem::LoadSound( const SoundConfig& config )
 {
-	// Check if sound already loaded
-	auto it = mSoundPathToId.find( sound_path );
+	auto it = mSoundPathToId.find( config.path );
 	if( it != mSoundPathToId.end() )
 	{
 		return it->second;
 	}
 
-	// Load new sound
-	auto sound_instance = std::make_unique<audio::SoundInstance>( mAudioMixer.CreateSound( sound_path ) );
-	if( !sound_instance ) 
+	SoundPool pool;
+	pool.looping = config.looping;
+	pool.instances.reserve( config.pool_size );
+	for( int i = 0; i < config.pool_size; ++i )
 	{
-		return INVALID_ID;
+		pool.instances.push_back(
+			std::make_unique<audio::SoundInstance>(
+				mAudioMixer.CreateSound( config.path, config.looping ) ) );
 	}
 
-	ResourceId id = mSounds.Store( std::move( sound_instance ) );
-	if( id != INVALID_ID )
-	{
-		mSoundPathToId[sound_path] = id;
-	}
+	ResourceId id = mNextSoundId++;
+	mSoundPathToId[config.path] = id;
+	mSoundPools[id] = std::move( pool );
 	return id;
+}
+
+void
+AudioSystem::Play( eage::ecs::ResourceId sound_id )
+{
+	auto it = mSoundPools.find( sound_id );
+	if( it == mSoundPools.end() ) return;
+
+	auto& pool = it->second;
+	if( pool.looping )
+	{
+		if( !pool.is_playing )
+		{
+			pool.instances[0]->Play();
+			pool.is_playing = true;
+		}
+	}
+	else
+	{
+		pool.instances[pool.next_index]->Restart();
+		pool.next_index = ( pool.next_index + 1 ) % static_cast<int>( pool.instances.size() );
+	}
+}
+
+void
+AudioSystem::Stop( eage::ecs::ResourceId sound_id )
+{
+	auto it = mSoundPools.find( sound_id );
+	if( it == mSoundPools.end() ) return;
+
+	auto& pool = it->second;
+	for( auto& instance : pool.instances )
+	{
+		instance->Stop();
+	}
+	pool.is_playing = false;
 }
 
 void
 AudioSystem::ProcessAudioEvents()
 {
-	// Iterate over all entities with AudioEventComponent
 	for( auto& [entity, audio_event] : mRegistry.GetComponentMap<AudioEventComponent>() )
 	{
-		// Check if entity has AudioSourceComponent
-		if( mRegistry.HasComponent<AudioSourceComponent>( entity ) )
+		if( !mRegistry.HasComponent<AudioSourceComponent>( entity ) )
 		{
-			auto& audio_source = mRegistry.GetComponent<AudioSourceComponent>( entity );
-			
-			// Process each event
-			for( const auto& event : audio_event.pending_events )
-			{
-				ProcessAudioEvent( audio_source, event );
-			}
-			
-			// Clear events after processing
 			audio_event.pending_events.clear();
+			continue;
 		}
+
+		auto& audio_source = mRegistry.GetComponent<AudioSourceComponent>( entity );
+
+		for( const auto& event : audio_event.pending_events )
+		{
+			auto source_it = audio_source.sources.find( event.source_name );
+			if( source_it == audio_source.sources.end() )
+			{
+				LOG_ERROR() << "AudioSourceComponent on entity " << entity
+							<< " has no source named '" << event.source_name << "'";
+				continue;
+			}
+
+			ResourceId sound_id = source_it->second.sound_id;
+			switch( event.type )
+			{
+			case AudioEventComponent::EventType::Play:
+				Play( sound_id );
+				break;
+			case AudioEventComponent::EventType::Stop:
+				Stop( sound_id );
+				break;
+			default:
+				break;
+			}
+		}
+
+		audio_event.pending_events.clear();
 	}
 }
 
-void
-AudioSystem::ProcessAudioEvent( AudioSourceComponent& audio_source, AudioEventComponent::EventType event )
-{
-	switch( event )
-	{
-	case AudioEventComponent::EventType::Play:
-		if( !audio_source.is_playing )
-		{
-			// Load sound if not already loaded
-			if( audio_source.sound_resource_id == INVALID_ID )
-			{
-				LOG() << "Sound resource ID is invalid: " << audio_source.sound_path;
-				return;
-			}
-
-			if( audio_source.sound_resource_id != 0 )
-			{
-				if( auto sound_instance = mSounds.Get( audio_source.sound_resource_id ) )
-				{
-					sound_instance->Play();
-					audio_source.is_playing = true;
-				}
-			}
-		}
-		break;
-	case AudioEventComponent::EventType::Stop:
-		if( audio_source.is_playing && audio_source.sound_resource_id != 0 )
-		{
-			if( auto sound_instance = mSounds.Get( audio_source.sound_resource_id ) )
-			{
-				sound_instance->Stop();
-				audio_source.is_playing = false;
-			}
-		}
-		break;
-	case AudioEventComponent::EventType::Pause:
-		// Pause functionality can be implemented if supported by SoundInstance
-		break;
-	case AudioEventComponent::EventType::Resume:
-		// Resume functionality can be implemented if supported by SoundInstance
-		break;
-	default:
-		break;
-	}
-}
 
