@@ -18,10 +18,10 @@ namespace eage::graphics
 		// Texture methods
 		MaterialBuilder& AddTexture( uint32_t binding, const std::string& texture_path );
 		MaterialBuilder& AddTexture( uint32_t binding, const std::string& texture_path, 
-									 vk::Filter min_filter, vk::Filter mag_filter );
+									 TextureFilter min_filter, TextureFilter mag_filter );
 		
 		// Pipeline state methods
-		MaterialBuilder& SetTopology( vk::PrimitiveTopology topology );
+		MaterialBuilder& SetTopology( Topology topology );
 		MaterialBuilder& SetAlphaBlending();
 		MaterialBuilder& SetAdditiveBlending();
 		MaterialBuilder& EnableDepthTest( bool enable = true );

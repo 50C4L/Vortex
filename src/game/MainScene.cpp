@@ -1,17 +1,10 @@
 #include "MainScene.h"
 
 #include <utility/Logger.h>
-#include <graphics/Renderer.h>
-#include <graphics/VulkanMesh.h>
-#include <graphics/VulkanPipeline.h>
-#include <graphics/VulkanShader.h>
 #include <graphics/Camera.h>
-#include <graphics/ManagedVulkanResources.h>
-#include <graphics/VMAWrapper.h>
-#include <imgui/imgui.h>
 #include <events/InputController.h>
 #include <audio/AudioMixer.h>
-#include <assets/ImageLoader.h>
+#include <imgui/imgui.h>
 
 #include <ecs/systems/AudioSystem.h>
 #include <ecs/systems/RenderSystem.h>
@@ -31,23 +24,10 @@ using namespace vortex;
 using namespace vortex::config;
 using namespace utility;
 
-namespace
-{
-	struct SceneGlobalData
-	{
-		alignas(64) glm::mat4 view;
-		alignas(64) glm::mat4 proj;
-		alignas(64) glm::mat4 view_proj;
-		// padding
-		float extra[16];
-	};
-}
-
-MainScene::MainScene( eage::graphics::Renderer& renderer, events::InputController& input_controller,
+MainScene::MainScene( events::InputController& input_controller,
 					  eage::ecs::ECSRegistry& ecs_registry, eage::ecs::AudioSystem& audio_system, eage::ecs::RenderSystem& render_system,
 					  eage::ecs::PhysicsSystem& physics_system )
-	: mRenderer( renderer )
-	, mInputController( input_controller )
+	: mInputController( input_controller )
 	, mECSRegistry( ecs_registry )
 	, mAudioSystem( audio_system )
 	, mRenderSystem( render_system )
@@ -110,14 +90,7 @@ MainScene::Update()
 	mAsteroidGameplaySystem->Update();
 
 	// Update camera
-	auto current_frame = mRenderer.GetCurrentFrameIndex();
-	{
-		SceneGlobalData scene_global_data;
-		scene_global_data.view = mCamera->GetViewMatrix();
-		scene_global_data.proj = mCamera->GetProjectionMatrix();
-		scene_global_data.view_proj = scene_global_data.proj * scene_global_data.view;
-		mRenderSystem.GetGlobalUniformBuffer()->Update( &scene_global_data, sizeof( SceneGlobalData ), sizeof( SceneGlobalData ) * current_frame );
-	}
+	mRenderSystem.SetCamera( *mCamera );
 }
 
 void 

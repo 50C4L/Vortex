@@ -1,9 +1,6 @@
 #ifndef _EAGE_RENDER_COMPONENTS_H_
 #define _EAGE_RENDER_COMPONENTS_H_
 
-#include <memory>
-#include <vulkan/vulkan.hpp>
-#include <graphics/RenderInfo.h>
 #include <ecs/ResourceManager.h>
 
 namespace eage::ecs

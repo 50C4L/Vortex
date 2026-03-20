@@ -1,7 +1,7 @@
 ---
 description: "Use when: reviewing architecture, planning refactors, decoupling systems, abstracting APIs, reducing boilerplate, improving game engine structure, or producing technical implementation plans."
 name: "Software Architect"
-tools: [read, search, todo]
+tools: [read/getNotebookSummary, read/problems, read/readFile, read/terminalSelection, read/terminalLastCommand, edit/createDirectory, edit/createFile, edit/createJupyterNotebook, edit/editFiles, edit/editNotebook, edit/rename, search/changes, search/codebase, search/fileSearch, search/listDirectory, search/searchResults, search/textSearch, search/searchSubagent, search/usages, todo]
 argument-hint: "Area or system to review (e.g. 'renderer', 'ECS', 'audio pipeline')"
 ---
 

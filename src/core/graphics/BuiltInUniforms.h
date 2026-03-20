@@ -12,6 +12,15 @@ namespace eage::graphics
 		// padding
 		float extra[46];
 	};
+
+	struct SceneGlobalData
+	{
+		alignas(64) glm::mat4 view;
+		alignas(64) glm::mat4 proj;
+		alignas(64) glm::mat4 view_proj;
+		// padding
+		float extra[16];
+	};
 }
 
 #endif // _EAGE_BUILT_IN_UNIFORMS_H_

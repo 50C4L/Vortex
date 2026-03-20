@@ -26,29 +26,29 @@ MaterialBuilder& MaterialBuilder::AddTexture( uint32_t binding, const std::strin
 	TextureBinding texture_binding;
 	texture_binding.binding = binding;
 	texture_binding.texture_path = texture_path;
-	texture_binding.min_filter = vk::Filter::eNearest;
-	texture_binding.mag_filter = vk::Filter::eNearest;
-	texture_binding.address_mode = vk::SamplerAddressMode::eRepeat;
+	texture_binding.min_filter = TextureFilter::NEAREST;
+	texture_binding.mag_filter = TextureFilter::NEAREST;
+	texture_binding.address_mode = AddressMode::REPEAT;
 	
 	mProperty.textures.push_back( texture_binding );
 	return *this;
 }
 
 MaterialBuilder& MaterialBuilder::AddTexture( uint32_t binding, const std::string& texture_path,
-												vk::Filter min_filter, vk::Filter mag_filter )
+												TextureFilter min_filter, TextureFilter mag_filter )
 {
 	TextureBinding texture_binding;
 	texture_binding.binding = binding;
 	texture_binding.texture_path = texture_path;
 	texture_binding.min_filter = min_filter;
 	texture_binding.mag_filter = mag_filter;
-	texture_binding.address_mode = vk::SamplerAddressMode::eRepeat;
+	texture_binding.address_mode = AddressMode::REPEAT;
 	
 	mProperty.textures.push_back( texture_binding );
 	return *this;
 }
 
-MaterialBuilder& MaterialBuilder::SetTopology( vk::PrimitiveTopology topology )
+MaterialBuilder& MaterialBuilder::SetTopology( Topology topology )
 {
 	mProperty.topology = topology;
 	return *this;
@@ -57,18 +57,18 @@ MaterialBuilder& MaterialBuilder::SetTopology( vk::PrimitiveTopology topology )
 MaterialBuilder& MaterialBuilder::SetAlphaBlending()
 {
 	mProperty.blend_enable = true;
-	mProperty.src_color_blend = vk::BlendFactor::eSrcAlpha;
-	mProperty.dst_color_blend = vk::BlendFactor::eOneMinusSrcAlpha;
-	mProperty.color_blend_op = vk::BlendOp::eAdd;
+	mProperty.src_color_blend = BlendFactor::SRC_ALPHA;
+	mProperty.dst_color_blend = BlendFactor::ONE_MINUS_SRC_ALPHA;
+	mProperty.color_blend_op = BlendOp::ADD;
 	return *this;
 }
 
 MaterialBuilder& MaterialBuilder::SetAdditiveBlending()
 {
 	mProperty.blend_enable = true;
-	mProperty.src_color_blend = vk::BlendFactor::eOne;
-	mProperty.dst_color_blend = vk::BlendFactor::eOne;
-	mProperty.color_blend_op = vk::BlendOp::eAdd;
+	mProperty.src_color_blend = BlendFactor::ONE;
+	mProperty.dst_color_blend = BlendFactor::ONE;
+	mProperty.color_blend_op = BlendOp::ADD;
 	return *this;
 }
 

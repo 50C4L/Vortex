@@ -52,7 +52,7 @@ AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
 		.SetShaders("./src/shaders/compiled/colored_triangle_mesh.vert.spv", 
 					"./src/shaders/compiled/colored_triangle.frag.spv")
 		.AddTexture(0, "./resources/textures/asteroid/asteroid.png", 
-					vk::Filter::eNearest, vk::Filter::eNearest)
+					eage::graphics::TextureFilter::NEAREST, eage::graphics::TextureFilter::NEAREST)
 		.SetAlphaBlending()
 		.EnableDepthTest(true)
 		.Build();

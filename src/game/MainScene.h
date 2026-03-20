@@ -4,21 +4,12 @@
 #include "../AbstractScene.h"
 #include <ecs/ResourceManager.h>
 
-#include <vulkan/vulkan.hpp>
-
 #include <memory>
 #include <chrono>
 
 namespace eage::graphics
 {
-	class Renderer;
 	class OrthographicCamera;
-	class UniformDescriptor;
-	struct ManagedBuffer;
-	struct GPUImageBuffers;
-	struct GPUMeshBuffers;
-	struct RenderPipeline;
-	class VulkanSampler;
 }
 
 namespace events
@@ -46,7 +37,7 @@ namespace vortex
 	class MainScene : public AbstractScene
 	{
 	public:
-		MainScene( eage::graphics::Renderer& renderer, events::InputController& input_controller, 
+		MainScene( events::InputController& input_controller, 
 				   eage::ecs::ECSRegistry& ecs_registry, eage::ecs::AudioSystem& audio_system, 
 				   eage::ecs::RenderSystem& render_system, eage::ecs::PhysicsSystem& physics_system );
 		virtual ~MainScene();
@@ -65,7 +56,6 @@ namespace vortex
 		void CreateScreenZoneEntities();
 		void CreateEnemyEntities();
 
-		eage::graphics::Renderer& mRenderer;
 		events::InputController& mInputController;
 		eage::ecs::ECSRegistry& mECSRegistry;
 		eage::ecs::AudioSystem& mAudioSystem;

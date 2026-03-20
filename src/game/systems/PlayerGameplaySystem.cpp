@@ -11,8 +11,6 @@
 #include <graphics/MaterialBuilder.h>
 #include <utility/Logger.h>
 
-#include <vulkan/vulkan.hpp>
-
 #include "BulletSystem.h"
 #include "../GameConfig.h"
 #include "../components/GameGenericComponents.h"
@@ -47,7 +45,7 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",
 					 "./src/shaders/compiled/colored_triangle.frag.spv" )
 		.AddTexture( 0, "./resources/textures/ship/ship_texatlas.png",
-					 vk::Filter::eNearest, vk::Filter::eNearest )
+					 eage::graphics::TextureFilter::NEAREST, eage::graphics::TextureFilter::NEAREST )
 		.SetAlphaBlending()
 		.EnableDepthTest( true )
 		.Build();
@@ -58,7 +56,7 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",
 					 "./src/shaders/compiled/colored_triangle.frag.spv" )
 		.AddTexture( 0, "./resources/textures/bullets/player_bullets.png",
-					 vk::Filter::eNearest, vk::Filter::eNearest )
+					 eage::graphics::TextureFilter::NEAREST, eage::graphics::TextureFilter::NEAREST )
 		.SetAlphaBlending()
 		.EnableDepthTest( true )
 		.Build();

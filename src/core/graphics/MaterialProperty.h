@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include <vulkan/vulkan.hpp>
+#include <graphics/GraphicsTypes.h>
 
 namespace eage::graphics
 {
@@ -15,11 +15,11 @@ namespace eage::graphics
 		/// File path to the texture image.
 		std::string texture_path;
 		/// Minification filter to use when sampling the texture.
-		vk::Filter min_filter = vk::Filter::eNearest;
+		TextureFilter min_filter = TextureFilter::NEAREST;
 		/// Magnification filter to use when sampling the texture.
-		vk::Filter mag_filter = vk::Filter::eNearest;
+		TextureFilter mag_filter = TextureFilter::NEAREST;
 		/// Address mode for texture coordinates outside [0, 1] range.
-		vk::SamplerAddressMode address_mode = vk::SamplerAddressMode::eRepeat;
+		AddressMode address_mode = AddressMode::REPEAT;
 	};
 
 	// Represents a uniform binding for a material, including binding index, descriptor type, size, and data pointer.
@@ -27,8 +27,8 @@ namespace eage::graphics
 	{
 		/// Descriptor set binding index for the uniform.
 		uint32_t binding;
-		/// Vulkan descriptor type (e.g., uniform buffer, storage buffer).
-		vk::DescriptorType type;
+		/// Uniform type (e.g., uniform buffer, storage buffer).
+		UniformType type;
 		/// Size of the uniform data in bytes.
 		size_t size;
 		/// Pointer to the uniform data.
@@ -51,24 +51,24 @@ namespace eage::graphics
 		// Pipeline state
 
 		/// Primitive topology used for rendering (e.g., triangle list).
-		vk::PrimitiveTopology topology = vk::PrimitiveTopology::eTriangleList;
+		Topology topology = Topology::TRIANGLE_LIST;
 		/// Polygon mode (e.g., fill, line, point).
-		vk::PolygonMode polygon_mode = vk::PolygonMode::eFill;
+		PolygonMode polygon_mode = PolygonMode::FILL;
 		/// Face culling mode.
-		vk::CullModeFlagBits cull_mode = vk::CullModeFlagBits::eNone;
+		CullMode cull_mode = CullMode::NONE;
 		/// Winding order for front-facing polygons.
-		vk::FrontFace front_face = vk::FrontFace::eClockwise;
+		FrontFace front_face = FrontFace::CLOCKWISE;
 		
 		// Blending
 
 		/// Enables or disables color blending.
 		bool blend_enable = true;
 		/// Source blend factor for color blending.
-		vk::BlendFactor src_color_blend = vk::BlendFactor::eOne;
+		BlendFactor src_color_blend = BlendFactor::ONE;
 		/// Destination blend factor for color blending.
-		vk::BlendFactor dst_color_blend = vk::BlendFactor::eDstAlpha;
+		BlendFactor dst_color_blend = BlendFactor::DST_ALPHA;
 		/// Blend operation for color blending.
-		vk::BlendOp color_blend_op = vk::BlendOp::eAdd;
+		BlendOp color_blend_op = BlendOp::ADD;
 		
 		// Depth testing
 
@@ -77,7 +77,7 @@ namespace eage::graphics
 		/// Enables or disables writing to the depth buffer.
 		bool depth_write = true;
 		/// Depth comparison operation.
-		vk::CompareOp depth_compare = vk::CompareOp::eGreaterOrEqual;
+		CompareOp depth_compare = CompareOp::GREATER_OR_EQUAL;
 	};
 }
 

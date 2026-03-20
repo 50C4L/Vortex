@@ -136,7 +136,7 @@ VortexGame::Init()
 	// Initialize SceneController
 	mSceneController = std::make_unique<SceneController>();
 	mSceneController->AddScene( static_cast<int>( config::SceneID::MAIN_SCENE ), 
-		std::make_unique<MainScene>( *mRenderer, *mInputController, *mECSRegistry, *mAudioSystem, *mRenderSystem, *mPhysicsSystem ) );
+		std::make_unique<MainScene>( *mInputController, *mECSRegistry, *mAudioSystem, *mRenderSystem, *mPhysicsSystem ) );
 	mSceneController->ChangeScene( static_cast<int>( config::SceneID::MAIN_SCENE ) );
 	mSceneGraphSystem->SetSceneRoot( mSceneController->GetCurrentSceneRoot() );
 
