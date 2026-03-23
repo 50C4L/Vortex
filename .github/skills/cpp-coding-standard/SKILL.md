@@ -22,3 +22,11 @@ Always follow these rules when generating or editing C++ code in this workspace.
 | Braces | Allman | opening brace on its own line |
 | Return type (out-of-line) | Separate line | `void\nVortexGame::Run()` |
 | Indentation | Hard tabs | one tab per level |
+
+## Character Encoding
+
+**All source files must use ASCII-only characters in comments, identifiers, and string literals.**
+
+- Never use Unicode punctuation in comments or strings: em-dash (`—`), en-dash (`–`), curly quotes (`"` `"` `'` `'`), ellipsis (`…`), etc.
+- Use plain ASCII equivalents instead: `-` or `--` for dashes, `"` and `'` for quotes, `...` for ellipsis.
+- Reason: MSVC on non-Unicode system code pages (e.g. 936) raises **C4819** for any non-ASCII character in a source file, treating it as a build warning.

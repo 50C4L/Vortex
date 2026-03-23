@@ -3,7 +3,7 @@
 
 ///
 /// Internal mapping between backend-agnostic GraphicsTypes and Vulkan types.
-/// NEVER include this from a public header — only from .cpp files inside graphics/.
+/// NEVER include this from a public header - only from .cpp files inside graphics/.
 ///
 
 #include <vulkan/vulkan.hpp>

@@ -11,6 +11,7 @@
 #include <graphics/ManagedVulkanResources.h>
 #include <graphics/Renderer.h>
 #include <graphics/RenderInfo.h>
+#include <graphics/ShaderReflection.h>
 #include <graphics/VulkanDescriptor.h>
 #include <graphics/VulkanMesh.h>
 #include <graphics/VulkanShader.h>
@@ -61,46 +62,118 @@ struct RenderSystem::Impl
 
 	ResourceId CreateMaterial( const MaterialProperty& material_property )
 	{
-		DescriptorLayoutBuilder layout_builder;
+		// Load shaders and retain SPIR-V bytecode for reflection
+		auto vert_asset = load_shader_from_file( mRenderer.GetDevice(), material_property.vertex_shader_path );
+		auto frag_asset = load_shader_from_file( mRenderer.GetDevice(), material_property.fragment_shader_path );
 
-		for( const auto& texture : material_property.textures )
+		if( !vert_asset || !frag_asset )
 		{
-			layout_builder.AddBinding( texture.binding, vk::DescriptorType::eCombinedImageSampler );
+			LOG_ERROR( "Failed to load shaders for material" );
+			return INVALID_ID;
 		}
 
-		for( const auto& uniform : material_property.uniforms )
-		{
-			layout_builder.AddBinding( uniform.binding, ToVulkan( uniform.type ) );
-		}
+		// Reflect descriptor bindings from SPIR-V
+		auto reflection = merge_reflection(
+			reflect_shader( vert_asset->spirv_code ),
+			reflect_shader( frag_asset->spirv_code ) );
 
-		auto material_layout = layout_builder.Build( mRenderer.GetDevice(),
-			vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment );
+		// Build material-specific descriptor set layouts (skip built-in sets 0 and 1)
+		auto material_layouts = build_descriptor_set_layouts(
+			mRenderer.GetDevice(), reflection,
+			vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+			{ 0, 1 } );
 
-		std::vector<vk::DescriptorSetLayout> global_layouts = {
+		// Assemble all layouts for the pipeline (set 0, set 1, then reflected sets)
+		std::vector<vk::DescriptorSetLayout> all_layouts = {
 			mRenderer.GetBuiltInDescriptorSetLayouts().global.get(),
 			mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get()
 		};
 
-		std::vector<vk::DescriptorSetLayout> all_layouts = global_layouts;
-		all_layouts.push_back( material_layout.get() );
+		// Track material-set layouts that we own (first reflected set is used for the material descriptor)
+		vk::DescriptorSetLayout material_set_layout = nullptr;
+		for( auto& [set_number, layout] : material_layouts )
+		{
+			if( !material_set_layout )
+			{
+				material_set_layout = layout.get();
+			}
+			all_layouts.push_back( layout.get() );
+		}
 
-		auto pipeline = CreateOrGetPipeline( material_property, all_layouts );
+		auto pipeline = CreateOrGetPipeline( material_property, all_layouts, *vert_asset, *frag_asset );
 
 		auto material = std::make_unique<Material>();
 		material->pipeline = pipeline;
-		material->descriptor = std::make_unique<StaticDescriptor>(
-			mRenderer, material_layout.get() );
 
+		if( material_set_layout )
+		{
+			material->descriptor = std::make_unique<StaticDescriptor>( mRenderer, material_set_layout );
+		}
+
+		// Build a name-to-binding lookup from the reflected bindings for the material set(s)
+		std::unordered_map<std::string, const DescriptorBindingInfo*> name_to_binding;
+		std::vector<const DescriptorBindingInfo*> sampler_bindings_ordered;
+		for( const auto& b : reflection.bindings )
+		{
+			if( b.set <= 1 )
+			{
+				continue;
+			}
+			if( !b.name.empty() )
+			{
+				name_to_binding[b.name] = &b;
+			}
+			if( b.descriptor_type == vk::DescriptorType::eCombinedImageSampler )
+			{
+				sampler_bindings_ordered.push_back( &b );
+			}
+		}
+
+		// Sort sampler bindings by (set, binding) for order-based fallback matching
+		std::sort( sampler_bindings_ordered.begin(), sampler_bindings_ordered.end(),
+			[]( const DescriptorBindingInfo* a, const DescriptorBindingInfo* b )
+			{
+				if( a->set != b->set ) return a->set < b->set;
+				return a->binding < b->binding;
+			} );
+
+		// Write textures: match by name first, then fall back to order-based matching
+		size_t order_index = 0;
 		for( const auto& texture_binding : material_property.textures )
 		{
-			auto it = mImagePathToIdMap.find( texture_binding.texture_path );
-			if( it == mImagePathToIdMap.end() )
+			const DescriptorBindingInfo* reflected = nullptr;
+
+			// Try name-based match
+			if( !texture_binding.name.empty() )
+			{
+				auto it = name_to_binding.find( texture_binding.name );
+				if( it != name_to_binding.end() )
+				{
+					reflected = it->second;
+				}
+			}
+
+			// Fall back to order-based match
+			if( !reflected && order_index < sampler_bindings_ordered.size() )
+			{
+				reflected = sampler_bindings_ordered[order_index];
+			}
+			++order_index;
+
+			if( !reflected )
+			{
+				LOG_ERROR() << "No matching shader binding for texture: " << texture_binding.texture_path;
+				continue;
+			}
+
+			auto img_it = mImagePathToIdMap.find( texture_binding.texture_path );
+			if( img_it == mImagePathToIdMap.end() )
 			{
 				LOG_ERROR() << "Failed to find image buffer for texture path: " << texture_binding.texture_path;
 				continue;
 			}
 
-			auto texture = mImages.Get( it->second );
+			auto texture = mImages.Get( img_it->second );
 			if( !texture )
 			{
 				LOG_ERROR() << "Invalid image buffer for texture path: " << texture_binding.texture_path;
@@ -114,31 +187,75 @@ struct RenderSystem::Impl
 			vk::Sampler sampler = GetSampler( sampler_id );
 
 			material->descriptor->WriteImage(
-				texture_binding.binding,
+				reflected->binding,
 				vk::DescriptorType::eCombinedImageSampler,
 				texture->image_view.get(),
 				vk::ImageLayout::eShaderReadOnlyOptimal,
 				sampler );
 		}
 
+		// Write uniforms: match by name first, then by order among reflected uniform bindings
+		std::vector<const DescriptorBindingInfo*> uniform_bindings_ordered;
+		for( const auto& b : reflection.bindings )
+		{
+			if( b.set <= 1 ) continue;
+			if( b.descriptor_type == vk::DescriptorType::eUniformBuffer ||
+				b.descriptor_type == vk::DescriptorType::eStorageBuffer )
+			{
+				uniform_bindings_ordered.push_back( &b );
+			}
+		}
+		std::sort( uniform_bindings_ordered.begin(), uniform_bindings_ordered.end(),
+			[]( const DescriptorBindingInfo* a, const DescriptorBindingInfo* b )
+			{
+				if( a->set != b->set ) return a->set < b->set;
+				return a->binding < b->binding;
+			} );
+
+		size_t uniform_order = 0;
 		for( const auto& uniform_binding : material_property.uniforms )
 		{
-			if( uniform_binding.data )
+			const DescriptorBindingInfo* reflected = nullptr;
+
+			if( !uniform_binding.name.empty() )
 			{
-				auto uniform_buffer = ManagedBuffer::Create(
-					*mRenderer.GetMemoryAllocator().allocator.get(),
-					uniform_binding.size,
-					vk::BufferUsageFlagBits::eUniformBuffer,
-					VMA_MEMORY_USAGE_CPU_TO_GPU );
-
-				uniform_buffer->Update( uniform_binding.data, uniform_binding.size, 0 );
-
-				material->descriptor->WriteBuffer(
-					uniform_binding.binding,
-					ToVulkan( uniform_binding.type ),
-					uniform_buffer->buffer,
-					uniform_binding.size );
+				auto it = name_to_binding.find( uniform_binding.name );
+				if( it != name_to_binding.end() )
+				{
+					reflected = it->second;
+				}
 			}
+
+			if( !reflected && uniform_order < uniform_bindings_ordered.size() )
+			{
+				reflected = uniform_bindings_ordered[uniform_order];
+			}
+			++uniform_order;
+
+			if( !reflected || !uniform_binding.data )
+			{
+				continue;
+			}
+
+			auto uniform_buffer = ManagedBuffer::Create(
+				*mRenderer.GetMemoryAllocator().allocator.get(),
+				uniform_binding.size,
+				vk::BufferUsageFlagBits::eUniformBuffer,
+				VMA_MEMORY_USAGE_CPU_TO_GPU );
+
+			uniform_buffer->Update( uniform_binding.data, uniform_binding.size, 0 );
+
+			material->descriptor->WriteBuffer(
+				reflected->binding,
+				reflected->descriptor_type,
+				uniform_buffer->buffer,
+				uniform_binding.size );
+		}
+
+		// Keep material layouts alive alongside the material
+		for( auto& [set_number, layout] : material_layouts )
+		{
+			mOwnedDescriptorSetLayouts.push_back( std::move( layout ) );
 		}
 
 		return mMaterials.Store( std::move( material ) );
@@ -347,7 +464,9 @@ struct RenderSystem::Impl
 
 	std::shared_ptr<RenderPipeline> CreateOrGetPipeline(
 		const MaterialProperty& property,
-		const std::vector<vk::DescriptorSetLayout>& global_layouts )
+		const std::vector<vk::DescriptorSetLayout>& all_layouts,
+		ShaderAsset& vert_asset,
+		ShaderAsset& frag_asset )
 	{
 		size_t hash = HashMaterialProperty( property );
 
@@ -359,19 +478,6 @@ struct RenderSystem::Impl
 
 		auto pipeline = std::make_shared<RenderPipeline>();
 
-		auto vertex_shader = create_shader_module_from_file(
-			mRenderer.GetDevice(), property.vertex_shader_path );
-		auto fragment_shader = create_shader_module_from_file(
-			mRenderer.GetDevice(), property.fragment_shader_path );
-
-		if( !vertex_shader || !fragment_shader )
-		{
-			LOG_ERROR( "Failed to load shaders for material" );
-			return nullptr;
-		}
-
-		std::vector<vk::DescriptorSetLayout> all_layouts = global_layouts;
-
 		vk::PipelineLayoutCreateInfo layout_info;
 		layout_info.setLayoutCount = static_cast<uint32_t>( all_layouts.size() );
 		layout_info.pSetLayouts = all_layouts.data();
@@ -382,7 +488,7 @@ struct RenderSystem::Impl
 
 		VulkanPipelineBuilder pipeline_builder;
 		pipeline->pipeline = pipeline_builder
-			.SetShaders( vertex_shader->get(), fragment_shader->get() )
+			.SetShaders( vert_asset.module.get(), frag_asset.module.get() )
 			.SetPipelineLayout( pipeline_layout.get() )
 			.SetInputTopology( ToVulkan( property.topology ) )
 			.SetPolygonMode( ToVulkan( property.polygon_mode ) )
@@ -435,6 +541,8 @@ struct RenderSystem::Impl
 	std::unordered_map<size_t, std::shared_ptr<RenderPipeline>> mPipelineCache;
 	std::unordered_map<std::string, ResourceId> mImagePathToIdMap;
 	std::unordered_map<size_t, ResourceId> mSamplerCache;
+
+	std::vector<vk::UniqueDescriptorSetLayout> mOwnedDescriptorSetLayouts;
 };
 
 // ---------------------------------------------------------------------------

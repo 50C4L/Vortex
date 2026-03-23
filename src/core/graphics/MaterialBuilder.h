@@ -15,9 +15,11 @@ namespace eage::graphics
 		MaterialBuilder& SetFragmentShader( const std::string& path );
 		MaterialBuilder& SetShaders( const std::string& vertex_path, const std::string& fragment_path );
 		
-		// Texture methods
-		MaterialBuilder& AddTexture( uint32_t binding, const std::string& texture_path );
-		MaterialBuilder& AddTexture( uint32_t binding, const std::string& texture_path, 
+		// Texture methods - binding is resolved automatically from the shader via reflection
+		MaterialBuilder& AddTexture( const std::string& texture_path );
+		MaterialBuilder& AddTexture( const std::string& texture_path,
+									 TextureFilter min_filter, TextureFilter mag_filter );
+		MaterialBuilder& AddTexture( const std::string& name, const std::string& texture_path,
 									 TextureFilter min_filter, TextureFilter mag_filter );
 		
 		// Pipeline state methods

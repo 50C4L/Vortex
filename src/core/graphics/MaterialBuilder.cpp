@@ -21,10 +21,9 @@ MaterialBuilder& MaterialBuilder::SetShaders( const std::string& vertex_path, co
 	return *this;
 }
 
-MaterialBuilder& MaterialBuilder::AddTexture( uint32_t binding, const std::string& texture_path )
+MaterialBuilder& MaterialBuilder::AddTexture( const std::string& texture_path )
 {
 	TextureBinding texture_binding;
-	texture_binding.binding = binding;
 	texture_binding.texture_path = texture_path;
 	texture_binding.min_filter = TextureFilter::NEAREST;
 	texture_binding.mag_filter = TextureFilter::NEAREST;
@@ -34,11 +33,24 @@ MaterialBuilder& MaterialBuilder::AddTexture( uint32_t binding, const std::strin
 	return *this;
 }
 
-MaterialBuilder& MaterialBuilder::AddTexture( uint32_t binding, const std::string& texture_path,
+MaterialBuilder& MaterialBuilder::AddTexture( const std::string& texture_path,
 												TextureFilter min_filter, TextureFilter mag_filter )
 {
 	TextureBinding texture_binding;
-	texture_binding.binding = binding;
+	texture_binding.texture_path = texture_path;
+	texture_binding.min_filter = min_filter;
+	texture_binding.mag_filter = mag_filter;
+	texture_binding.address_mode = AddressMode::REPEAT;
+	
+	mProperty.textures.push_back( texture_binding );
+	return *this;
+}
+
+MaterialBuilder& MaterialBuilder::AddTexture( const std::string& name, const std::string& texture_path,
+												TextureFilter min_filter, TextureFilter mag_filter )
+{
+	TextureBinding texture_binding;
+	texture_binding.name = name;
 	texture_binding.texture_path = texture_path;
 	texture_binding.min_filter = min_filter;
 	texture_binding.mag_filter = mag_filter;

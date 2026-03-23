@@ -49,12 +49,12 @@ AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
 
 	// Create sprite material using the new MaterialBuilder and RenderSystem
 	auto material_property = eage::graphics::MaterialBuilder()
-		.SetShaders("./src/shaders/compiled/colored_triangle_mesh.vert.spv", 
-					"./src/shaders/compiled/colored_triangle.frag.spv")
-		.AddTexture(0, "./resources/textures/asteroid/asteroid.png", 
-					eage::graphics::TextureFilter::NEAREST, eage::graphics::TextureFilter::NEAREST)
+		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",
+					 "./src/shaders/compiled/colored_triangle.frag.spv" )
+		.AddTexture( "./resources/textures/asteroid/asteroid.png",
+					 eage::graphics::TextureFilter::NEAREST, eage::graphics::TextureFilter::NEAREST )
 		.SetAlphaBlending()
-		.EnableDepthTest(true)
+		.EnableDepthTest( true )
 		.Build();
 
 	mAsteroidMaterialId = mRenderSystem.CreateMaterial( material_property );

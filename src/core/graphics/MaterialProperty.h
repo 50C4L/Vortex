@@ -7,11 +7,13 @@
 
 namespace eage::graphics
 {
-	// Represents a texture binding for a material, including binding index, texture path, and sampler settings.
+	// Represents a texture binding for a material.
+	// Textures are matched to shader bindings by name or declaration order.
 	struct TextureBinding
 	{
-		/// Descriptor set binding index for the texture.
-		uint32_t binding;
+		/// Optional GLSL variable name used for name-based matching to the shader binding.
+		/// If empty, textures are matched in declaration order.
+		std::string name;
 		/// File path to the texture image.
 		std::string texture_path;
 		/// Minification filter to use when sampling the texture.
@@ -22,13 +24,12 @@ namespace eage::graphics
 		AddressMode address_mode = AddressMode::REPEAT;
 	};
 
-	// Represents a uniform binding for a material, including binding index, descriptor type, size, and data pointer.
+	// Represents a uniform binding for a material.
+	// Uniforms are matched to shader bindings by name or declaration order.
 	struct UniformBinding
 	{
-		/// Descriptor set binding index for the uniform.
-		uint32_t binding;
-		/// Uniform type (e.g., uniform buffer, storage buffer).
-		UniformType type;
+		/// Optional GLSL variable name used for name-based matching to the shader binding.
+		std::string name;
 		/// Size of the uniform data in bytes.
 		size_t size;
 		/// Pointer to the uniform data.

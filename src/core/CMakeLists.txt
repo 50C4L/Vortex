@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(THIRDPARTY_DEBUG_PATH ${CMAKE_CURRENT_LIST_DIR}/../../thirdparty/debug)
 set(THIRDPARTY_RELEASE_PATH ${CMAKE_CURRENT_LIST_DIR}/../../thirdparty/release)
+set(THIRDPARTY_SRC_PATH ${CMAKE_CURRENT_LIST_DIR}/../../thirdparty/src)
 
 # IMGUI static library
 set(IMGUI_PATH ${CMAKE_CURRENT_LIST_DIR}/imgui)
@@ -82,6 +83,8 @@ add_library(eage_core STATIC
 	./graphics/VulkanMesh.h
 	./graphics/VulkanPipeline.h
 	./graphics/VulkanPipeline.cpp
+	./graphics/ShaderReflection.h
+	./graphics/ShaderReflection.cpp
 	./graphics/VulkanShader.h
 	./graphics/VulkanShader.cpp
 	./graphics/VulkanSwapchain.h
@@ -126,11 +129,18 @@ add_library(eage_core STATIC
 	./utility/Pointers.h
 	./utility/Logger.h
 	./utility/JsonParser.h
+
+	${THIRDPARTY_SRC_PATH}/spirv-reflect/spirv_reflect.h
+	${THIRDPARTY_SRC_PATH}/spirv-reflect/spirv_reflect.c
 )
 
 add_definitions(-DGLM_FORCE_DEPTH_ZERO_TO_ONE)
+add_definitions(-DSPIRV_REFLECT_USE_SYSTEM_SPIRV_H)
 
-target_include_directories(eage_core PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(eage_core PUBLIC
+	${CMAKE_CURRENT_LIST_DIR}
+	${THIRDPARTY_SRC_PATH}/spirv-reflect/include
+)
 
 target_link_libraries(eage_core PUBLIC
 	imgui
