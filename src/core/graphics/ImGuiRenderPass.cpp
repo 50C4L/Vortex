@@ -73,6 +73,26 @@ ImGuiRenderPass::~ImGuiRenderPass()
 }
 
 void
+ImGuiRenderPass::LoadFont( const char* path, float size_px, eage::ecs::HudFontSize slot )
+{
+	ImFontAtlas* atlas = ImGui::GetIO().Fonts;
+	ImFont* font = nullptr;
+
+	if( path )
+	{
+		font = atlas->AddFontFromFileTTF( path, size_px );
+	}
+	else
+	{
+		ImFontConfig config;
+		config.SizePixels = size_px;
+		font = atlas->AddFontDefault( &config );
+	}
+
+	mFonts[static_cast<size_t>( slot )] = font;
+}
+
+void
 ImGuiRenderPass::InitFontTexture( std::function<void( std::function<void( vk::CommandBuffer& )> )> immediate_submit )
 {
 	immediate_submit( []( vk::CommandBuffer& )
@@ -82,6 +102,13 @@ ImGuiRenderPass::InitFontTexture( std::function<void( std::function<void( vk::Co
 			LOG_ERROR( "Failed to create IMGUI fonts texture." );
 		}
 	} );
+}
+
+ImFont*
+ImGuiRenderPass::GetFont( eage::ecs::HudFontSize slot ) const
+{
+	ImFont* font = mFonts[static_cast<size_t>( slot )];
+	return font ? font : ImGui::GetFont();
 }
 
 const RenderPassDesc&

@@ -18,6 +18,7 @@
 #include <ecs/systems/PhysicsSystem.h>
 #include <ecs/systems/RenderSystem.h>
 #include <ecs/systems/SceneGraphSystem.h>
+#include <ecs/systems/HudRenderSystem.h>
 #include <profiling/PerformanceTracker.h>
 
 #include "SceneController.h"
@@ -40,6 +41,7 @@ VortexGame::~VortexGame()
 	mRenderer->WaitForIdle();
 
 	mPerformanceTracker.reset();
+	mHudRenderSystem.reset();
 	mRenderSystem.reset();
 	mSceneGraphSystem.reset();
 	mPhysicsSystem.reset();
@@ -133,6 +135,9 @@ VortexGame::Init()
 		eage::graphics::Renderer::MAX_FRAMES_IN_FLIGHT,
 		mRenderer->GetSwapchainImageCount(),
 		*mRenderer->GetRenderImage() );
+	mImGuiPass->LoadFont( nullptr, 13.0f, eage::ecs::HudFontSize::SMALL );
+	mImGuiPass->LoadFont( nullptr, 24.0f, eage::ecs::HudFontSize::MEDIUM );
+	mImGuiPass->LoadFont( nullptr, 36.0f, eage::ecs::HudFontSize::LARGE );
 	mImGuiPass->InitFontTexture( [this]( std::function<void( vk::CommandBuffer& )> work )
 	{
 		mRenderer->ImmediateSubmit( std::move( work ) );
@@ -183,6 +188,9 @@ VortexGame::Init()
 	{
 		mPerformanceTracker->DrawDebugGUI();
 	} );
+
+	// Initialize HudRenderSystem (registers its own overlay callback)
+	mHudRenderSystem = std::make_unique<eage::ecs::HudRenderSystem>( *mECSRegistry, *mImGuiPass );
 
 	return true;
 }

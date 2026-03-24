@@ -1,6 +1,7 @@
 #ifndef _EAGE_IMGUI_RENDER_PASS_H_
 #define _EAGE_IMGUI_RENDER_PASS_H_
 
+#include <array>
 #include <functional>
 #include <memory>
 #include <vector>
@@ -8,9 +9,11 @@
 #include <vulkan/vulkan.hpp>
 
 #include <graphics/AbstractRenderPass.h>
+#include <ecs/components/Hud.h>
 
 union SDL_Event;
 struct SDL_Window;
+struct ImFont;
 
 namespace eage::graphics
 {
@@ -30,8 +33,15 @@ namespace eage::graphics
 
 		~ImGuiRenderPass() override;
 
+		/// Add a font at the given pixel size. Must be called before InitFontTexture.
+		/// Pass nullptr for path to use the embedded default font.
+		void LoadFont( const char* path, float size_px, eage::ecs::HudFontSize slot );
+
 		/// Upload the ImGui font texture. Caller provides an immediate-submit function.
 		void InitFontTexture( std::function<void( std::function<void( vk::CommandBuffer& )> )> immediate_submit );
+
+		/// Retrieve a previously loaded font by HudFontSize slot.
+		ImFont* GetFont( eage::ecs::HudFontSize slot ) const;
 
 		const RenderPassDesc& GetDesc() const override;
 
@@ -52,6 +62,8 @@ namespace eage::graphics
 		VkDescriptorSet mSceneDescriptorSet = VK_NULL_HANDLE;
 
 		std::vector<std::function<void()>> mOverlayCallbacks;
+
+		std::array<ImFont*, static_cast<size_t>( eage::ecs::HudFontSize::COUNT )> mFonts{};
 	};
 }
 

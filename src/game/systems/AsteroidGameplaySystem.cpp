@@ -230,6 +230,7 @@ AsteroidGameplaySystem::Update()
 
 		if( health.IsDead() )
 		{
+			++mKillCount;
 			DespawnAsteroid( entity );
 		}
 	}

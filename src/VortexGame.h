@@ -26,6 +26,7 @@ namespace eage::ecs
 {
 	class AudioSystem;
 	class ECSRegistry;
+	class HudRenderSystem;
 	class PhysicsSystem;
 	class RenderSystem;
 	class SceneGraphSystem;
@@ -63,6 +64,7 @@ namespace vortex
 		std::unique_ptr<eage::ecs::SceneGraphSystem> mSceneGraphSystem;
 		std::unique_ptr<eage::ecs::RenderSystem> mRenderSystem;
 		std::unique_ptr<eage::ecs::PhysicsSystem> mPhysicsSystem;
+		std::unique_ptr<eage::ecs::HudRenderSystem> mHudRenderSystem;
 		std::unique_ptr<eage::profiling::PerformanceTracker> mPerformanceTracker;
 	};
 }

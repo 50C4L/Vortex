@@ -32,6 +32,8 @@ namespace vortex
 		void SpawnAsteroid( int count );
 		void DespawnAsteroid( uint64_t asteroid_entity );
 
+		int GetKillCount() const { return mKillCount; }
+
 		void Update();
 
 		// PhysicsSystem::Observer interface
@@ -53,6 +55,8 @@ namespace vortex
 
 		glm::vec2 mScreenTopLeft;
 		glm::vec2 mScreenBottomRight;
+
+		int mKillCount = 0;
 	};
 }
 
