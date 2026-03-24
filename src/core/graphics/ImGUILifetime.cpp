@@ -50,7 +50,8 @@ ImGUILifetime::Init( SDL_Window& window, uint32_t min_image_count, uint32_t max_
 	pool_info.maxSets = max_sets;
 	pool_info.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 
-	mDescriptorPool = mContext.logical_device->createDescriptorPoolUnique( pool_info );
+	vk::Device raw_device = *mContext.logical_device;
+	mDescriptorPool = raw_device.createDescriptorPoolUnique( pool_info );
 
 	ImGui::CreateContext();
 
@@ -66,11 +67,11 @@ ImGUILifetime::Init( SDL_Window& window, uint32_t min_image_count, uint32_t max_
 	pipeline_rendering_create_info.colorAttachmentCount = 1;
 
 	ImGui_ImplVulkan_InitInfo init_info{};
-	init_info.Instance = mContext.instance.get();
-	init_info.PhysicalDevice = mContext.physical_device;
-	init_info.Device = mContext.logical_device.get();
-	init_info.Queue = mContext.graphics_queue;
-	init_info.DescriptorPool = mDescriptorPool.get();
+	init_info.Instance = *mContext.instance;
+	init_info.PhysicalDevice = *mContext.physical_device;
+	init_info.Device = *mContext.logical_device;
+	init_info.Queue = *mContext.graphics_queue;
+	init_info.DescriptorPool = *mDescriptorPool;
 	init_info.MinImageCount = min_image_count;
 	init_info.ImageCount = max_image_count;
 	init_info.UseDynamicRendering = true;

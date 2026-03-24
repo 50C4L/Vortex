@@ -13,7 +13,7 @@ namespace eage::graphics
 	class VulkanPipelineBuilder
 	{
 	public:
-		vk::UniquePipeline Build( vk::Device& device );
+		vk::UniquePipeline Build( vk::Device device );
 
 		void Clear();
 

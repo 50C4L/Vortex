@@ -5,7 +5,7 @@
 using namespace eage::graphics;
 
 std::optional<ShaderAsset>
-eage::graphics::load_shader_from_file( vk::Device& device, const std::string& spv_file_path )
+eage::graphics::load_shader_from_file( vk::Device device, const std::string& spv_file_path )
 {
 	std::ifstream file( spv_file_path, std::ios::ate | std::ios::binary );
 
@@ -33,7 +33,7 @@ eage::graphics::load_shader_from_file( vk::Device& device, const std::string& sp
 }
 
 std::optional<vk::UniqueShaderModule>
-eage::graphics::create_shader_module_from_file( vk::Device& device, const std::string& spv_file_path )
+eage::graphics::create_shader_module_from_file( vk::Device device, const std::string& spv_file_path )
 {
 	auto asset = load_shader_from_file( device, spv_file_path );
 	if( !asset )

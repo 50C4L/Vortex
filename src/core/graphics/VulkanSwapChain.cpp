@@ -31,7 +31,7 @@ namespace
 	/// 
 	/// @return SwapChainSupportDetails
 	///
-	SwapChainSupportDetails query_swap_chain_support( const vk::PhysicalDevice &device, const vk::SurfaceKHR &surface )
+	SwapChainSupportDetails query_swap_chain_support( const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface )
 	{
 		SwapChainSupportDetails details;
 
@@ -110,7 +110,7 @@ namespace
 VulkanSwapChain::VulkanSwapChain( VulkanContext& context, uint32_t width, uint32_t height )
 : mContext( context )
 {
-	auto sc_support = query_swap_chain_support( mContext.physical_device, mContext.surface.get() );
+	auto sc_support = query_swap_chain_support( *mContext.physical_device, *mContext.surface );
 	if( !sc_support.IsComplete() )
 	{
 		throw std::runtime_error( "Physical device doesn't have swap chain support!" );
@@ -129,7 +129,7 @@ VulkanSwapChain::VulkanSwapChain( VulkanContext& context, uint32_t width, uint32
 	}
 
 	vk::SwapchainCreateInfoKHR create_info{};
-	create_info.setSurface( mContext.surface.get() );
+	create_info.setSurface( *mContext.surface );
 	create_info.setMinImageCount( 2 );
 	create_info.setImageFormat( surface_format.format );
 	create_info.setImageColorSpace( surface_format.colorSpace );
@@ -146,27 +146,14 @@ VulkanSwapChain::VulkanSwapChain( VulkanContext& context, uint32_t width, uint32
 	create_info.clipped = VK_TRUE;
 	create_info.oldSwapchain = VK_NULL_HANDLE;
 
-	try
-	{
-		mSwapChain = mContext.logical_device->createSwapchainKHRUnique( create_info );
-	}
-	catch ( vk::SystemError /*err*/ )
-	{
-		throw std::runtime_error( "Failed to create swap chain." );
-	}
+	mSwapChain = mContext.logical_device.createSwapchainKHR( create_info );
 
-	try
-	{
-		mImages = mContext.logical_device->getSwapchainImagesKHR( mSwapChain.get() );
-	}
-	catch ( vk::SystemError /*err*/ )
-	{
-		throw std::runtime_error( "Failed to get sawp chain images." );
-	}
+	vk::Device raw_device = *mContext.logical_device;
+	mImages = raw_device.getSwapchainImagesKHR( *mSwapChain );
 
 	// Create image views
-	mImageViews.resize( mImages.size() );
-	for( auto i = 0; i < mImages.size(); i++ )
+	mImageViews.reserve( mImages.size() );
+	for( size_t i = 0; i < mImages.size(); i++ )
 	{
 		vk::ImageViewCreateInfo view_info{};
 		view_info.image = mImages[ i ];
@@ -178,14 +165,7 @@ VulkanSwapChain::VulkanSwapChain( VulkanContext& context, uint32_t width, uint32
 		view_info.subresourceRange.baseArrayLayer = 0;
 		view_info.subresourceRange.layerCount = 1;
 
-		try
-		{
-			mImageViews[ i ] = context.logical_device->createImageViewUnique( view_info );
-		}
-		catch ( vk::SystemError /*err*/ )
-		{
-			throw std::runtime_error( "Failed to get sawp chain images." );
-		}
+		mImageViews.push_back( mContext.logical_device.createImageView( view_info ) );
 	}
 
 	// CreateDepthImages( std::move( allocator ) );
@@ -196,9 +176,10 @@ VulkanSwapChain::~VulkanSwapChain()
 }
 
 uint32_t 
-VulkanSwapChain::GetNextImage( vk::Semaphore& senmaphore )
+VulkanSwapChain::GetNextImage( vk::Semaphore senmaphore )
 {
-	auto res = mContext.logical_device->acquireNextImageKHR( mSwapChain.get(), UINT64_MAX, senmaphore, VK_NULL_HANDLE );
+	vk::Device raw_device = *mContext.logical_device;
+	auto res = raw_device.acquireNextImageKHR( *mSwapChain, UINT64_MAX, senmaphore, VK_NULL_HANDLE );
 	if( res.result == vk::Result::eSuccess )
 	{
 		return res.value;
@@ -210,11 +191,12 @@ VulkanSwapChain::GetNextImage( vk::Semaphore& senmaphore )
 }
 
 void 
-VulkanSwapChain::PresentToQueue( vk::Queue& present_qeuue, uint32_t image_index, vk::Semaphore& semaphore )
+VulkanSwapChain::PresentToQueue( vk::Queue present_qeuue, uint32_t image_index, vk::Semaphore semaphore )
 {
+	vk::SwapchainKHR raw_swapchain = *mSwapChain;
 	vk::PresentInfoKHR present_info{};
 	present_info.swapchainCount = 1;
-	present_info.pSwapchains = &mSwapChain.get();
+	present_info.pSwapchains = &raw_swapchain;
 	present_info.pImageIndices = &image_index;
 	present_info.waitSemaphoreCount = 1;
 

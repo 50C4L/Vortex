@@ -58,25 +58,6 @@ namespace
 	///
 	/// debug callback that is invoked by the Vulkan's validation layer
 	/// 
-	/// @param message_severity
-	///  Severity of this debug info, can be one of the followings
-	///   - VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
-	///   - VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT
-	///   - VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
-	///   - VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT
-	/// 
-	/// @param message_type
-	///  Type of the debug info, can be one of the followings
-	///   - VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-	///   - VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
-	///   - VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
-	/// 
-	/// @param pCallbackData
-	///  Message data
-	/// 
-	/// @param pUserData
-	///  Whatever you pass in
-	/// 
 	VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
 		VkDebugUtilsMessageTypeFlagsEXT message_type,
@@ -108,32 +89,6 @@ namespace
 			vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
 			debug_callback,
 			nullptr };
-	}
-
-	///
-	/// Vulkan extention functions to create and destroy a `VkDebugUtilsMessengerEXT`
-	/// so we can get rid of this address retrieving shit.
-	/// 
-	VkResult CreateDebugUtilsMessengerEXT( VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger )
-	{
-		auto func = ( PFN_vkCreateDebugUtilsMessengerEXT )vkGetInstanceProcAddr( instance, "vkCreateDebugUtilsMessengerEXT" );
-		if( func != nullptr ) 
-		{
-			return func( instance, pCreateInfo, pAllocator, pDebugMessenger );
-		}
-		else 
-		{
-			return VK_ERROR_EXTENSION_NOT_PRESENT;
-		}
-	}
-
-	void DestroyDebugUtilsMessengerEXT( VkInstance instance, VkDebugUtilsMessengerEXT callback, const VkAllocationCallbacks* pAllocator )
-	{
-		auto func = ( PFN_vkDestroyDebugUtilsMessengerEXT )vkGetInstanceProcAddr( instance, "vkDestroyDebugUtilsMessengerEXT" );
-		if( func != nullptr ) 
-		{
-			func( instance, callback, pAllocator );
-		}
 	}
 
 	///
@@ -194,43 +149,8 @@ namespace
 
 		return required_extenssions.empty();
 	}
-}
 
-namespace eage::graphics
-{
-	// Simple wrapper for the vulkan debug messenger
-	class VulkanDebugMessenger
-	{
-	public:
-		VulkanDebugMessenger( vk::Instance& instance )
-			: mInstance( instance )
-			, mMessenger( nullptr )
-		{
-			auto debug_info = make_debug_info();
-			if( CreateDebugUtilsMessengerEXT( mInstance, reinterpret_cast<const VkDebugUtilsMessengerCreateInfoEXT*>( &debug_info ), nullptr, &mMessenger ) !=	VK_SUCCESS )
-			{
-				throw std::runtime_error( "Failed to set up vulkan debug messenger!" );
-			}
-			LOG( "Vulkan debug messenger is set up." );
-		}
-
-		~VulkanDebugMessenger()
-		{
-			if( mMessenger )
-			{
-				DestroyDebugUtilsMessengerEXT( mInstance, mMessenger, nullptr );
-			}
-		}
-
-	private:
-		vk::Instance& mInstance;
-		VkDebugUtilsMessengerEXT mMessenger;
-	};
-}
-
-namespace
-{
-	vk::UniqueInstance create_vulkan_instance( SDL_Window& window )
+	vk::raii::Instance create_vulkan_instance( vk::raii::Context& raii_context, SDL_Window& window )
 	{
 		if( ENABLE_VALIDATION_LAYERS && !check_validation_layer_support() ) 
 		{
@@ -272,15 +192,7 @@ namespace
 			ENABLE_VALIDATION_LAYERS ? &debug_info : nullptr
 		);
 
-		vk::UniqueInstance instance;
-		try 
-		{
-			instance = vk::createInstanceUnique( std::move( create_info ) );
-		}
-		catch ( vk::SystemError /*err*/ )
-		{
-			throw std::runtime_error( "Failed to create vulkan instance!" );
-		}
+		vk::raii::Instance instance( raii_context, create_info );
 		LOG( "OK" );
 
 		LOG( "Retrieving Vulkan extensions:" );
@@ -294,64 +206,45 @@ namespace
 		return instance; 
 	}
 
-	std::unique_ptr<VulkanDebugMessenger>
-	setup_debug_messenger( vk::Instance& instance )
-	{
-		if( !ENABLE_VALIDATION_LAYERS )
-		{
-			return nullptr;
-		}
-		return std::make_unique<VulkanDebugMessenger>( instance );
-	}
-
-	vk::UniqueSurfaceKHR
-	create_vulkan_surface( vk::Instance& instance, SDL_Window& window )
+	vk::raii::SurfaceKHR
+	create_vulkan_surface( vk::raii::Instance& instance, SDL_Window& window )
 	{
 		VkSurfaceKHR surface;
-		if( !SDL_Vulkan_CreateSurface( &window, instance, &surface ) )
+		if( !SDL_Vulkan_CreateSurface( &window, *instance, &surface ) )
 		{
 			throw std::runtime_error( "Failed to create Vulkan surface!" );
 		}
-		return vk::UniqueSurfaceKHR( surface, vk::ObjectDestroy<vk::Instance, vk::DispatchLoaderStatic>( instance ) );
+		return vk::raii::SurfaceKHR( instance, surface );
 	}
 
-	vk::PhysicalDevice
-	create_physical_device( vk::Instance& instance, vk::SurfaceKHR& surface, VulkanContext::QueueFamilyIndices& queue_indices )
+	vk::raii::PhysicalDevice
+	create_physical_device( vk::raii::Instance& instance, vk::raii::SurfaceKHR& surface, VulkanContext::QueueFamilyIndices& queue_indices )
 	{
-		vk::PhysicalDevice phy_device;
-		uint32_t device_count = 0;
-		auto devices = instance.enumeratePhysicalDevices();
+		vk::raii::PhysicalDevices devices( instance );
 		if( devices.size() == 0 )
 		{
 			throw std::runtime_error( "Failed to find an GPU with Vulkan support!" );
 		}
 
-		// Find an suitable device
-		for( const auto& device : devices )
+		// Find a suitable device
+		for( auto& device : devices )
 		{
-			auto queue_indcies = find_queue_families( device, surface );
+			auto queue_indcies = find_queue_families( *device, *surface );
 			if( queue_indcies.IsComplete() )
 			{
 				queue_indices = std::move( queue_indcies );
-				phy_device = device;
-				break;
+				if( !check_device_extension_support( *device ) )
+				{
+					continue;
+				}
+				return std::move( device );
 			}
 		}
 
-		if( !queue_indices.IsComplete() || !phy_device )
-		{
-			throw std::runtime_error( "No available queue family to create a logical device!" );
-		}
-
-		if( !check_device_extension_support( phy_device ) )
-		{
-			throw std::runtime_error( "Physical device doesn't support the required extensions!" );
-		}
-
-		return phy_device;
+		throw std::runtime_error( "No suitable GPU found with required queue families and extensions!" );
 	}
 
-	vk::UniqueDevice create_logical_device( vk::PhysicalDevice& physical_device, VulkanContext::QueueFamilyIndices& queue_indices )
+	vk::raii::Device create_logical_device( vk::raii::PhysicalDevice& physical_device, VulkanContext::QueueFamilyIndices& queue_indices )
 	{
 		std::vector<vk::DeviceQueueCreateInfo> queue_create_infos;
 		std::set<uint32_t> unique_queue_families = { 
@@ -378,7 +271,8 @@ namespace
 
 		vk::PhysicalDeviceFeatures2 physical_feature{};
 		physical_feature.pNext = &features_13;
-		physical_device.getFeatures2( &physical_feature );
+		vk::PhysicalDevice raw_physical = *physical_device;
+		raw_physical.getFeatures2( &physical_feature );
 
 		if( features_12.bufferDeviceAddress == VK_FALSE ||
 			features_12.descriptorIndexing == VK_FALSE ||
@@ -413,17 +307,7 @@ namespace
 			&physical_feature
 		);
 
-		vk::UniqueDevice logical_device;
-		try
-		{
-			logical_device = physical_device.createDeviceUnique( device_create_info );
-		}
-		catch ( vk::SystemError /*err*/ )
-		{
-			throw std::runtime_error( "Failed to create logical device!" );
-		}
-
-		return logical_device;
+		return physical_device.createDevice( device_create_info );
 	}
 }
 
@@ -434,23 +318,27 @@ namespace
 
 VulkanContext::VulkanContext( SDL_Window& window )
 {
-	instance = create_vulkan_instance( window );
+	instance = create_vulkan_instance( raii_context, window );
 
-	debug_messenger = setup_debug_messenger( *instance );
-	if( !debug_messenger )
+	if( ENABLE_VALIDATION_LAYERS )
+	{
+		debug_messenger = instance.createDebugUtilsMessengerEXT( make_debug_info() );
+		LOG( "Vulkan debug messenger is set up." );
+	}
+	else
 	{
 		LOG( "Vulkan debug messenger is not available." );
 	}
 
-	surface = create_vulkan_surface( *instance, window );
+	surface = create_vulkan_surface( instance, window );
 
-	physical_device = create_physical_device( *instance, *surface, queue_indices );
+	physical_device = create_physical_device( instance, surface, queue_indices );
 
 	logical_device = create_logical_device( physical_device, queue_indices );
 
 	// Retrieve the queue
-	graphics_queue = logical_device->getQueue( queue_indices.graphics_family.value(), 0 );
-	present_queue  = logical_device->getQueue( queue_indices.present_family.value(), 0 );
+	graphics_queue = logical_device.getQueue( queue_indices.graphics_family.value(), 0 );
+	present_queue  = logical_device.getQueue( queue_indices.present_family.value(), 0 );
 }
 
 VulkanContext::~VulkanContext()

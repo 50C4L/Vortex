@@ -48,7 +48,7 @@ DescriptorLayoutBuilder::Clear()
 	mBindings.clear();
 }
 
-DynamicDescriptorAllocator::DynamicDescriptorAllocator( vk::Device& device, uint32_t sets_per_pool, const std::vector<PoolSizeRatio>& pool_sizes )
+DynamicDescriptorAllocator::DynamicDescriptorAllocator( vk::Device device, uint32_t sets_per_pool, const std::vector<PoolSizeRatio>& pool_sizes )
 	: mDevice( device )
 	, mRatios( pool_sizes )
 	, mSetsPerPool( sets_per_pool )

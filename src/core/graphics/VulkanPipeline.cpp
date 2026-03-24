@@ -13,7 +13,7 @@ namespace
 }
 
 vk::UniquePipeline
-VulkanPipelineBuilder::Build( vk::Device& device )
+VulkanPipelineBuilder::Build( vk::Device device )
 {
 	vk::PipelineViewportStateCreateInfo viewport_state{};
 	viewport_state.viewportCount = VIEWPORT_COUNT;

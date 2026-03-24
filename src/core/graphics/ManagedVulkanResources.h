@@ -13,7 +13,7 @@ namespace eage::graphics
 	struct ManagedImage
 	{
 		using Ptr = std::unique_ptr<ManagedImage, std::function<void(ManagedImage*)>>;
-		static Ptr Create( vk::Device& device, VmaAllocator& allocator, vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usage, vk::ImageAspectFlags aspect_flags, uint32_t mip_levels = 1 );
+		static Ptr Create( vk::Device device, VmaAllocator& allocator, vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usage, vk::ImageAspectFlags aspect_flags, uint32_t mip_levels = 1 );
 
 		VmaAllocation allocation;
 		VmaAllocationInfo allocation_info;

@@ -95,7 +95,7 @@ namespace eage::graphics
 
 		vk::UniqueSampler CreateSampler( vk::Filter min_filter, vk::Filter mag_filter );
 
-		vk::Device& GetDevice();
+		vk::Device GetDevice();
 
 		std::vector<Frame>& GetFrames();
 

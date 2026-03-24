@@ -1,15 +1,13 @@
 #ifndef _EAGE_VULKAN_CONTEXT_H
 #define _EAGE_VULKAN_CONTEXT_H
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_raii.hpp>
 #include <optional>
 
 struct SDL_Window;
 
 namespace eage::graphics
 {
-	class VulkanDebugMessenger;
-
 	class VulkanContext
 	{
 	public:
@@ -28,15 +26,17 @@ namespace eage::graphics
 				       present_family.has_value();
 			}
 		};
-		
-		vk::UniqueInstance						instance;
-		std::unique_ptr<VulkanDebugMessenger>	debug_messenger;
-		vk::UniqueSurfaceKHR					surface;
-		vk::PhysicalDevice						physical_device;
-		vk::UniqueDevice						logical_device;
+
+		// Declared first - must outlive all other handles (reverse destruction order)
+		vk::raii::Context						raii_context;
+		vk::raii::Instance						instance{ nullptr };
+		vk::raii::DebugUtilsMessengerEXT		debug_messenger{ nullptr };
+		vk::raii::SurfaceKHR					surface{ nullptr };
+		vk::raii::PhysicalDevice				physical_device{ nullptr };
+		vk::raii::Device						logical_device{ nullptr };
 		QueueFamilyIndices						queue_indices;
-		vk::Queue								graphics_queue;
-		vk::Queue								present_queue;
+		vk::raii::Queue							graphics_queue{ nullptr };
+		vk::raii::Queue							present_queue{ nullptr };
 	};
 } // namespace eage::graphics
 

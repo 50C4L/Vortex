@@ -9,9 +9,9 @@ using namespace eage::graphics;
 VMAWrapper::VMAWrapper( VulkanContext& context )
 {
 	VmaAllocatorCreateInfo allocator_info{};
-	allocator_info.physicalDevice = context.physical_device;
-	allocator_info.device         = context.logical_device.get();
-	allocator_info.instance       = context.instance.get();
+	allocator_info.physicalDevice = *context.physical_device;
+	allocator_info.device         = *context.logical_device;
+	allocator_info.instance       = *context.instance;
 	allocator_info.flags		  = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 
 	VmaAllocator* vma_allocator = new VmaAllocator();

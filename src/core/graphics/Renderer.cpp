@@ -44,7 +44,7 @@ namespace
 		return submit_info;
 	}
 
-	vk::RenderingAttachmentInfo create_attachment_info( vk::ImageView& view, std::optional<vk::ClearValue> clear, vk::ImageLayout layout )
+	vk::RenderingAttachmentInfo create_attachment_info( vk::ImageView view, std::optional<vk::ClearValue> clear, vk::ImageLayout layout )
 	{
 		vk::RenderingAttachmentInfo attachment_info{};
 		attachment_info.imageView = view;
@@ -59,7 +59,7 @@ namespace
 		return attachment_info;
 	}
 
-	void render_imgui( vk::CommandBuffer& cmd, vk::ImageView& target_image_view, vk::Extent2D extent )
+	void render_imgui( vk::CommandBuffer& cmd, vk::ImageView target_image_view, vk::Extent2D extent )
 	{
 		vk::RenderingAttachmentInfo color_attachment_info = create_attachment_info( target_image_view, std::nullopt, vk::ImageLayout::eGeneral );
 		vk::RenderingInfo render_info{};
@@ -120,7 +120,7 @@ Renderer::Init()
 	LOG( "Creating render image ..." );
 
 	mRenderImage = ManagedImage::Create(
-		mContext->logical_device.get(),
+		*mContext->logical_device,
 		*mVMA->allocator.get(),
 		vk::Extent3D{ static_cast<uint32_t>( width ), static_cast<uint32_t>( height ), 1 },
 		vk::Format::eR16G16B16A16Sfloat,
@@ -131,7 +131,7 @@ Renderer::Init()
 	LOG( "Creating depth image ..." );
 
 	mDepthImage = ManagedImage::Create(
-		mContext->logical_device.get(),
+		*mContext->logical_device,
 		*mVMA->allocator.get(),
 		vk::Extent3D{ static_cast<uint32_t>( width ), static_cast<uint32_t>( height ), 1 },
 		vk::Format::eD32Sfloat,
@@ -202,7 +202,7 @@ Renderer::Render()
 	transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eColorAttachmentOptimal );
 
 	// Render imgui
-	render_imgui( cmd, mSwapChain->GetImageViews()[ next_image_index ].get(), mSwapChain->GetExtent() );
+	render_imgui( cmd, *mSwapChain->GetImageViews()[ next_image_index ], mSwapChain->GetExtent() );
 
 	// Transition the swapchain image back to the present layout
 	transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR );
@@ -242,7 +242,7 @@ Renderer::AddToRenderQueue( RenderInfo render_info )
 void
 Renderer::WaitForIdle()
 {
-	mContext->logical_device->waitIdle();
+	mContext->logical_device.waitIdle();
 }
 
 std::unique_ptr<GPUMeshBuffers>
@@ -258,7 +258,7 @@ Renderer::UploadMesh( const std::vector<uint32_t>& indices, const std::vector<Ve
 
 	vk::BufferDeviceAddressInfo vertex_buffer_address_info{};
 	vertex_buffer_address_info.buffer = new_surface.vertex_buffer->buffer;
-	new_surface.vertex_buffer_address = mContext->logical_device->getBufferAddress( vertex_buffer_address_info );
+	new_surface.vertex_buffer_address = mContext->logical_device.getBufferAddress( vertex_buffer_address_info );
 
 	// Copying to the staging buffer on CPU
 	auto staging_buffer = ManagedBuffer::Create( *mVMA->allocator.get(), vertex_buffer_size + index_buffer_size, vk::BufferUsageFlagBits::eTransferSrc, VMA_MEMORY_USAGE_CPU_ONLY );
@@ -305,7 +305,7 @@ Renderer::UploadImage(
 	memcpy( upload_buffer->allocation_info.pMappedData, data, image_size );
 
 	auto image = ManagedImage::Create( 
-		mContext->logical_device.get(),
+		*mContext->logical_device,
 		*mVMA->allocator.get(),
 		vk::Extent3D{ width, height, 1 },
 		format,
@@ -361,10 +361,11 @@ Renderer::CreateSampler( vk::Filter min_filter, vk::Filter mag_filter )
 	// sampler_info.borderColor = vk::BorderColor::eFloatOpaqueBlack;
 	// sampler_info.unnormalizedCoordinates = VK_FALSE;
 
-	return mContext->logical_device->createSamplerUnique( sampler_info );;
+	vk::Device raw_device = *mContext->logical_device;
+	return raw_device.createSamplerUnique( sampler_info );
 }
 
-vk::Device&
+vk::Device
 Renderer::GetDevice()
 {
 	return *mContext->logical_device;
@@ -437,14 +438,16 @@ Renderer::Present( uint32_t image_index )
 {
 	auto& frame = GetCurrentFrame();
 
+	vk::Semaphore present_semaphore = frame.command_context->GetPresentSemaphore();
 	vk::PresentInfoKHR present_info{};
 	present_info.waitSemaphoreCount = 1;
-	present_info.pWaitSemaphores	= &frame.command_context->GetPresentSemaphore();
+	present_info.pWaitSemaphores	= &present_semaphore;
 	present_info.swapchainCount	 = 1;
 	present_info.pSwapchains		= &mSwapChain->GetSwapChain();
 	present_info.pImageIndices	  = &image_index;
 
-	std::ignore = mContext->present_queue.presentKHR( present_info );
+	vk::Queue raw_present_queue = *mContext->present_queue;
+	std::ignore = raw_present_queue.presentKHR( present_info );
 }
 
 void
@@ -484,7 +487,7 @@ Renderer::InitDescriptors()
 		DescriptorLayoutBuilder layout_builder;
 		layout_builder.AddBinding( 0, vk::DescriptorType::eUniformBufferDynamic );
 		mBuiltInDescriptorSetLayouts.global = 
-			layout_builder.Build( mContext->logical_device.get(), vk::ShaderStageFlagBits::eVertex );
+			layout_builder.Build( *mContext->logical_device, vk::ShaderStageFlagBits::eVertex );
 	}
 
 	// Render component layout (model matrix, vertex buffer address)
@@ -492,7 +495,7 @@ Renderer::InitDescriptors()
 		DescriptorLayoutBuilder layout_builder;
 		layout_builder.AddBinding( 0, vk::DescriptorType::eUniformBufferDynamic );
 		mBuiltInDescriptorSetLayouts.per_object = 
-			layout_builder.Build( mContext->logical_device.get(), vk::ShaderStageFlagBits::eVertex );
+			layout_builder.Build( *mContext->logical_device, vk::ShaderStageFlagBits::eVertex );
 	}
 }
 
@@ -646,7 +649,8 @@ Renderer::InitGPUTiming()
 	query_pool_info.queryType = vk::QueryType::eTimestamp;
 	query_pool_info.queryCount = MAX_FRAMES_IN_FLIGHT * 2; // Start and end per frame
 	
-	mTimestampQueryPool = mContext->logical_device->createQueryPoolUnique(query_pool_info);
+	vk::Device raw_device = *mContext->logical_device;
+	mTimestampQueryPool = raw_device.createQueryPoolUnique(query_pool_info);
 	
 	// Reset the query pool
 	auto& cmd = mImmidiateCommandContext->GetPrimaryBuffer();
@@ -681,7 +685,8 @@ Renderer::UpdateGPUTiming()
 	try
 	{
 		// Read timestamp results
-		auto result = mContext->logical_device->getQueryPoolResults(
+		vk::Device raw_device = *mContext->logical_device;
+		auto result = raw_device.getQueryPoolResults(
 			mTimestampQueryPool.get(),
 			start_query,
 			2, // Read 2 queries (start and end)

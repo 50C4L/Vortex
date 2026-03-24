@@ -37,7 +37,7 @@ namespace
 /*static*/
 ManagedImage::Ptr
 ManagedImage::Create( 
-	vk::Device& device, 
+	vk::Device device, 
 	VmaAllocator& allocator, 
 	vk::Extent3D extent, 
 	vk::Format format, 

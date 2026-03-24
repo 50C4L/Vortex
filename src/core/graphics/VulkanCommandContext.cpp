@@ -11,51 +11,25 @@ VulkanCommandContext::VulkanCommandContext( VulkanContext& context )
 	command_pool_info.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
 	command_pool_info.queueFamilyIndex = mContext.queue_indices.graphics_family.value();
 
-	try
-	{
-		mCmdPool = mContext.logical_device->createCommandPoolUnique( command_pool_info );
-	}
-	catch ( vk::SystemError /*err*/ )
-	{
-		throw std::runtime_error( "Failed to create command pool!" );
-	}
+	mCmdPool = mContext.logical_device.createCommandPool( command_pool_info );
 
 	vk::CommandBufferAllocateInfo alloc_info{};
-	alloc_info.commandPool = mCmdPool.get();
+	alloc_info.commandPool = *mCmdPool;
 	alloc_info.level = vk::CommandBufferLevel::ePrimary;
 	alloc_info.commandBufferCount = 1;
 
-	try
-	{
-		mPrimaryBuffer = std::move( mContext.logical_device->allocateCommandBuffersUnique( alloc_info )[0] );
-	}
-	catch ( vk::SystemError /*error*/ )
-	{
-		throw std::runtime_error( "Failed to create main command buffers." );
-	}
+	// Allocate via raw device - pool manages the buffer's lifetime
+	vk::Device raw_device = *mContext.logical_device;
+	mPrimaryBuffer = raw_device.allocateCommandBuffers( alloc_info )[0];
 
 	// Create primary fence
 	vk::FenceCreateInfo fence_info{};
 	fence_info.flags = vk::FenceCreateFlagBits::eSignaled;
-	try
-	{
-		mFence = mContext.logical_device->createFenceUnique( fence_info );
-	}
-	catch (vk::SystemError /*error*/)
-	{
-		throw std::runtime_error( "Failed to create synchronization fences!" );
-	}
+	mFence = mContext.logical_device.createFence( fence_info );
 
 	vk::SemaphoreCreateInfo semaphore_info{};
-	try
-	{
-		mSwapchainSemaphore = mContext.logical_device->createSemaphoreUnique( semaphore_info );
-		mPresentSemaphore   = mContext.logical_device->createSemaphoreUnique( semaphore_info );
-	}
-	catch( vk::SystemError /*error*/ )
-	{
-		throw std::runtime_error( "Failed to create synchronization semaphores!" );
-	}
+	mSwapchainSemaphore = mContext.logical_device.createSemaphore( semaphore_info );
+	mPresentSemaphore   = mContext.logical_device.createSemaphore( semaphore_info );
 }
 
 VulkanCommandContext::~VulkanCommandContext()
@@ -66,47 +40,49 @@ void
 VulkanCommandContext::Begin()
 {
 	vk::CommandBufferBeginInfo begin_info{};
-	mPrimaryBuffer->begin( begin_info );
+	mPrimaryBuffer.begin( begin_info );
 }
 
 vk::CommandBuffer&
 VulkanCommandContext::End()
 {
-	mPrimaryBuffer->end();
-	return *mPrimaryBuffer;
+	mPrimaryBuffer.end();
+	return mPrimaryBuffer;
 }
 
 void
 VulkanCommandContext::WaitForCompletion()
 {
-	std::ignore = mContext.logical_device->waitForFences( *mFence, VK_TRUE, UINT64_MAX );
-	mContext.logical_device->resetFences( *mFence );
+	vk::Device raw_device = *mContext.logical_device;
+	std::ignore = raw_device.waitForFences( *mFence, VK_TRUE, UINT64_MAX );
+	raw_device.resetFences( *mFence );
 }
 
 void
 VulkanCommandContext::Reset()
 {
-	mContext.logical_device->resetFences( *mFence );
-	mContext.logical_device->resetCommandPool( *mCmdPool, vk::CommandPoolResetFlagBits::eReleaseResources );
+	vk::Device raw_device = *mContext.logical_device;
+	raw_device.resetFences( *mFence );
+	raw_device.resetCommandPool( *mCmdPool, vk::CommandPoolResetFlagBits::eReleaseResources );
 }
 
 vk::CommandBuffer&
 VulkanCommandContext::GetPrimaryBuffer()
 {
-	return *mPrimaryBuffer;
+	return mPrimaryBuffer;
 }
 
 vk::CommandBufferSubmitInfo
 VulkanCommandContext::GetSubmitInfo() const
 {
 	vk::CommandBufferSubmitInfo submit_info{};
-	submit_info.commandBuffer = *mPrimaryBuffer;
+	submit_info.commandBuffer = mPrimaryBuffer;
 	submit_info.deviceMask = 0;
 
 	return submit_info;
 }
 
-vk::Fence&
+vk::Fence
 VulkanCommandContext::GetFence()
 {
 	return *mFence;
@@ -117,7 +93,7 @@ VulkanCommandContext::GetSwapchainSemaphoreSubmitInfo( vk::PipelineStageFlagBits
 {
 	vk::SemaphoreSubmitInfo semaphore_submit_info{};
 
-	semaphore_submit_info.semaphore = mSwapchainSemaphore.get();
+	semaphore_submit_info.semaphore = *mSwapchainSemaphore;
 	semaphore_submit_info.stageMask = stage_mask;
 	semaphore_submit_info.deviceIndex = 0;
 	semaphore_submit_info.value = 1;
@@ -130,7 +106,7 @@ VulkanCommandContext::GetPresentSemaphoreSubmitInfo( vk::PipelineStageFlagBits2 
 {
 	vk::SemaphoreSubmitInfo semaphore_submit_info{};
 
-	semaphore_submit_info.semaphore = mPresentSemaphore.get();
+	semaphore_submit_info.semaphore = *mPresentSemaphore;
 	semaphore_submit_info.stageMask = stage_mask;
 	semaphore_submit_info.deviceIndex = 0;
 	semaphore_submit_info.value = 1;
@@ -138,14 +114,14 @@ VulkanCommandContext::GetPresentSemaphoreSubmitInfo( vk::PipelineStageFlagBits2 
 	return semaphore_submit_info;
 }
 
-vk::Semaphore&
+vk::Semaphore
 VulkanCommandContext::GetSwapchainSemaphore()
 {
-	return mSwapchainSemaphore.get();
+	return *mSwapchainSemaphore;
 }
 
-vk::Semaphore&
+vk::Semaphore
 VulkanCommandContext::GetPresentSemaphore()
 {
-	return mPresentSemaphore.get();
+	return *mPresentSemaphore;
 }

@@ -1,7 +1,7 @@
 #ifndef _VULKAN_COMMAND_CONTEXT_H
 #define _VULKAN_COMMAND_CONTEXT_H
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_raii.hpp>
 
 namespace eage::graphics
 {
@@ -54,7 +54,7 @@ namespace eage::graphics
 		///
 		vk::CommandBufferSubmitInfo GetSubmitInfo() const;
 
-		vk::Fence& GetFence();
+		vk::Fence GetFence();
 		///
 		/// Get the queue family indices
 		///
@@ -64,15 +64,15 @@ namespace eage::graphics
 		vk::SemaphoreSubmitInfo GetSwapchainSemaphoreSubmitInfo( vk::PipelineStageFlagBits2 stage_mask ) const;
 		vk::SemaphoreSubmitInfo GetPresentSemaphoreSubmitInfo( vk::PipelineStageFlagBits2 stage_mask ) const;
 
-		vk::Semaphore& GetSwapchainSemaphore();
-		vk::Semaphore& GetPresentSemaphore();
+		vk::Semaphore GetSwapchainSemaphore();
+		vk::Semaphore GetPresentSemaphore();
 
 	private:
-		vk::UniqueCommandPool   mCmdPool;		//< The guy that owns everything
-		vk::UniqueCommandBuffer mPrimaryBuffer; //< The primary command queue
-		vk::UniqueFence         mFence;			//< Useful for synchronization
-		vk::UniqueSemaphore		mSwapchainSemaphore;
-		vk::UniqueSemaphore		mPresentSemaphore;
+		vk::raii::CommandPool   mCmdPool{ nullptr };		//< The guy that owns everything
+		vk::CommandBuffer       mPrimaryBuffer;				//< Raw handle, lifetime managed by pool
+		vk::raii::Fence         mFence{ nullptr };			//< Useful for synchronization
+		vk::raii::Semaphore		mSwapchainSemaphore{ nullptr };
+		vk::raii::Semaphore		mPresentSemaphore{ nullptr };
 
 		VulkanContext& 			mContext;		//< The vulkan context
 	};
