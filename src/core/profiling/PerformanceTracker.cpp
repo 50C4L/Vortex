@@ -1,5 +1,6 @@
 #include "PerformanceTracker.h"
 
+#include <imgui/imgui.h>
 #include <graphics/Renderer.h>
 
 using namespace eage::profiling;

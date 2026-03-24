@@ -6,8 +6,6 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include <graphics/RenderInfo.h>
-
 struct SDL_Window;
 
 namespace eage::graphics
@@ -17,7 +15,7 @@ namespace eage::graphics
 	class VulkanCommandContext;
 	class VulkanSampler;
 	class DynamicDescriptorAllocator;
-	class ImGUILifetime;
+	class AbstractRenderPass;
 	struct VMAWrapper;
 	struct ManagedImage;
 	struct Vertex;
@@ -64,14 +62,6 @@ namespace eage::graphics
 		void Render();
 
 		///
-		/// Add a RenderInfo to the render queue
-		///
-		/// @param RenderInfo
-		///  The RenderInfo to add
-		///
-		void AddToRenderQueue( RenderInfo render_info );
-
-		///
 		/// Wait for the renderer to be idle
 		///
 		void WaitForIdle();
@@ -113,13 +103,22 @@ namespace eage::graphics
 		};
 		BuiltInDescriptorSetLayouts& GetBuiltInDescriptorSetLayouts();
 
-		///
-		/// Set the ImGUI render function, should use for debugging rendering or editor GUI rendering
-		/// Gameplay GUI should be rendered with `RenderComponent`
-		///
-		void SetImGUIRenderFunction( std::function<void()> render_function );
-
 		float GetGPUFrameTime() const { return mGPUFrameTime; }
+
+		// -- Render pass management --
+
+		void AddRenderPass( AbstractRenderPass* pass );
+		void RemoveRenderPass( AbstractRenderPass* pass );
+
+		// -- Accessors for render passes --
+
+		VulkanContext& GetVulkanContext();
+		vk::Format GetSwapchainFormat();
+		uint32_t GetSwapchainImageCount();
+		ManagedImage* GetRenderImage();
+		ManagedImage* GetDepthImage();
+
+		void ImmediateSubmit( std::function<void( vk::CommandBuffer& )> work );
 
 	private:
 		Frame& GetCurrentFrame();
@@ -130,13 +129,6 @@ namespace eage::graphics
 
 		void InitFrameResources();
 		void InitDescriptors();
-		void InitImGUI();
-
-		void ImmediateSubmit( std::function<void( vk::CommandBuffer& )> work );
-
-		void PrepareImGUI();
-
-		void DrawRenderQueue( vk::CommandBuffer& cmd );
 
 		void InitGPUTiming();
 		void UpdateGPUTiming();
@@ -152,16 +144,13 @@ namespace eage::graphics
 		std::unique_ptr<DynamicDescriptorAllocator> 	mGlobalDescriptorAllocator; //< Don't use this for per frame data
 
 		std::unique_ptr<VulkanCommandContext> mImmidiateCommandContext;
-		std::unique_ptr<ImGUILifetime> mImGUILifetime;
-		std::function<void()> mImGUIRenderFunction;
+
+		std::vector<AbstractRenderPass*> mPasses;
 
 		std::vector<Frame>					mFrames;
 		uint64_t							mFrameNumber;
 
 		BuiltInDescriptorSetLayouts mBuiltInDescriptorSetLayouts;
-
-		// The queue shold be clear first when destorying the renderer
-		std::vector<RenderInfo> mRenderQueue;
 
 		// GPU frame timing
 		vk::UniqueQueryPool mTimestampQueryPool;

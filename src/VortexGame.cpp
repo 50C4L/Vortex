@@ -8,8 +8,10 @@
 #include <utility/Pointers.h>
 #include <utility/Logger.h>
 #include <graphics/Renderer.h>
+#include <graphics/SceneRenderPass.h>
+#include <graphics/ImGuiRenderPass.h>
+#include <graphics/ManagedVulkanResources.h>
 #include <events/InputController.h>
-#include <imgui/imgui_impl_sdl2.h>
 #include <audio/AudioMixer.h>
 #include <ecs/ECS.h>
 #include <ecs/systems/AudioSystem.h>
@@ -31,6 +33,21 @@ VortexGame::VortexGame()
 
 VortexGame::~VortexGame()
 {
+	// GPU resources must be released before the renderer (which owns VMA/device).
+	// Systems like RenderSystem hold VMA-allocated buffers and images, so they
+	// must be torn down while the allocator is still alive.
+	mRenderer->WaitForIdle();
+
+	mPerformanceTracker.reset();
+	mRenderSystem.reset();
+	mSceneGraphSystem.reset();
+	mPhysicsSystem.reset();
+	mAudioSystem.reset();
+	mSceneController.reset();
+
+	mImGuiPass.reset();
+	mScenePass.reset();
+	mRenderer.reset();
 	mWindow.reset();
 	SDL_Quit();
 }
@@ -49,7 +66,7 @@ VortexGame::Run()
 				quit = true;
 			}
 
-			ImGui_ImplSDL2_ProcessEvent( &event );
+			mImGuiPass->ProcessEvent( event );
 
 			if( event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
 			{
@@ -105,6 +122,24 @@ VortexGame::Init()
 		return false;
 	}
 
+	// Create render passes
+	mScenePass = std::make_unique<eage::graphics::SceneRenderPass>(
+		*mRenderer, *mRenderer->GetRenderImage(), *mRenderer->GetDepthImage() );
+	mImGuiPass = std::make_unique<eage::graphics::ImGuiRenderPass>(
+		mRenderer->GetVulkanContext(),
+		*mWindow,
+		mRenderer->GetSwapchainFormat(),
+		eage::graphics::Renderer::MAX_FRAMES_IN_FLIGHT,
+		mRenderer->GetSwapchainImageCount(),
+		*mRenderer->GetRenderImage() );
+	mImGuiPass->InitFontTexture( [this]( std::function<void( vk::CommandBuffer& )> work )
+	{
+		mRenderer->ImmediateSubmit( std::move( work ) );
+	} );
+
+	mRenderer->AddRenderPass( mScenePass.get() );
+	mRenderer->AddRenderPass( mImGuiPass.get() );
+
 	// Initialize AudioMixer
 	mAudioMixer = std::make_unique<eage::audio::AudioMixer>();
 
@@ -127,7 +162,7 @@ VortexGame::Init()
 	mSceneGraphSystem = std::make_unique<eage::ecs::SceneGraphSystem>( *mECSRegistry );
 
 	// Initialize RenderSystem
-	mRenderSystem = std::make_unique<eage::ecs::RenderSystem>( *mRenderer, *mECSRegistry );
+	mRenderSystem = std::make_unique<eage::ecs::RenderSystem>( *mRenderer, *mScenePass, *mECSRegistry );
 
 	// Initialize PhysicsSystem
 	mPhysicsSystem = std::make_unique<eage::ecs::PhysicsSystem>( *mECSRegistry );
@@ -142,16 +177,10 @@ VortexGame::Init()
 
 	// Initialize PerformanceTracker
 	mPerformanceTracker = std::make_unique<eage::profiling::PerformanceTracker>( *mRenderer );
-	mRenderer->SetImGUIRenderFunction([this]() {
-		// // Call current scene's GUI if it exists
-		// if( auto scene = mSceneController->GetCurrentScene() )
-		// {
-		// 	scene->DrawDebugGUI();
-		// }
-		
-		// Always draw performance overlay
+	mImGuiPass->AddOverlayCallback( [this]()
+	{
 		mPerformanceTracker->DrawDebugGUI();
-	});
+	} );
 
 	return true;
 }

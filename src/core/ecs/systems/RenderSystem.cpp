@@ -11,6 +11,7 @@
 #include <graphics/ManagedVulkanResources.h>
 #include <graphics/Renderer.h>
 #include <graphics/RenderInfo.h>
+#include <graphics/SceneRenderPass.h>
 #include <graphics/ShaderReflection.h>
 #include <graphics/VulkanDescriptor.h>
 #include <graphics/VulkanMesh.h>
@@ -35,8 +36,9 @@ namespace
 
 struct RenderSystem::Impl
 {
-	Impl( eage::graphics::Renderer& renderer, ECSRegistry& ecs_registry )
+	Impl( eage::graphics::Renderer& renderer, eage::graphics::SceneRenderPass& scene_pass, ECSRegistry& ecs_registry )
 		: mRenderer( renderer )
+		, mScenePass( scene_pass )
 		, mECSRegistry( ecs_registry )
 	{
 		mGlobalDescriptorSetId = CreateDynamicDescriptorSet( mRenderer.GetBuiltInDescriptorSetLayouts().global.get() );
@@ -379,7 +381,7 @@ struct RenderSystem::Impl
 				render_info.model_matrix = glm::mat4( 1.0f );
 			}
 
-			mRenderer.AddToRenderQueue( std::move( render_info ) );
+			mScenePass.AddRenderInfo( std::move( render_info ) );
 		}
 	}
 
@@ -526,6 +528,7 @@ struct RenderSystem::Impl
 	// ----- Members -----
 
 	eage::graphics::Renderer& mRenderer;
+	eage::graphics::SceneRenderPass& mScenePass;
 	ECSRegistry& mECSRegistry;
 
 	ResourceId mGlobalDescriptorSetId;
@@ -549,8 +552,8 @@ struct RenderSystem::Impl
 // RenderSystem forwarding
 // ---------------------------------------------------------------------------
 
-RenderSystem::RenderSystem( eage::graphics::Renderer& renderer, ECSRegistry& ecs_registry )
-	: mImpl( std::make_unique<Impl>( renderer, ecs_registry ) )
+RenderSystem::RenderSystem( eage::graphics::Renderer& renderer, eage::graphics::SceneRenderPass& scene_pass, ECSRegistry& ecs_registry )
+	: mImpl( std::make_unique<Impl>( renderer, scene_pass, ecs_registry ) )
 {
 }
 

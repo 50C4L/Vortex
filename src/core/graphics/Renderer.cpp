@@ -1,28 +1,22 @@
 #include "Renderer.h"
 
+#include <algorithm>
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_vulkan.h>
 #include <SDL2/SDL_system.h>
 #include <iostream>
 
 #include <utility/Logger.h>
-#include <graphics/BuiltInUniforms.h>
+#include <graphics/AbstractRenderPass.h>
 #include <graphics/ImageUtilities.h>
-#include <graphics/Material.h>
 #include <graphics/ManagedVulkanResources.h>
 #include <graphics/VulkanContext.h>
 #include <graphics/VulkanSwapChain.h>
-#include <graphics/VulkanShader.h>
 #include <graphics/VulkanCommandContext.h>
 #include <graphics/VulkanDescriptor.h>
 #include <graphics/VulkanMesh.h>
-#include <graphics/VulkanPipeline.h>
 #include <graphics/VMAWrapper.h>
-#include <graphics/ImGUILifetime.h>
-#include <graphics/Camera.h>
-
-#include <imgui/imgui_impl_vulkan.h>
-#include <imgui/imgui_impl_sdl2.h>
 
 using namespace eage::graphics;
 using namespace utility;
@@ -43,44 +37,6 @@ namespace
 
 		return submit_info;
 	}
-
-	vk::RenderingAttachmentInfo create_attachment_info( vk::ImageView view, std::optional<vk::ClearValue> clear, vk::ImageLayout layout )
-	{
-		vk::RenderingAttachmentInfo attachment_info{};
-		attachment_info.imageView = view;
-		attachment_info.imageLayout = layout;
-		attachment_info.loadOp = clear.has_value() ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad;
-		attachment_info.storeOp = vk::AttachmentStoreOp::eStore;
-		if( clear.has_value() )
-		{
-			attachment_info.clearValue = clear.value();
-		}
-
-		return attachment_info;
-	}
-
-	void render_imgui( vk::CommandBuffer& cmd, vk::ImageView target_image_view, vk::Extent2D extent )
-	{
-		vk::RenderingAttachmentInfo color_attachment_info = create_attachment_info( target_image_view, std::nullopt, vk::ImageLayout::eGeneral );
-		vk::RenderingInfo render_info{};
-		render_info.colorAttachmentCount = 1;
-		render_info.pColorAttachments = &color_attachment_info;
-		render_info.renderArea = vk::Rect2D{ vk::Offset2D{ 0, 0 }, std::move( extent ) };
-		render_info.layerCount = 1;
-
-		cmd.beginRendering( render_info );
-		ImGui_ImplVulkan_RenderDrawData( ImGui::GetDrawData(), cmd );
-		cmd.endRendering();
-	}
-
-	struct SceneGlobalData
-	{
-		glm::mat4 view;
-		glm::mat4 proj;
-		glm::mat4 view_proj;
-		// padding
-		glm::vec4 extra[16];
-	};
 }
 
 
@@ -124,7 +80,7 @@ Renderer::Init()
 		*mVMA->allocator.get(),
 		vk::Extent3D{ static_cast<uint32_t>( width ), static_cast<uint32_t>( height ), 1 },
 		vk::Format::eR16G16B16A16Sfloat,
-		vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eColorAttachment,
+		vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
 		vk::ImageAspectFlagBits::eColor
 	);
 
@@ -142,9 +98,6 @@ Renderer::Init()
 	// Init descriptor set layout
 	InitDescriptors();
 
-	// Init IMGUI
-	InitImGUI();
-
 	// Initialize GPU timing
 	InitGPUTiming();
 
@@ -154,7 +107,12 @@ Renderer::Init()
 void
 Renderer::Render()
 {
-	PrepareImGUI();
+	// CPU-side preparation for all passes
+	size_t current_frame = GetCurrentFrameIndex();
+	for( auto* pass : mPasses )
+	{
+		pass->Prepare( current_frame );
+	}
 
 	auto& frame = GetCurrentFrame();
 	auto& cmd = frame.command_context->GetPrimaryBuffer();
@@ -167,50 +125,55 @@ Renderer::Render()
 	// GPU timing: Record start timestamp
 	if( mTimestampQuerySupported )
 	{
-		uint32_t query_index = static_cast<uint32_t>( GetCurrentFrameIndex() ) * 2u; // Start timestamp
-		// Reset the current frame's queries before using them
-		cmd.resetQueryPool( mTimestampQueryPool.get(), query_index, 2 ); // Reset both start and end queries
+		uint32_t query_index = static_cast<uint32_t>( current_frame ) * 2u;
+		cmd.resetQueryPool( mTimestampQueryPool.get(), query_index, 2 );
 		cmd.writeTimestamp( vk::PipelineStageFlagBits::eTopOfPipe, mTimestampQueryPool.get(), query_index );
 	}
 
-	// Transition the main render image to a general layout
-	transition_image( cmd, mRenderImage->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral );
-	cmd.clearColorImage( 
-		mRenderImage->image,
-		vk::ImageLayout::eGeneral,
-		vk::ClearColorValue{ std::array<float,4>{ 0.0f, 0.0f, 0.0f, 1.0f } },
-		vk::ImageSubresourceRange{ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 } );
+	// Execute each registered render pass
+	for( auto* pass : mPasses )
+	{
+		const auto& desc = pass->GetDesc();
 
-	transition_image( cmd, mRenderImage->image, vk::ImageLayout::eGeneral, vk::ImageLayout::eColorAttachmentOptimal );
-	transition_image( cmd, mDepthImage->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal );
+		// Transition input images to shader-read layout
+		for( auto* input : desc.input_images )
+		{
+			transition_image( cmd, input->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal );
+		}
 
-	// Actual rendering here
-	DrawRenderQueue( cmd );
+		// Transition color target
+		if( desc.color_target )
+		{
+			// Off-screen target
+			transition_image( cmd, desc.color_target->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal );
+		}
+		else
+		{
+			// Writes to swapchain
+			transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal );
+		}
 
-	vk::Extent2D render_extent = { mRenderImage->extent.width, mRenderImage->extent.height };
+		// Transition depth target
+		if( desc.depth_target )
+		{
+			transition_image( cmd, desc.depth_target->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal );
+		}
 
-	// End of rendering
+		ExecutionContext ctx{};
+		ctx.swapchain_image_view = *mSwapChain->GetImageViews()[ next_image_index ];
+		ctx.swapchain_extent = mSwapChain->GetExtent();
+		ctx.frame_index = current_frame;
 
-	// Transition the main render image and the current swapchain image to the appropriate layout, so later we can copy the render image to the swapchain image
-	transition_image( cmd, mRenderImage->image, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eTransferSrcOptimal );
-	transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal );
+		pass->Execute( cmd, ctx );
+	}
 
-	// Copy the render image to the swapchain image
-	copy_image_to_image( cmd, mRenderImage->image, mSwapChain->GetImages()[ next_image_index ], render_extent, mSwapChain->GetExtent() );
-
-	// Transition the swapchain image to a color optimal layout so we can draw imgui on it
-	transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eColorAttachmentOptimal );
-
-	// Render imgui
-	render_imgui( cmd, *mSwapChain->GetImageViews()[ next_image_index ], mSwapChain->GetExtent() );
-
-	// Transition the swapchain image back to the present layout
+	// Transition swapchain to present
 	transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR );
 
 	// GPU timing: Record end timestamp
 	if( mTimestampQuerySupported )
 	{
-		uint32_t query_index = static_cast<uint32_t>( GetCurrentFrameIndex() ) * 2u + 1u; // End timestamp
+		uint32_t query_index = static_cast<uint32_t>( current_frame ) * 2u + 1u;
 		cmd.writeTimestamp( vk::PipelineStageFlagBits::eBottomOfPipe, mTimestampQueryPool.get(), query_index );
 	}
 	
@@ -224,19 +187,6 @@ Renderer::Render()
 	Present( next_image_index );
 
 	mFrameNumber++;
-
-	mRenderQueue.clear();
-}
-
-void
-Renderer::AddToRenderQueue( RenderInfo render_info )
-{
-	if( mFrames.empty() )
-	{
-		LOG_ERROR( "No frames available, Init() must be called first." );
-		return;
-	}
-	mRenderQueue.push_back( std::move( render_info ) );
 }
 
 void
@@ -414,12 +364,6 @@ Renderer::GetBuiltInDescriptorSetLayouts()
 }
 
 void
-Renderer::SetImGUIRenderFunction( std::function<void()> render_function )
-{
-	mImGUIRenderFunction = std::move( render_function );
-}
-
-void
 Renderer::Submit()
 {
 	auto& frame = GetCurrentFrame();
@@ -500,18 +444,45 @@ Renderer::InitDescriptors()
 }
 
 void
-Renderer::InitImGUI()
+Renderer::AddRenderPass( AbstractRenderPass* pass )
 {
-	mImGUILifetime = std::make_unique<ImGUILifetime>( *mContext );
-	mImGUILifetime->Init( mWindow, MAX_FRAMES_IN_FLIGHT, static_cast<uint32_t>( mSwapChain->GetImages().size() ), mSwapChain->GetImageFormat() );
+	mPasses.push_back( pass );
+}
 
-	ImmediateSubmit( []( vk::CommandBuffer& )
-	{
-		if( !ImGui_ImplVulkan_CreateFontsTexture() )
-		{
-			LOG_ERROR( "Failed to create IMGUI fonts texture." );
-		}
-	} );
+void
+Renderer::RemoveRenderPass( AbstractRenderPass* pass )
+{
+	mPasses.erase( std::remove( mPasses.begin(), mPasses.end(), pass ), mPasses.end() );
+}
+
+VulkanContext&
+Renderer::GetVulkanContext()
+{
+	return *mContext;
+}
+
+vk::Format
+Renderer::GetSwapchainFormat()
+{
+	return mSwapChain->GetImageFormat();
+}
+
+uint32_t
+Renderer::GetSwapchainImageCount()
+{
+	return static_cast<uint32_t>( mSwapChain->GetImages().size() );
+}
+
+ManagedImage*
+Renderer::GetRenderImage()
+{
+	return mRenderImage.get();
+}
+
+ManagedImage*
+Renderer::GetDepthImage()
+{
+	return mDepthImage.get();
 }
 
 void
@@ -531,104 +502,6 @@ Renderer::ImmediateSubmit( std::function<void( vk::CommandBuffer& )> work )
 
 	mContext->graphics_queue.submit2( submit_info, mImmidiateCommandContext->GetFence() );
 	mImmidiateCommandContext->WaitForCompletion();
-}
-
-void
-Renderer::PrepareImGUI()
-{
-	ImGui_ImplVulkan_NewFrame();
-	ImGui_ImplSDL2_NewFrame();
-	ImGui::NewFrame();
-	// @TODO: Actual setup of the GUI should be passed in as a callback
-	if( mImGUIRenderFunction )
-	{
-		mImGUIRenderFunction();
-	}
-	ImGui::Render();
-}
-
-void
-Renderer::DrawRenderQueue( vk::CommandBuffer& cmd )
-{
-	auto color_attachment = create_attachment_info( mRenderImage->image_view.get(), std::nullopt, vk::ImageLayout::eGeneral );
-	vk::ClearValue depth_clear_value;
-	depth_clear_value.depthStencil.depth = 0.f;
-	auto depth_attachment = create_attachment_info( mDepthImage->image_view.get(), std::move( depth_clear_value ), vk::ImageLayout::eDepthAttachmentOptimal );
-
-	vk::Extent2D render_extent = { mRenderImage->extent.width, mRenderImage->extent.height };
-	vk::RenderingInfo rendering_info{};
-	rendering_info.colorAttachmentCount = 1;
-	rendering_info.pColorAttachments = &color_attachment;
-	rendering_info.renderArea = vk::Rect2D{ vk::Offset2D{ 0, 0 }, std::move( render_extent ) };
-	rendering_info.layerCount = 1;
-	rendering_info.pDepthAttachment = &depth_attachment;
-
-	cmd.beginRendering( rendering_info );
-
-	size_t current_frame = GetCurrentFrameIndex();
-	for( auto& render_info : mRenderQueue )
-	{
-		cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, render_info.material->pipeline->pipeline.get() );
-
-		vk::Viewport viewport{};
-		viewport.width = static_cast<float>( render_extent.width );
-		viewport.height = static_cast<float>( render_extent.height );
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		viewport.x = 0;
-		viewport.y = 0;
-		cmd.setViewport( 0, viewport );
-
-		vk::Rect2D scissor{};
-		scissor.extent = render_extent;
-		scissor.offset = vk::Offset2D{ 0, 0 };
-		cmd.setScissor( 0, scissor );
-
-		// Update model matrix
-		
-		MeshUniformData data;
-		data.model = render_info.model_matrix;
-		data.vertex_buffer_address = render_info.mesh_buffer->vertex_buffer_address;
-		render_info.mesh_uniform_data_dynamic->Update( &data, sizeof( MeshUniformData ), sizeof( MeshUniformData ) * current_frame );
-
-		// Pipeline global uniform
-		uint32_t descriptor_index = 0;
-		{
-			auto dynamic_offsets = render_info.material->pipeline->global_descriptor->GetDynamicOffsets( current_frame );
-			cmd.bindDescriptorSets( 
-				vk::PipelineBindPoint::eGraphics,
-				render_info.material->pipeline->layout.get(),
-				descriptor_index++, 1,
-				render_info.material->pipeline->global_descriptor->GetDescriptorSet( current_frame ),
-				static_cast<uint32_t>( dynamic_offsets->size() ), dynamic_offsets->data() );
-		}
-
-		// Per-object predefined uniform
-		{
-			auto dynamic_offsets = render_info.mesh_descriptor->GetDynamicOffsets( current_frame );
-			cmd.bindDescriptorSets( 
-				vk::PipelineBindPoint::eGraphics,
-				render_info.material->pipeline->layout.get(),
-				descriptor_index++, 1,
-				render_info.mesh_descriptor->GetDescriptorSet( current_frame ),
-				static_cast<uint32_t>( dynamic_offsets->size() ), dynamic_offsets->data() );
-		}
-		
-		// Material static uniform
-		{
-			cmd.bindDescriptorSets( 
-				vk::PipelineBindPoint::eGraphics,
-				render_info.material->pipeline->layout.get(),
-				descriptor_index++, 1,
-				render_info.material->descriptor->GetDescriptorSet(),
-				0, nullptr ); // No dynamic offsets for static descriptors
-		}
-
-		cmd.bindIndexBuffer( render_info.mesh_buffer->index_buffer->buffer, 0, vk::IndexType::eUint32 );
-		cmd.drawIndexed( render_info.index_count, 1, render_info.first_index, render_info.vertex_offset, 0 );
-	}
-
-	cmd.endRendering();
 }
 
 void

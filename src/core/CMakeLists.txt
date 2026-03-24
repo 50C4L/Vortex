@@ -60,6 +60,11 @@ endif (WIN32)
 add_library(eage_core STATIC
 	./graphics/BuiltInMeshes.h
 	./graphics/BuiltInMeshes.cpp
+	./graphics/AbstractRenderPass.h
+	./graphics/SceneRenderPass.h
+	./graphics/SceneRenderPass.cpp
+	./graphics/ImGuiRenderPass.h
+	./graphics/ImGuiRenderPass.cpp
 	./graphics/ImageUtilities.h
 	./graphics/ImageUtilities.cpp
 	./graphics/ImGUILifetime.h

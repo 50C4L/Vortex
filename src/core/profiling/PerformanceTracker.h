@@ -2,7 +2,6 @@
 #define _EAGE_PROFILING_PERFORMANCE_TRACKER_H_
 
 #include <chrono>
-#include <imgui/imgui.h>
 
 namespace eage::graphics
 {
