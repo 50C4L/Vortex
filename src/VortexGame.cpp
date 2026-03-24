@@ -23,6 +23,7 @@
 #include "SceneController.h"
 #include "game/MainScene.h"
 #include "game/GameConfig.h"
+#include "game/UIStyle.h"
 
 using namespace vortex;
 using namespace vortex::config;
@@ -136,6 +137,7 @@ VortexGame::Init()
 	{
 		mRenderer->ImmediateSubmit( std::move( work ) );
 	} );
+	apply_game_style();
 
 	mRenderer->AddRenderPass( mScenePass.get() );
 	mRenderer->AddRenderPass( mImGuiPass.get() );

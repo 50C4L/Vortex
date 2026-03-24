@@ -23,6 +23,23 @@ Always follow these rules when generating or editing C++ code in this workspace.
 | Return type (out-of-line) | Separate line | `void\nVortexGame::Run()` |
 | Indentation | Hard tabs | one tab per level |
 
+## Include Guards
+
+**Never use `#pragma once`. Always use `#ifndef` include guards.**
+
+- Guard name format: `_SCREAMING_SNAKE_CASE_H` (leading underscore, filename words separated by underscores, trailing `_H`)
+- Examples: `VortexGame.h` -> `_VORTEX_GAME_H`, `MainScene.h` -> `_MAIN_SCENE_H`, `UIStyle.h` -> `_UI_STYLE_H`
+- Close with `#endif // _GUARD_NAME` (comment required)
+
+```cpp
+#ifndef _MY_CLASS_H
+#define _MY_CLASS_H
+
+// ... content ...
+
+#endif // _MY_CLASS_H
+```
+
 ## Character Encoding
 
 **All source files must use ASCII-only characters in comments, identifiers, and string literals.**
