@@ -1,24 +1,24 @@
 {
   "frames": [
     {
-      "filename": "asteroid_L_0.png",
+      "filename": "Asteroid L.png",
       "frame": {
         "x": 0,
         "y": 0,
-        "w": 16,
-        "h": 16
+        "w": 32,
+        "h": 26
       },
       "rotated": false,
-      "trimmed": false,
+      "trimmed": true,
       "spriteSourceSize": {
         "x": 0,
-        "y": 0,
-        "w": 16,
-        "h": 16
+        "y": 3,
+        "w": 32,
+        "h": 26
       },
       "sourceSize": {
-        "w": 16,
-        "h": 16
+        "w": 32,
+        "h": 32
       },
       "pivot": {
         "x": 0.5,

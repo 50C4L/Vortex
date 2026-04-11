@@ -62,7 +62,7 @@ AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
 	// Load texture
 	assets::TextureAtlas texture_atlas( "./resources/textures/asteroid/asteroid.json" );
 	texture_atlas.Flip();
-	const auto& asteroid_tex = texture_atlas.GetSubTexture( "asteroid_L_0.png" );
+	const auto& asteroid_tex = texture_atlas.GetSubTexture( "Asteroid L.png" );
 
 	// Create shared mesh - ALL ASTEROIDS CAN USE THIS
 	mAsteroidMeshId = mRenderSystem.CreateSpriteMesh( 50.f, 50.f, asteroid_tex.uv_min, asteroid_tex.uv_max );

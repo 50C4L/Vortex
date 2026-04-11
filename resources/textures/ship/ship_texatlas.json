@@ -1,24 +1,24 @@
 {
   "frames": [
     {
-      "filename": "player_ship.png",
+      "filename": "Ship.png",
       "frame": {
         "x": 0,
         "y": 0,
-        "w": 16,
-        "h": 16
+        "w": 32,
+        "h": 32
       },
       "rotated": false,
       "trimmed": false,
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 16,
-        "h": 16
+        "w": 32,
+        "h": 32
       },
       "sourceSize": {
-        "w": 16,
-        "h": 16
+        "w": 32,
+        "h": 32
       },
       "pivot": {
         "x": 0.5,
@@ -28,7 +28,7 @@
     {
       "filename": "ship_thrust_fx.png",
       "frame": {
-        "x": 16,
+        "x": 32,
         "y": 0,
         "w": 6,
         "h": 5
@@ -57,8 +57,8 @@
     "image": "ship_texatlas.png",
     "format": "RGBA8888",
     "size": {
-      "w": 32,
-      "h": 16
+      "w": 128,
+      "h": 128
     },
     "scale": 1
   }

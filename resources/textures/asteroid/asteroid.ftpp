@@ -2,11 +2,11 @@
   "meta": {
     "version": "0.6.7"
   },
-  "savePath": "",
+  "savePath": "C:\\Users\\Eric He\\Coding\\Repos\\Projects\\Vortex\\resources\\textures\\asteroid",
   "images": [
     {
-      "name": "asteroid_L_0.png",
-      "path": "C:/Users/Eric He/Coding/Repos/Projects/Vortex/resources/textures/asteroid/asteroid_L_0.png",
+      "name": "Asteroid L.png",
+      "path": "C:/Users/Eric He/Coding/Repos/Projects/Vortex/resources/textures/asteroid/Asteroid L.png",
       "folder": ""
     }
   ],
@@ -23,7 +23,7 @@
     "filter": "none",
     "exporter": "JSON (array)",
     "fileName": "pack-result",
-    "savePath": "",
+    "savePath": "C:\\Users\\Eric He\\Coding\\Repos\\Projects\\Vortex\\resources\\textures\\asteroid",
     "width": 64,
     "height": 64,
     "fixedSize": true,

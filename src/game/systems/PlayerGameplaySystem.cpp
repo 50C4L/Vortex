@@ -98,7 +98,7 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 	player_collider.mask_bits = PHYSX_CAT_SCREEN_ZONE | PHYSX_CAT_ENEMY;
 	mRegistry.AddComponent( player_entity, std::move( player_collider ) );
 
-	const auto& ship_tex = texture_atlas.GetSubTexture( "player_ship.png" );
+	const auto& ship_tex = texture_atlas.GetSubTexture( "Ship.png" );
 	mRenderSystem.AttachSprite( player_entity, mPlayerMaterialId, 50.f, 50.f, ship_tex.uv_min, ship_tex.uv_max );
 
 	AudioSourceComponent thrust_audio;

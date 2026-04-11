@@ -2,16 +2,16 @@
   "meta": {
     "version": "0.6.7"
   },
-  "savePath": "E:\\Repos\\Projects\\Vortex\\resources\\textures\\ship",
+  "savePath": "C:\\Users\\Eric He\\Coding\\Repos\\Projects\\Vortex\\resources\\textures\\ship",
   "images": [
     {
-      "name": "player_ship.png",
-      "path": "E:/Repos/Projects/Vortex/resources/textures/ship/player_ship.png",
+      "name": "Ship.png",
+      "path": "C:/Users/Eric He/Coding/Repos/Projects/Vortex/resources/textures/ship/Ship.png",
       "folder": ""
     },
     {
       "name": "ship_thrust_fx.png",
-      "path": "E:/Repos/Projects/Vortex/resources/textures/ship/ship_thrust_fx.png",
+      "path": "C:/Users/Eric He/Coding/Repos/Projects/Vortex/resources/textures/ship/ship_thrust_fx.png",
       "folder": ""
     }
   ],
@@ -28,10 +28,10 @@
     "filter": "none",
     "exporter": "JSON (array)",
     "fileName": "pack-result",
-    "savePath": "E:\\Repos\\Projects\\Vortex\\resources\\textures\\ship",
-    "width": 2048,
-    "height": 2048,
-    "fixedSize": false,
+    "savePath": "C:\\Users\\Eric He\\Coding\\Repos\\Projects\\Vortex\\resources\\textures\\ship",
+    "width": 128,
+    "height": 128,
+    "fixedSize": true,
     "powerOfTwo": true,
     "padding": 0,
     "extrude": 0,
