@@ -195,7 +195,7 @@ MainScene::CreateHudEntities()
 
 	eage::ecs::HudTransformComponent hud_tf;
 	hud_tf.position = glm::vec2( 1.0f, 0.0f );
-	hud_tf.offset_px = glm::vec2( -20.0f, 15.0f );
+	hud_tf.offset_px = glm::vec2( -7.0f, 5.0f );
 	hud_tf.anchor = eage::ecs::HudAnchor::TOP_RIGHT;
 	mECSRegistry.AddComponent( mKillCountHudEntity, std::move( hud_tf ) );
 

@@ -16,13 +16,14 @@ namespace eage::ecs
 	class HudRenderSystem
 	{
 	public:
-		HudRenderSystem( ECSRegistry& registry, eage::graphics::ImGuiRenderPass& imgui_pass );
+		HudRenderSystem( ECSRegistry& registry, eage::graphics::ImGuiRenderPass& imgui_pass, float scale_factor );
 
 		void Render();
 
 	private:
 		ECSRegistry& mRegistry;
 		eage::graphics::ImGuiRenderPass& mImGuiPass;
+		float mScaleFactor;
 	};
 }
 

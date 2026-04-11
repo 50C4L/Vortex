@@ -19,8 +19,8 @@ using namespace utility;
 
 namespace
 {
-	constexpr float INACTIVE_OFFSET = 1000.0f; // Offset to move inactive asteroids off-screen
-	constexpr float SPAWN_AREA_PADDING = 100.0f; // Padding from screen edges for spawning asteroids
+	constexpr float INACTIVE_OFFSET = 333.0f; // Offset to move inactive asteroids off-screen
+	constexpr float SPAWN_AREA_PADDING = 33.0f; // Padding from screen edges for spawning asteroids
 }
 
 AsteroidGameplaySystem::AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry, eage::ecs::RenderSystem& render_system,
@@ -65,7 +65,7 @@ AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
 	const auto& asteroid_tex = texture_atlas.GetSubTexture( "Asteroid L.png" );
 
 	// Create shared mesh - ALL ASTEROIDS CAN USE THIS
-	mAsteroidMeshId = mRenderSystem.CreateSpriteMesh( 50.f, 50.f, asteroid_tex.uv_min, asteroid_tex.uv_max );
+	mAsteroidMeshId = mRenderSystem.CreateSpriteMesh( 32.f, 32.f, asteroid_tex.uv_min, asteroid_tex.uv_max );
 
 	// Create given number of asteroids
 	for( int i = 0; i < count; ++i )
@@ -89,12 +89,12 @@ AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
 		eage::ecs::PhysicsComponent physics_cmp;
 		physics_cmp.body_type = eage::ecs::PhysicsComponent::BodyType::DYNAMIC;
 		physics_cmp.sync_transform_from_body = true;
-		physics_cmp.max_linear_velocity = 300.0f;
+		physics_cmp.max_linear_velocity = 150.0f;
 		physics_cmp.QueueSleep( true ); // Start asleep
 		mECSRegistry.AddComponent( asteroid, std::move( physics_cmp ) );
 
 		eage::ecs::CircleColliderComponent collider;
-		collider.radius = 25.f; // Approximate radius of the ship
+		collider.radius = 16.f; // Approximate radius of the asteroid
 		// collider.is_sensor = true;
 		collider.category_bits = config::PHYSX_CAT_WARPABLE | config::PHYSX_CAT_ENEMY;
 		collider.mask_bits = config::PHYSX_CAT_SCREEN_ZONE | config::PHYSX_CAT_PLAYER | config::PHYSX_CAT_BULLET;
@@ -170,7 +170,7 @@ AsteroidGameplaySystem::SpawnAsteroid( int count )
 		target_point.x = mScreenTopLeft.x + static_cast<float>( rand() % static_cast<int>( (mScreenBottomRight.x - mScreenTopLeft.x) ) );
 		target_point.y = mScreenBottomRight.y + static_cast<float>( rand() % static_cast<int>( (mScreenTopLeft.y - mScreenBottomRight.y) ) );
 		glm::vec2 direction = glm::normalize( target_point - glm::vec2( transform.position.x, transform.position.y ) );
-		float speed = 100.0f + static_cast<float>( rand() % 200 ); // Random speed between 100 and 300
+		float speed = 50.0f + static_cast<float>( rand() % 100 ); // Random speed between 50 and 150
 		physics_cmp.QueueAddVelocity( direction * speed );
 		// Random angular velocity
 		float angular_speed = (rand() % 20) - 10.f; // Random angular speed between -10 and 10

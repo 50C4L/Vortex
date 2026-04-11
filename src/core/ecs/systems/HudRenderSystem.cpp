@@ -56,9 +56,10 @@ namespace
 	}
 }
 
-HudRenderSystem::HudRenderSystem( ECSRegistry& registry, ImGuiRenderPass& imgui_pass )
+HudRenderSystem::HudRenderSystem( ECSRegistry& registry, ImGuiRenderPass& imgui_pass, float scale_factor )
 	: mRegistry( registry )
 	, mImGuiPass( imgui_pass )
+	, mScaleFactor( scale_factor )
 {
 	mImGuiPass.AddOverlayCallback( [this]() { Render(); } );
 }
@@ -86,7 +87,7 @@ HudRenderSystem::Render()
 				font->FontSize, FLT_MAX, 0.0f, text_cmp.text.c_str() );
 
 			ImVec2 screen_pos = resolve_anchor(
-				hud_tf.position, hud_tf.offset_px, hud_tf.anchor,
+				hud_tf.position, hud_tf.offset_px * mScaleFactor, hud_tf.anchor,
 				viewport_size, text_size );
 
 			ImU32 color = ImGui::ColorConvertFloat4ToU32( ImVec4(

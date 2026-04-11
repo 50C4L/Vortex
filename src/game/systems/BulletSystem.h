@@ -24,9 +24,9 @@ namespace vortex
 	struct BulletPoolConfig
 	{
 		float damage = 10.f;
-		float collider_radius = 5.f;
-		float mesh_width = 10.f;
-		float mesh_height = 10.f;
+		float collider_radius = 4.f;
+		float mesh_width = 8.f;
+		float mesh_height = 8.f;
 		eage::ecs::ResourceId material_id = 0;
 		uint16_t category_bits = 0x0006;
 		uint16_t mask_bits = 0x0005;

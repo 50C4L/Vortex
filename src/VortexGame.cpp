@@ -105,11 +105,12 @@ VortexGame::Init()
 		return false;
 	}
 
+	config::ScreenResolution screen_res;
 	mWindow = utility::make_resource( 
 		SDL_CreateWindow, SDL_DestroyWindow,
 		"Vortex Game",
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-		static_cast<int>( config::DesignResolution::WIDTH ), static_cast<int>( config::DesignResolution::HEIGHT ),
+		screen_res.width, screen_res.height,
 		SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN );
 	if( !mWindow )
 	{
@@ -135,9 +136,10 @@ VortexGame::Init()
 		eage::graphics::Renderer::MAX_FRAMES_IN_FLIGHT,
 		mRenderer->GetSwapchainImageCount(),
 		*mRenderer->GetRenderImage() );
-	mImGuiPass->LoadFont( nullptr, 13.0f, eage::ecs::HudFontSize::SMALL );
-	mImGuiPass->LoadFont( nullptr, 24.0f, eage::ecs::HudFontSize::MEDIUM );
-	mImGuiPass->LoadFont( nullptr, 36.0f, eage::ecs::HudFontSize::LARGE );
+	float ui_scale = config::get_scale_factor( screen_res.width, static_cast<int>( config::DesignResolution::WIDTH ) );
+	mImGuiPass->LoadFont( nullptr, 13.0f * ui_scale, eage::ecs::HudFontSize::SMALL );
+	mImGuiPass->LoadFont( nullptr, 24.0f * ui_scale, eage::ecs::HudFontSize::MEDIUM );
+	mImGuiPass->LoadFont( nullptr, 36.0f * ui_scale, eage::ecs::HudFontSize::LARGE );
 	mImGuiPass->InitFontTexture( [this]( std::function<void( vk::CommandBuffer& )> work )
 	{
 		mRenderer->ImmediateSubmit( std::move( work ) );
@@ -190,7 +192,7 @@ VortexGame::Init()
 	} );
 
 	// Initialize HudRenderSystem (registers its own overlay callback)
-	mHudRenderSystem = std::make_unique<eage::ecs::HudRenderSystem>( *mECSRegistry, *mImGuiPass );
+	mHudRenderSystem = std::make_unique<eage::ecs::HudRenderSystem>( *mECSRegistry, *mImGuiPass, ui_scale );
 
 	return true;
 }

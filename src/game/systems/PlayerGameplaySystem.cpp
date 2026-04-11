@@ -89,17 +89,17 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 	eage::ecs::PhysicsComponent player_physics;
 	player_physics.body_type = eage::ecs::PhysicsComponent::BodyType::DYNAMIC;
 	player_physics.sync_transform_from_body = true;
-	player_physics.max_linear_velocity = 400.0f;
+	player_physics.max_linear_velocity = 200.0f;
 	mRegistry.AddComponent( player_entity, std::move( player_physics ) );
 
 	eage::ecs::CircleColliderComponent player_collider;
-	player_collider.radius = 25.f;
+	player_collider.radius = 16.f;
 	player_collider.category_bits = PHYSX_CAT_WARPABLE | PHYSX_CAT_PLAYER;
 	player_collider.mask_bits = PHYSX_CAT_SCREEN_ZONE | PHYSX_CAT_ENEMY;
 	mRegistry.AddComponent( player_entity, std::move( player_collider ) );
 
 	const auto& ship_tex = texture_atlas.GetSubTexture( "Ship.png" );
-	mRenderSystem.AttachSprite( player_entity, mPlayerMaterialId, 50.f, 50.f, ship_tex.uv_min, ship_tex.uv_max );
+	mRenderSystem.AttachSprite( player_entity, mPlayerMaterialId, 32.f, 32.f, ship_tex.uv_min, ship_tex.uv_max );
 
 	AudioSourceComponent thrust_audio;
 	thrust_audio.sources["thruster"] = { mAudioSystem.LoadSound( { "./resources/sounds/thruster.mp3", 1, true } ) };
@@ -120,12 +120,12 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 	player_cmp.thruster_fx_entity = thruster_entity;
 
 	eage::ecs::TransformComponent thruster_transform;
-	thruster_transform.SetPosition( glm::vec3( 0.0f, -30.f, 0.0f ) );
+	thruster_transform.SetPosition( glm::vec3( 0.0f, -19.f, 0.0f ) );
 	thruster_transform.SetScale( glm::vec3( 1 / 5.f ) );
 	mRegistry.AddComponent( thruster_entity, std::move( thruster_transform ) );
 
 	const auto& thrust_tex = texture_atlas.GetSubTexture( "ship_thrust_fx.png" );
-	mRenderSystem.AttachSprite( thruster_entity, mPlayerMaterialId, 50.f, 50.f, thrust_tex.uv_min, thrust_tex.uv_max );
+	mRenderSystem.AttachSprite( thruster_entity, mPlayerMaterialId, 32.f, 32.f, thrust_tex.uv_min, thrust_tex.uv_max );
 
 	// ------------------------------------------------------------------
 	// Bullet launcher child entity
@@ -139,7 +139,7 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 	mRegistry.AddComponent( launcher_entity, std::move( launcher_relationship ) );
 
 	eage::ecs::TransformComponent launcher_transform;
-	launcher_transform.SetPosition( glm::vec3( 0.f, 25.f, 0.f ) );
+	launcher_transform.SetPosition( glm::vec3( 0.f, 16.f, 0.f ) );
 	mRegistry.AddComponent( launcher_entity, std::move( launcher_transform ) );
 
 	AudioSourceComponent launcher_audio;
@@ -154,9 +154,9 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 
 	BulletPoolConfig bullet_config;
 	bullet_config.damage = 1.f;
-	bullet_config.collider_radius = 5.f;
-	bullet_config.mesh_width = 10.f;
-	bullet_config.mesh_height = 10.f;
+	bullet_config.collider_radius = 4.f;
+	bullet_config.mesh_width = 8.f;
+	bullet_config.mesh_height = 8.f;
 	bullet_config.material_id = mPlayerBulletMaterialId;
 	bullet_config.category_bits = PHYSX_CAT_BULLET;
 	bullet_config.mask_bits = PHYSX_CAT_ENEMY;

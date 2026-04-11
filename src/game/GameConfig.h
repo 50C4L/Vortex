@@ -13,9 +13,20 @@ namespace vortex
 
 		enum class DesignResolution
 		{
-			WIDTH = 1920,
-			HEIGHT = 1080
+			WIDTH = 1280,
+			HEIGHT = 720
 		};
+
+		struct ScreenResolution
+		{
+			int width = 1920;
+			int height = 1080;
+		};
+
+		inline float get_scale_factor( int screen_width, int design_width )
+		{
+			return static_cast<float>( screen_width ) / static_cast<float>( design_width );
+		}
 
 		enum class GameEvents : uint64_t
 		{
