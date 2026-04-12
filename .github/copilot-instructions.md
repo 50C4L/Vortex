@@ -17,5 +17,13 @@ Guidelines:
   - Out-of-line function definitions: return type on its own line above `Class::Method()`
   - Indentation: hard tabs
 
+Architecture:
+- Under directory `src/`:
+  - Immediate files: game entry point and main loop
+  - `core/`: Core engine code (e.g. windowing, input, logging)
+    - Each folder under `core/` is a module
+    - codes in `core/` should be platform-agnostic and reusable across different projects, and should not depend on game-specific code
+  - `game/`: Game layer, including ECS systems and components, and game logic
+
 Build system:
 - Uses CMake
