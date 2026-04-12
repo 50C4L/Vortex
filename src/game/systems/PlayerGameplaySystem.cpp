@@ -46,7 +46,7 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 					 "./src/shaders/compiled/colored_triangle.frag.spv" )
 		.AddTexture( "./resources/textures/ship/ship_texatlas.png",
 					 eage::graphics::TextureFilter::NEAREST, eage::graphics::TextureFilter::NEAREST )
-		.SetAlphaBlending()
+		.SetAlphaBlending( true )
 		.EnableDepthTest( true )
 		.Build();
 
@@ -57,7 +57,7 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 					 "./src/shaders/compiled/colored_triangle.frag.spv" )
 		.AddTexture( "./resources/textures/bullets/player_bullets.png",
 					 eage::graphics::TextureFilter::NEAREST, eage::graphics::TextureFilter::NEAREST )
-		.SetAlphaBlending()
+		.SetAlphaBlending( true )
 		.EnableDepthTest( true )
 		.Build();
 

@@ -18,7 +18,9 @@ ImageLoader::Image
 ImageLoader::LoadImage( const std::string& filename )
 {
 	Image image;
-	unsigned char* data = stbi_load( filename.c_str(), &image.width, &image.height, &image.num_channels, 0 );
+	int original_channels = 0;
+	unsigned char* data = stbi_load( filename.c_str(), &image.width, &image.height, &original_channels, 4 );
+	image.num_channels = 4;
 	if( data )
 	{
 		image.data = std::vector<unsigned char>( data, data + image.width * image.height * image.num_channels );

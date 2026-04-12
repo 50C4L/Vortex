@@ -66,12 +66,15 @@ MaterialBuilder& MaterialBuilder::SetTopology( Topology topology )
 	return *this;
 }
 
-MaterialBuilder& MaterialBuilder::SetAlphaBlending()
+MaterialBuilder& MaterialBuilder::SetAlphaBlending( bool enable )
 {
-	mProperty.blend_enable = true;
+	mProperty.blend_enable = enable;
 	mProperty.src_color_blend = BlendFactor::SRC_ALPHA;
 	mProperty.dst_color_blend = BlendFactor::ONE_MINUS_SRC_ALPHA;
 	mProperty.color_blend_op = BlendOp::ADD;
+	mProperty.src_alpha_blend = BlendFactor::ONE;
+	mProperty.dst_alpha_blend = BlendFactor::ONE_MINUS_SRC_ALPHA;
+	mProperty.depth_write = !enable; // Transparent objects must not write depth
 	return *this;
 }
 
@@ -81,6 +84,8 @@ MaterialBuilder& MaterialBuilder::SetAdditiveBlending()
 	mProperty.src_color_blend = BlendFactor::ONE;
 	mProperty.dst_color_blend = BlendFactor::ONE;
 	mProperty.color_blend_op = BlendOp::ADD;
+	mProperty.src_alpha_blend = BlendFactor::ONE;
+	mProperty.dst_alpha_blend = BlendFactor::ZERO;
 	return *this;
 }
 

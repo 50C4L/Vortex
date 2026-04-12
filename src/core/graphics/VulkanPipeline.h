@@ -27,7 +27,8 @@ namespace eage::graphics
 
 		// The following features are disabled for now
 		VulkanPipelineBuilder& SetMultisampling( vk::SampleCountFlagBits sample_count = vk::SampleCountFlagBits::e1 );
-		VulkanPipelineBuilder& SetBlendMode( vk::Bool32 enable, vk::BlendFactor src_factor, vk::BlendFactor dst_factor, vk::BlendOp blend_op );
+		VulkanPipelineBuilder& SetBlendMode( vk::Bool32 enable, vk::BlendFactor src_factor, vk::BlendFactor dst_factor, vk::BlendOp blend_op,
+											 vk::BlendFactor src_alpha_factor, vk::BlendFactor dst_alpha_factor );
 		VulkanPipelineBuilder& SetDepthTest( vk::Bool32 enable, vk::Bool32 write_enable, vk::CompareOp compare_op );
 	
 		vk::PipelineInputAssemblyStateCreateInfo input_assembly;

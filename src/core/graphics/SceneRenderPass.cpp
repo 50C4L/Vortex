@@ -1,5 +1,6 @@
 #include "SceneRenderPass.h"
 
+#include <algorithm>
 #include <graphics/BuiltInUniforms.h>
 #include <graphics/Material.h>
 #include <graphics/ManagedVulkanResources.h>
@@ -36,7 +37,7 @@ SceneRenderPass::SceneRenderPass( Renderer& renderer, ManagedImage& color_target
 	mDesc.color_target = &mColorTarget;
 	mDesc.depth_target = &mDepthTarget;
 	mDesc.clear_color = glm::vec4{ 0.f, 0.f, 0.f, 1.f };
-	mDesc.clear_depth = 0.f;
+	mDesc.clear_depth = 1.f;
 }
 
 const RenderPassDesc&
@@ -74,6 +75,13 @@ SceneRenderPass::Execute( vk::CommandBuffer& cmd, const ExecutionContext& ctx )
 	rendering_info.pDepthAttachment = &depth_attachment;
 
 	cmd.beginRendering( rendering_info );
+
+	// Sort back-to-front by world Z for correct alpha blending
+	std::sort( mRenderQueue.begin(), mRenderQueue.end(),
+		[]( const RenderInfo& a, const RenderInfo& b )
+		{
+			return a.model_matrix[3][2] < b.model_matrix[3][2];
+		} );
 
 	size_t current_frame = ctx.frame_index;
 	for( auto& render_info : mRenderQueue )

@@ -53,6 +53,7 @@ namespace vortex
 		void PrepareMeshes();
 		void PrepareMaterials();
 		void CreateSceneRoot();
+		void CreateBackgroundEntity();
 		void CreatePlayerEntity();
 		void CreateScreenZoneEntities();
 		void CreateEnemyEntities();
@@ -74,6 +75,7 @@ namespace vortex
 
 		uint64_t mSceneRootEntity = 0;
 		uint64_t mOnScreenZoneEntity = 0;
+		uint64_t mBackgroundEntity = 0;
 		eage::ecs::Entity mKillCountHudEntity = 0;
 
 		std::chrono::time_point<std::chrono::steady_clock> mLastUpdateTime;

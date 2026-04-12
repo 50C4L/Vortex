@@ -500,7 +500,9 @@ struct RenderSystem::Impl
 				vk::Bool32( property.blend_enable ),
 				ToVulkan( property.src_color_blend ),
 				ToVulkan( property.dst_color_blend ),
-				ToVulkan( property.color_blend_op ) )
+				ToVulkan( property.color_blend_op ),
+				ToVulkan( property.src_alpha_blend ),
+				ToVulkan( property.dst_alpha_blend ) )
 			.SetColorAttachmentFormat( mRenderer.GetColorFormat() )
 			.SetDepthTest(
 				vk::Bool32( property.depth_test ),

@@ -15,6 +15,7 @@
 
 #include "GameConfig.h"
 #include "systems/AsteroidGameplaySystem.h"
+#include <graphics/MaterialBuilder.h>
 #include "systems/BulletSystem.h"
 #include "systems/PlayerInputSystem.h"
 #include "systems/PlayerGameplaySystem.h"
@@ -53,6 +54,8 @@ MainScene::OnEnter()
 	PrepareMaterials();
 
 	CreateSceneRoot();
+
+	CreateBackgroundEntity();
 
 	CreatePlayerEntity();
 
@@ -123,6 +126,51 @@ MainScene::CreateSceneRoot()
 
 	// Root relationship component
 	mECSRegistry.AddComponent( mSceneRootEntity, eage::ecs::SceneGraphComponment{} );
+}
+
+void
+MainScene::CreateBackgroundEntity()
+{
+	// Upload texture directly -- no TextureAtlas
+	mRenderSystem.CreateImageBuffer( "./resources/textures/background/dark.png" );
+
+	// Build material
+	auto material_property = eage::graphics::MaterialBuilder()
+		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",
+					 "./src/shaders/compiled/colored_triangle.frag.spv" )
+		.AddTexture( "./resources/textures/background/dark.png",
+					 eage::graphics::TextureFilter::NEAREST,
+					 eage::graphics::TextureFilter::NEAREST )
+		.SetAlphaBlending( true )
+		.EnableDepthTest( true )
+		.Build();
+
+	auto material_id = mRenderSystem.CreateMaterial( material_property );
+
+	// Create sprite mesh
+	auto mesh_id = mRenderSystem.CreateSpriteMesh( 1280.f, 720.f,
+		glm::vec2( 0.f, 0.f ), glm::vec2( 1.f, 1.f ) );
+
+	// Create entity
+	mBackgroundEntity = mECSRegistry.CreateEntity();
+
+	// Parent to scene root
+	auto& root = mECSRegistry.GetComponent<eage::ecs::SceneGraphComponment>( mSceneRootEntity );
+	root.children_entities.push_back( mBackgroundEntity );
+	eage::ecs::SceneGraphComponment relationship;
+	relationship.parent_entity = mSceneRootEntity;
+	mECSRegistry.AddComponent( mBackgroundEntity, std::move( relationship ) );
+
+	// Transform -- centered at origin.
+	// z=-1 places the background behind the gameplay plane (z=0). With conventional depth
+	// (LESS_OR_EQUAL, clear=1), objects further from the camera have larger depth values and
+	// correctly lose the depth test against closer objects.
+	eage::ecs::TransformComponent transform;
+	transform.SetPosition( glm::vec3( 0.f, 0.f, -1.f ) );
+	mECSRegistry.AddComponent( mBackgroundEntity, std::move( transform ) );
+
+	// Attach renderable
+	mRenderSystem.AttachRenderable( mBackgroundEntity, mesh_id, material_id );
 }
 
 void

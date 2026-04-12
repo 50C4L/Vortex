@@ -24,7 +24,7 @@ namespace eage::graphics
 		
 		// Pipeline state methods
 		MaterialBuilder& SetTopology( Topology topology );
-		MaterialBuilder& SetAlphaBlending();
+		MaterialBuilder& SetAlphaBlending( bool enable = true );
 		MaterialBuilder& SetAdditiveBlending();
 		MaterialBuilder& EnableDepthTest( bool enable = true );
 		

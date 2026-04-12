@@ -130,15 +130,16 @@ VulkanPipelineBuilder::SetMultisampling( vk::SampleCountFlagBits sample_count )
 }
 
 VulkanPipelineBuilder&
-VulkanPipelineBuilder::SetBlendMode( vk::Bool32 enable, vk::BlendFactor src_factor, vk::BlendFactor dst_factor, vk::BlendOp blend_op )
+VulkanPipelineBuilder::SetBlendMode( vk::Bool32 enable, vk::BlendFactor src_factor, vk::BlendFactor dst_factor, vk::BlendOp blend_op,
+									  vk::BlendFactor src_alpha_factor, vk::BlendFactor dst_alpha_factor )
 {
 	color_blend_attachement.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
 	color_blend_attachement.blendEnable = enable;
 	color_blend_attachement.srcColorBlendFactor = src_factor;
 	color_blend_attachement.dstColorBlendFactor = dst_factor;
 	color_blend_attachement.colorBlendOp = blend_op;
-	color_blend_attachement.srcAlphaBlendFactor = vk::BlendFactor::eOne;
-	color_blend_attachement.dstAlphaBlendFactor = vk::BlendFactor::eZero;
+	color_blend_attachement.srcAlphaBlendFactor = src_alpha_factor;
+	color_blend_attachement.dstAlphaBlendFactor = dst_alpha_factor;
 	color_blend_attachement.alphaBlendOp = blend_op;
 
 	return *this;

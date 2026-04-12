@@ -70,6 +70,10 @@ namespace eage::graphics
 		BlendFactor dst_color_blend = BlendFactor::DST_ALPHA;
 		/// Blend operation for color blending.
 		BlendOp color_blend_op = BlendOp::ADD;
+		/// Source blend factor for the alpha channel.
+		BlendFactor src_alpha_blend = BlendFactor::ONE;
+		/// Destination blend factor for the alpha channel.
+		BlendFactor dst_alpha_blend = BlendFactor::ONE_MINUS_SRC_ALPHA;
 		
 		// Depth testing
 
@@ -78,7 +82,7 @@ namespace eage::graphics
 		/// Enables or disables writing to the depth buffer.
 		bool depth_write = true;
 		/// Depth comparison operation.
-		CompareOp depth_compare = CompareOp::GREATER_OR_EQUAL;
+		CompareOp depth_compare = CompareOp::LESS_OR_EQUAL;
 	};
 }
 
