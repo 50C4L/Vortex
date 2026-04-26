@@ -27,3 +27,6 @@ Architecture:
 
 Build system:
 - Uses CMake
+
+Module Skills (load before working in these areas):
+- `src/core/graphics/` → `.github/skills/graphics-module/SKILL.md`
