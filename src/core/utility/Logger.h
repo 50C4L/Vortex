@@ -11,7 +11,7 @@
 #include <memory>
 #include <thread>
 
-#ifndef DEBUG
+#ifdef _DEBUG
 #   define EAGE_ASSERT(Expr, Msg) \
     EAGE_ASSERT_IMPL(#Expr, Expr, __FILE__, __LINE__, Msg)
 #else
@@ -284,7 +284,6 @@ namespace utility
 	inline void LOG_ERROR( const std::string& message )
 	{
 		GetLogger().Log( message, LOG_LEVEL::EAGE_ERROR );
-		EAGE_ASSERT(false, message.c_str());
 	}
 }
 
