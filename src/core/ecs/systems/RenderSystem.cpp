@@ -315,13 +315,14 @@ struct RenderSystem::Impl
 		AttachRenderable( entity, mesh_id, material_id, visible );
 	}
 
-	void SetCamera( const AbstractCamera& camera )
+	void SetCamera( const AbstractCamera& camera, glm::vec2 virtual_resolution )
 	{
 		auto current_frame = mRenderer.GetCurrentFrameIndex();
 		SceneGlobalData scene_global_data;
 		scene_global_data.view = camera.GetViewMatrix();
 		scene_global_data.proj = camera.GetProjectionMatrix();
 		scene_global_data.view_proj = scene_global_data.proj * scene_global_data.view;
+		scene_global_data.virtual_resolution = virtual_resolution;
 		GetGlobalUniformBuffer()->Update( &scene_global_data, sizeof( SceneGlobalData ), sizeof( SceneGlobalData ) * current_frame );
 	}
 
@@ -605,9 +606,9 @@ RenderSystem::AttachSprite( Entity entity, ResourceId material_id, float width, 
 }
 
 void
-RenderSystem::SetCamera( const AbstractCamera& camera )
+RenderSystem::SetCamera( const AbstractCamera& camera, glm::vec2 virtual_resolution )
 {
-	mImpl->SetCamera( camera );
+	mImpl->SetCamera( camera, virtual_resolution );
 }
 
 void

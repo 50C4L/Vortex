@@ -17,6 +17,14 @@ namespace vortex
 			HEIGHT = 720
 		};
 
+		// Low-res render target for pixel-art style. Each "pixel" here maps to
+		// (ScreenResolution / VirtualResolution) screen pixels, upscaled with nearest-neighbor.
+		enum class VirtualResolution
+		{
+			WIDTH  = 640,
+			HEIGHT = 360
+		};
+
 		struct ScreenResolution
 		{
 			int width = 1920;

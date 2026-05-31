@@ -120,7 +120,9 @@ VortexGame::Init()
 
 	// Initialize Renderer
 	mRenderer = std::make_unique<eage::graphics::Renderer>( *mWindow );
-	if( !mRenderer->Init() )
+	if( !mRenderer->Init(
+			static_cast<uint32_t>( config::VirtualResolution::WIDTH ),
+			static_cast<uint32_t>( config::VirtualResolution::HEIGHT ) ) )
 	{
 		std::cerr << "Failed to initialize Renderer" << std::endl;
 		return false;

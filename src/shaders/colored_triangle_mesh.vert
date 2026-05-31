@@ -21,6 +21,7 @@ layout(set = 0, binding = 0) uniform SceneGlobalData {
 	mat4 view_matrix;
 	mat4 project_matrix;
 	mat4 project_view_matrix;
+	vec2 virtual_resolution;
 } sceneGlobalData;
 
 layout(set = 1, binding = 0) uniform RenderableFixedData {
@@ -37,6 +38,13 @@ void main()
 
 	//output data
 	gl_Position = sceneGlobalData.project_view_matrix * renderableData.model_matrix * vec4(v.position, 1.0f);
+
+	// Snap to virtual pixel grid to preserve pixel-art alignment during rotation
+	vec2 half_res = sceneGlobalData.virtual_resolution * 0.5;
+	vec2 ndc = gl_Position.xy / gl_Position.w;
+	vec2 snapped = round( ndc * half_res ) / half_res;
+	gl_Position.xy = snapped * gl_Position.w;
+
 	outColor = v.color;
 	outUV = vec2( v.uv_x, v.uv_y ) * renderableData.uv_rect.zw + renderableData.uv_rect.xy;
 }

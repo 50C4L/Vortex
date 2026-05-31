@@ -19,8 +19,9 @@ namespace eage::graphics
 		alignas(64) glm::mat4 view;
 		alignas(64) glm::mat4 proj;
 		alignas(64) glm::mat4 view_proj;
+		alignas(8) glm::vec2 virtual_resolution; // pixel-snapping grid size
 		// padding
-		float extra[16];
+		float extra[14];
 	};
 }
 

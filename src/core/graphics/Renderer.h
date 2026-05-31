@@ -49,12 +49,15 @@ namespace eage::graphics
 		virtual ~Renderer();
 
 		///
-		/// Initialize the renderer
+		/// Initialize the renderer.
 		///
-		/// @return
-		///  true if successful, false otherwise
+		/// @param render_width  Width of the scene render target in pixels.
+		///                      Pass 0 to match the window drawable size.
+		/// @param render_height Height of the scene render target in pixels.
+		///                      Pass 0 to match the window drawable size.
+		/// @return true if successful, false otherwise
 		///
-		bool Init();
+		bool Init( uint32_t render_width = 0, uint32_t render_height = 0 );
 
 		///
 		/// Output the rendered frame

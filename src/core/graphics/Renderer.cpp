@@ -51,16 +51,16 @@ Renderer::~Renderer()
 }
 
 bool
-Renderer::Init()
+Renderer::Init( uint32_t render_width, uint32_t render_height )
 {
 	LOG( "Initializing vulkan context ..." );
 	mContext = std::make_unique<VulkanContext>( mWindow );
 
-	int width, height = 0;
-	SDL_Vulkan_GetDrawableSize( &mWindow, &width, &height );
+	int win_width, win_height = 0;
+	SDL_Vulkan_GetDrawableSize( &mWindow, &win_width, &win_height );
 
 	LOG( "Initializing vulkan swap chain ..." );
-	mSwapChain = std::make_unique<VulkanSwapChain>( *mContext, static_cast<uint32_t>( width ), static_cast<uint32_t>( height ) );
+	mSwapChain = std::make_unique<VulkanSwapChain>( *mContext, static_cast<uint32_t>( win_width ), static_cast<uint32_t>( win_height ) );
 	if( mSwapChain->GetImages().size() <MAX_FRAMES_IN_FLIGHT )
 	{
 		LOG_ERROR( "Swap chain does not have enough images." );
@@ -73,12 +73,16 @@ Renderer::Init()
 	InitFrameResources();
 	mImmidiateCommandContext = std::make_unique<VulkanCommandContext>( *mContext );
 
+	// Use caller-supplied virtual resolution if provided, else fall back to window size.
+	uint32_t img_width  = ( render_width  > 0 ) ? render_width  : static_cast<uint32_t>( win_width );
+	uint32_t img_height = ( render_height > 0 ) ? render_height : static_cast<uint32_t>( win_height );
+
 	LOG( "Creating render image ..." );
 
 	mRenderImage = ManagedImage::Create(
 		*mContext->logical_device,
 		*mVMA->allocator.get(),
-		vk::Extent3D{ static_cast<uint32_t>( width ), static_cast<uint32_t>( height ), 1 },
+		vk::Extent3D{ img_width, img_height, 1 },
 		vk::Format::eR16G16B16A16Sfloat,
 		vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
 		vk::ImageAspectFlagBits::eColor
@@ -89,7 +93,7 @@ Renderer::Init()
 	mDepthImage = ManagedImage::Create(
 		*mContext->logical_device,
 		*mVMA->allocator.get(),
-		vk::Extent3D{ static_cast<uint32_t>( width ), static_cast<uint32_t>( height ), 1 },
+		vk::Extent3D{ img_width, img_height, 1 },
 		vk::Format::eD32Sfloat,
 		vk::ImageUsageFlagBits::eDepthStencilAttachment,
 		vk::ImageAspectFlagBits::eDepth

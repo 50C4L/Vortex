@@ -46,7 +46,7 @@ namespace eage::ecs
 		void AttachSprite( eage::ecs::Entity entity, ResourceId material_id, float width, float height, glm::vec2 uv_min, glm::vec2 uv_max, bool visible = true );
 
 		// Camera
-		void SetCamera( const eage::graphics::AbstractCamera& camera );
+		void SetCamera( const eage::graphics::AbstractCamera& camera, glm::vec2 virtual_resolution );
 
 		void Update();
 

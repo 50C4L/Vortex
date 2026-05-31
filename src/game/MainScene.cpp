@@ -103,7 +103,9 @@ MainScene::Update()
 	}
 
 	// Update camera
-	mRenderSystem.SetCamera( *mCamera );
+	mRenderSystem.SetCamera( *mCamera, glm::vec2(
+		static_cast<float>( config::VirtualResolution::WIDTH ),
+		static_cast<float>( config::VirtualResolution::HEIGHT ) ) );
 }
 
 void 
