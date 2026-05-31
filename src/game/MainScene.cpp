@@ -172,8 +172,8 @@ void
 MainScene::CreatePlayerEntity()
 {
 	mPlayerInputSystem = std::make_unique<PlayerInputSystem>( mECSRegistry, mInputController );
-	mPlayerGameplaySystem = std::make_unique<PlayerGameplaySystem>( mECSRegistry, *mBulletSystem, mRenderSystem, mAudioSystem );
-	mPlayerGameplaySystem->PreparePlayer( mSceneRootEntity );
+	mPlayerGameplaySystem = std::make_unique<PlayerGameplaySystem>( mECSRegistry, *mBulletSystem, mAudioSystem );
+	mPlayerGameplaySystem->PreparePlayer( mRenderSystem, mSceneRootEntity );
 }
 
 void 
@@ -219,14 +219,14 @@ void
 MainScene::InitializeGenericSystems()
 {
 	mWarpSystem = std::make_unique<WarpSystem>( mECSRegistry, mPhysicsSystem );
-	mBulletSystem = std::make_unique<BulletSystem>( mECSRegistry, mRenderSystem, mPhysicsSystem );
-	mAsteroidGameplaySystem = std::make_unique<AsteroidGameplaySystem>( mECSRegistry, mRenderSystem, mPhysicsSystem );
+	mBulletSystem = std::make_unique<BulletSystem>( mECSRegistry, mPhysicsSystem );
+	mAsteroidGameplaySystem = std::make_unique<AsteroidGameplaySystem>( mECSRegistry, mPhysicsSystem );
 }
 
 void
 MainScene::CreateEnemyEntities()
 {
-	mAsteroidGameplaySystem->PrepareAsteroids( 100, mSceneRootEntity );
+	mAsteroidGameplaySystem->PrepareAsteroids( mRenderSystem, 100, mSceneRootEntity );
 
 	mAsteroidGameplaySystem->SpawnAsteroid( 10 );
 }

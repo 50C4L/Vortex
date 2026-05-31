@@ -23,10 +23,8 @@ namespace
 	constexpr float SPAWN_AREA_PADDING = 33.0f; // Padding from screen edges for spawning asteroids
 }
 
-AsteroidGameplaySystem::AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry, eage::ecs::RenderSystem& render_system,
-												eage::ecs::PhysicsSystem& physics_system )
+AsteroidGameplaySystem::AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry, eage::ecs::PhysicsSystem& physics_system )
 	: mECSRegistry( registry )
-	, mRenderSystem( render_system )
 	, mPhysicsSystem( physics_system )
 {
 	mPhysicsSystem.Subscribe( this );
@@ -42,10 +40,10 @@ AsteroidGameplaySystem::~AsteroidGameplaySystem()
 }
 
 void
-AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
+AsteroidGameplaySystem::PrepareAsteroids( eage::ecs::RenderSystem& render_system, int count, uint64_t root_entity )
 {
 	// Create asteroid material
-	mRenderSystem.CreateImageBuffer( "./resources/textures/asteroid/asteroid.png" );
+	render_system.CreateImageBuffer( "./resources/textures/asteroid/asteroid.png" );
 
 	// Create sprite material using the new MaterialBuilder and RenderSystem
 	auto material_property = eage::graphics::MaterialBuilder()
@@ -57,7 +55,7 @@ AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
 		.EnableDepthTest( true )
 		.Build();
 
-	mAsteroidMaterialId = mRenderSystem.CreateMaterial( material_property );
+	mAsteroidMaterialId = render_system.CreateMaterial( material_property );
 
 	// Load texture
 	assets::TextureAtlas texture_atlas( "./resources/textures/asteroid/asteroid.json" );
@@ -65,7 +63,7 @@ AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
 	const auto& asteroid_tex = texture_atlas.GetSubTexture( "Asteroid L.png" );
 
 	// Create shared mesh - ALL ASTEROIDS CAN USE THIS
-	mAsteroidMeshId = mRenderSystem.CreateSpriteMesh( 32.f, 32.f, asteroid_tex.uv_min, asteroid_tex.uv_max );
+	mAsteroidMeshId = render_system.CreateSpriteMesh( 32.f, 32.f, asteroid_tex.uv_min, asteroid_tex.uv_max );
 
 	// Create given number of asteroids
 	for( int i = 0; i < count; ++i )
@@ -109,7 +107,7 @@ AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
 		mAllAsteroids.insert( asteroid );
 
 		// Render component
-		mRenderSystem.AttachRenderable( asteroid, mAsteroidMeshId, mAsteroidMaterialId, false );
+		render_system.AttachRenderable( asteroid, mAsteroidMeshId, mAsteroidMaterialId, false );
 	}
 }
 

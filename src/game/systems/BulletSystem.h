@@ -43,8 +43,7 @@ namespace vortex
 	class BulletSystem final : public eage::ecs::PhysicsSystem::Observer
 	{
 	public:
-		BulletSystem( eage::ecs::ECSRegistry& registry, eage::ecs::RenderSystem& render_system,
-					  eage::ecs::PhysicsSystem& physics_system );
+		BulletSystem( eage::ecs::ECSRegistry& registry, eage::ecs::PhysicsSystem& physics_system );
 		~BulletSystem();
 
 		///
@@ -52,7 +51,7 @@ namespace vortex
 		/// Must be called before Fire() with the returned ID.
 		/// Note: performs immediate GPU operations.
 		///
-		BulletPoolId PreparePool( const BulletPoolConfig& config, int count, uint64_t root_entity );
+		BulletPoolId PreparePool( eage::ecs::RenderSystem& render_system, const BulletPoolConfig& config, int count, uint64_t root_entity );
 
 		///
 		/// Fire a bullet from the given pool at the given world position and direction.
@@ -75,7 +74,6 @@ namespace vortex
 		void DespawnBullet( uint64_t bullet_entity );
 
 		eage::ecs::ECSRegistry& mRegistry;
-		eage::ecs::RenderSystem& mRenderSystem;
 		eage::ecs::PhysicsSystem& mPhysicsSystem;
 
 		BulletPoolId mNextPoolId = 1;

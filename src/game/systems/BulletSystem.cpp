@@ -19,10 +19,8 @@ namespace
 	constexpr float INACTIVE_OFFSET = 2000.0f;
 }
 
-BulletSystem::BulletSystem( eage::ecs::ECSRegistry& registry, eage::ecs::RenderSystem& render_system,
-							eage::ecs::PhysicsSystem& physics_system )
+BulletSystem::BulletSystem( eage::ecs::ECSRegistry& registry, eage::ecs::PhysicsSystem& physics_system )
 	: mRegistry( registry )
-	, mRenderSystem( render_system )
 	, mPhysicsSystem( physics_system )
 {
 	mPhysicsSystem.Subscribe( this );
@@ -39,7 +37,7 @@ BulletSystem::~BulletSystem()
 }
 
 BulletPoolId
-BulletSystem::PreparePool( const BulletPoolConfig& config, int count, uint64_t root_entity )
+BulletSystem::PreparePool( eage::ecs::RenderSystem& render_system, const BulletPoolConfig& config, int count, uint64_t root_entity )
 {
 	BulletPoolId pool_id = mNextPoolId++;
 	auto& pool = mPools[pool_id];
@@ -48,7 +46,7 @@ BulletSystem::PreparePool( const BulletPoolConfig& config, int count, uint64_t r
 	glm::vec2 inactive_pos = mScreenBottomRight + glm::vec2( INACTIVE_OFFSET, -INACTIVE_OFFSET );
 
 	// Create a shared mesh for this pool
-	eage::ecs::ResourceId mesh_id = mRenderSystem.CreateSpriteMesh(
+	eage::ecs::ResourceId mesh_id = render_system.CreateSpriteMesh(
 		config.mesh_width, config.mesh_height,
 		glm::vec2( 0.f, 0.f ), glm::vec2( 1.f, 1.f ) );
 
@@ -91,7 +89,7 @@ BulletSystem::PreparePool( const BulletPoolConfig& config, int count, uint64_t r
 		mRegistry.AddComponent( entity, BulletComponent{ false, config.damage } );
 
 		// Render
-		mRenderSystem.AttachSprite( entity, config.material_id, config.mesh_width, config.mesh_height, config.uv_min, config.uv_max );
+		render_system.AttachSprite( entity, config.material_id, config.mesh_width, config.mesh_height, config.uv_min, config.uv_max );
 	}
 
 	return pool_id;

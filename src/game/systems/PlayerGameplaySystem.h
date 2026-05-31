@@ -26,10 +26,10 @@ namespace vortex
 	{
 	public:
 		PlayerGameplaySystem( eage::ecs::ECSRegistry& registry, BulletSystem& bullet_system,
-							  eage::ecs::RenderSystem& render_system, eage::ecs::AudioSystem& audio_system );
+							  eage::ecs::AudioSystem& audio_system );
 		~PlayerGameplaySystem();
 
-		void PreparePlayer( uint64_t root_entity );
+		void PreparePlayer( eage::ecs::RenderSystem& render_system, uint64_t root_entity );
 		
 		void Update( float delta_time );
 		
@@ -45,7 +45,6 @@ namespace vortex
 
 		eage::ecs::ECSRegistry& mRegistry;
 		BulletSystem& mBulletSystem;
-		eage::ecs::RenderSystem& mRenderSystem;
 		eage::ecs::AudioSystem& mAudioSystem;
 
 		uint32_t mPlayerMaterialId = 0;

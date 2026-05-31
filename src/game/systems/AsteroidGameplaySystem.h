@@ -19,15 +19,14 @@ namespace vortex
 	class AsteroidGameplaySystem : public eage::ecs::PhysicsSystem::Observer
 	{
 	public:
-		AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry, eage::ecs::RenderSystem& render_system,
-								eage::ecs::PhysicsSystem& physics_system );
+		AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry, eage::ecs::PhysicsSystem& physics_system );
 		~AsteroidGameplaySystem();
 
 		///
 		/// Precreate and setup a number of asteroids
 		/// Note that this function will perform immediate GPU operations
 		///
-		void PrepareAsteroids( int count, uint64_t root_entity );
+		void PrepareAsteroids( eage::ecs::RenderSystem& render_system, int count, uint64_t root_entity );
 
 		void SpawnAsteroid( int count );
 		void DespawnAsteroid( uint64_t asteroid_entity );
@@ -44,7 +43,6 @@ namespace vortex
 
 	private:
 		eage::ecs::ECSRegistry& mECSRegistry;
-		eage::ecs::RenderSystem& mRenderSystem;
 		eage::ecs::PhysicsSystem& mPhysicsSystem;
 
 		eage::ecs::ResourceId mAsteroidMaterialId = 0;
