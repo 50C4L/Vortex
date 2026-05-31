@@ -127,7 +127,7 @@ MainScene::CreateSceneRoot()
 	mECSRegistry.AddComponent( mSceneRootEntity, eage::ecs::TransformComponent{} );
 
 	// Root relationship component
-	mECSRegistry.AddComponent( mSceneRootEntity, eage::ecs::SceneGraphComponment{} );
+	mECSRegistry.AddComponent( mSceneRootEntity, eage::ecs::SceneGraphComponent{} );
 }
 
 void
@@ -157,9 +157,9 @@ MainScene::CreateBackgroundEntity()
 	mBackgroundEntity = mECSRegistry.CreateEntity();
 
 	// Parent to scene root
-	auto& root = mECSRegistry.GetComponent<eage::ecs::SceneGraphComponment>( mSceneRootEntity );
+	auto& root = mECSRegistry.GetComponent<eage::ecs::SceneGraphComponent>( mSceneRootEntity );
 	root.children_entities.push_back( mBackgroundEntity );
-	eage::ecs::SceneGraphComponment relationship;
+	eage::ecs::SceneGraphComponent relationship;
 	relationship.parent_entity = mSceneRootEntity;
 	mECSRegistry.AddComponent( mBackgroundEntity, std::move( relationship ) );
 
@@ -189,9 +189,9 @@ MainScene::CreateScreenZoneEntities()
 	mOnScreenZoneEntity = mECSRegistry.CreateEntity();
 
 	// Set parent-child relationship with scene root
-	auto& root = mECSRegistry.GetComponent<eage::ecs::SceneGraphComponment>( mSceneRootEntity );
+	auto& root = mECSRegistry.GetComponent<eage::ecs::SceneGraphComponent>( mSceneRootEntity );
 	root.children_entities.push_back( mOnScreenZoneEntity );
-	eage::ecs::SceneGraphComponment screen_zone_relationship;
+	eage::ecs::SceneGraphComponent screen_zone_relationship;
 	screen_zone_relationship.parent_entity = mSceneRootEntity;
 	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( screen_zone_relationship ) );
 

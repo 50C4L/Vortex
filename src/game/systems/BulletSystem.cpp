@@ -59,9 +59,9 @@ BulletSystem::PreparePool( const BulletPoolConfig& config, int count, uint64_t r
 		mEntityToPool[entity] = pool_id;
 
 		// Scene graph: child of world root
-		auto& root = mRegistry.GetComponent<eage::ecs::SceneGraphComponment>( root_entity );
+		auto& root = mRegistry.GetComponent<eage::ecs::SceneGraphComponent>( root_entity );
 		root.children_entities.push_back( entity );
-		eage::ecs::SceneGraphComponment relationship;
+		eage::ecs::SceneGraphComponent relationship;
 		relationship.parent_entity = root_entity;
 		mRegistry.AddComponent( entity, std::move( relationship ) );
 

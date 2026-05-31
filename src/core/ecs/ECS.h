@@ -70,9 +70,9 @@ public:
 	const std::unordered_map<Entity, T>& GetComponentMap() const
 	{
 		auto type = std::type_index( typeid(T) );
-		auto it = components.find( type );
+		auto it = mComponents.find( type );
 		
-		if( it == components.end() )
+		if( it == mComponents.end() )
 		{
 			// Return empty map if component type doesn't exist
 			static const std::unordered_map<Entity, T> empty_map;
@@ -88,16 +88,16 @@ public:
 	std::unordered_map<Entity, T>& GetComponentMap() 
 	{
 		auto type = std::type_index(typeid(T));
-		if( components.find(type) == components.end() )
+		if( mComponents.find(type) == mComponents.end() )
 		{
-			components.emplace( type, std::unordered_map<Entity, T>{} ); // Use emplace to avoid copying
+			mComponents.emplace( type, std::unordered_map<Entity, T>{} ); // Use emplace to avoid copying
 		}
-		return std::any_cast<std::unordered_map<Entity, T>&>(components[type]);
+		return std::any_cast<std::unordered_map<Entity, T>&>(mComponents[type]);
 	}
 
 private:
 	Entity mNextEntity = 1;
-	std::unordered_map<std::type_index, std::any> components;
+	std::unordered_map<std::type_index, std::any> mComponents;
 };
 
 }

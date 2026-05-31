@@ -73,9 +73,9 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 	// ------------------------------------------------------------------
 	auto player_entity = mRegistry.CreateEntity();
 
-	auto& root = mRegistry.GetComponent<eage::ecs::SceneGraphComponment>( root_entity );
+	auto& root = mRegistry.GetComponent<eage::ecs::SceneGraphComponent>( root_entity );
 	root.children_entities.push_back( player_entity );
-	eage::ecs::SceneGraphComponment player_relationship;
+	eage::ecs::SceneGraphComponent player_relationship;
 	player_relationship.parent_entity = root_entity;
 	mRegistry.AddComponent( player_entity, std::move( player_relationship ) );
 
@@ -101,10 +101,10 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 	const auto& ship_tex = texture_atlas.GetSubTexture( "Ship.png" );
 	mRenderSystem.AttachSprite( player_entity, mPlayerMaterialId, 32.f, 32.f, ship_tex.uv_min, ship_tex.uv_max );
 
-	AudioSourceComponent thrust_audio;
+	eage::ecs::AudioSourceComponent thrust_audio;
 	thrust_audio.sources["thruster"] = { mAudioSystem.LoadSound( { "./resources/sounds/thruster.mp3", 1, true } ) };
 	mRegistry.AddComponent( player_entity, std::move( thrust_audio ) );
-	mRegistry.AddComponent( player_entity, AudioEventComponent{} );
+	mRegistry.AddComponent( player_entity, eage::ecs::AudioEventComponent{} );
 
 	mRegistry.AddComponent( player_entity, WarpComponent{} );
 
@@ -113,7 +113,7 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 	// ------------------------------------------------------------------
 	auto thruster_entity = mRegistry.CreateEntity();
 
-	auto& player_scene = mRegistry.GetComponent<eage::ecs::SceneGraphComponment>( player_entity );
+	auto& player_scene = mRegistry.GetComponent<eage::ecs::SceneGraphComponent>( player_entity );
 	player_scene.children_entities.push_back( thruster_entity );
 
 	auto& player_cmp = mRegistry.GetComponent<PlayerComponent>( player_entity );
@@ -134,7 +134,7 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 	player_scene.children_entities.push_back( launcher_entity );
 	player_cmp.bullet_launcher_entity = launcher_entity;
 
-	eage::ecs::SceneGraphComponment launcher_relationship;
+	eage::ecs::SceneGraphComponent launcher_relationship;
 	launcher_relationship.parent_entity = player_entity;
 	mRegistry.AddComponent( launcher_entity, std::move( launcher_relationship ) );
 
@@ -142,10 +142,10 @@ PlayerGameplaySystem::PreparePlayer( uint64_t root_entity )
 	launcher_transform.SetPosition( glm::vec3( 0.f, 16.f, 0.f ) );
 	mRegistry.AddComponent( launcher_entity, std::move( launcher_transform ) );
 
-	AudioSourceComponent launcher_audio;
+	eage::ecs::AudioSourceComponent launcher_audio;
 	launcher_audio.sources["fire"] = { mAudioSystem.LoadSound( { "./resources/sounds/laser.wav", 4, false } ) };
 	mRegistry.AddComponent( launcher_entity, std::move( launcher_audio ) );
-	mRegistry.AddComponent( launcher_entity, AudioEventComponent{} );
+	mRegistry.AddComponent( launcher_entity, eage::ecs::AudioEventComponent{} );
 
 	// ------------------------------------------------------------------
 	// Bullet pool
@@ -240,12 +240,12 @@ PlayerGameplaySystem::UpdateThrusterFX( PlayerComponent& player_comp, uint64_t e
 		mRegistry.GetComponent<eage::ecs::RenderComponent>( player_comp.thruster_fx_entity ).visible = player_comp.thruster_on;
 	}
 
-	if( mRegistry.HasComponent<AudioEventComponent>( entity ) )
+	if( mRegistry.HasComponent<eage::ecs::AudioEventComponent>( entity ) )
 	{
-		auto& audio_event = mRegistry.GetComponent<AudioEventComponent>( entity );
+		auto& audio_event = mRegistry.GetComponent<eage::ecs::AudioEventComponent>( entity );
 		audio_event.QueueEvent( "thruster", player_comp.thruster_on
-			? AudioEventComponent::EventType::Play
-			: AudioEventComponent::EventType::Stop );
+			? eage::ecs::AudioEventComponent::EventType::Play
+			: eage::ecs::AudioEventComponent::EventType::Stop );
 	}
 }
 
@@ -308,9 +308,9 @@ PlayerGameplaySystem::UpdateWeapon( PlayerComponent& player_comp,
 
 	bool fired = mBulletSystem.Fire( mDefaultBulletPoolId, spawn_pos, fire_dir, bullet_speed );
 
-	if( fired && mRegistry.HasComponent<AudioEventComponent>( player_comp.bullet_launcher_entity ) )
+	if( fired && mRegistry.HasComponent<eage::ecs::AudioEventComponent>( player_comp.bullet_launcher_entity ) )
 	{
-		auto& audio_event = mRegistry.GetComponent<AudioEventComponent>( player_comp.bullet_launcher_entity );
-		audio_event.QueueEvent( "fire", AudioEventComponent::EventType::Play );
+		auto& audio_event = mRegistry.GetComponent<eage::ecs::AudioEventComponent>( player_comp.bullet_launcher_entity );
+		audio_event.QueueEvent( "fire", eage::ecs::AudioEventComponent::EventType::Play );
 	}
 }

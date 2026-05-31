@@ -29,7 +29,7 @@ SceneGraphSystem::Update()
 		return; // No scene root set
 	}
 
-	auto& root_relationships = mECSRegistry.GetComponent<SceneGraphComponment>( mSceneRootEntity );
+	auto& root_relationships = mECSRegistry.GetComponent<SceneGraphComponent>( mSceneRootEntity );
 	for( auto& child : root_relationships.children_entities )
 	{
 		UpdateChildrenRecursive( child, glm::mat4(1.0f) ); // Identity matrix as parent for root's children
@@ -51,11 +51,11 @@ SceneGraphSystem::UpdateChildrenRecursive( uint64_t entity, const glm::mat4& par
 	glm::mat4 world_matrix = parent_world_matrix * local_matrix;
 	transform.SetWorldMatrix( world_matrix );
 
-	if( !mECSRegistry.HasComponent<SceneGraphComponment>( entity ) )
+	if( !mECSRegistry.HasComponent<SceneGraphComponent>( entity ) )
 	{
 		return; // No children to update
 	}
-	auto& relationship = mECSRegistry.GetComponent<SceneGraphComponment>( entity );
+	auto& relationship = mECSRegistry.GetComponent<SceneGraphComponent>( entity );
 
 	// Recursively update children
 	for( auto& child : relationship.children_entities )

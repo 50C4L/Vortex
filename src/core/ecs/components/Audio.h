@@ -6,6 +6,9 @@
 #include <unordered_map>
 #include <vector>
 
+namespace eage::ecs
+{
+
 // Stores named audio sources for an entity.
 // Each source is a ResourceId referencing a SoundPool in AudioSystem.
 // An entity may own multiple named sources (e.g. "thruster", "weapon_fire").
@@ -13,7 +16,7 @@ struct AudioSourceComponent
 {
 	struct Source
 	{
-		eage::ecs::ResourceId sound_id = 0;
+		ResourceId sound_id = 0;
 	};
 	std::unordered_map<std::string, Source> sources;
 };
@@ -41,5 +44,7 @@ struct AudioEventComponent
 		pending_events.push_back( { source_name, type } );
 	}
 };
+
+}
 
 #endif // _EAGE_COMPONENTS_AUDIO_H_

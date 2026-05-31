@@ -74,9 +74,9 @@ AsteroidGameplaySystem::PrepareAsteroids( int count, uint64_t root_entity )
 		mAvailableAsteroids.push_back( asteroid );
 
 		// Set parent-child relationship with scene root
-		auto& root = mECSRegistry.GetComponent<eage::ecs::SceneGraphComponment>( root_entity );
+		auto& root = mECSRegistry.GetComponent<eage::ecs::SceneGraphComponent>( root_entity );
 		root.children_entities.push_back( asteroid );
-		eage::ecs::SceneGraphComponment relationship;
+		eage::ecs::SceneGraphComponent relationship;
 		relationship.parent_entity = root_entity;
 		mECSRegistry.AddComponent( asteroid, std::move( relationship ) );
 		

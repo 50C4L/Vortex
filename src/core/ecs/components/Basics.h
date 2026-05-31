@@ -64,7 +64,7 @@ namespace eage::ecs
 		}
 	};
 
-	struct SceneGraphComponment
+	struct SceneGraphComponent
 	{
 		uint64_t parent_entity = 0; // 0 means no parent
 		std::vector<uint64_t> children_entities;
