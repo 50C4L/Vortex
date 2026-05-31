@@ -105,6 +105,7 @@ SceneRenderPass::Execute( vk::CommandBuffer& cmd, const ExecutionContext& ctx )
 		MeshUniformData data;
 		data.model = render_info.model_matrix;
 		data.vertex_buffer_address = render_info.mesh_buffer->vertex_buffer_address;
+		data.uv_rect = render_info.uv_rect;
 		render_info.mesh_uniform_data_dynamic->Update( &data, sizeof( MeshUniformData ), sizeof( MeshUniformData ) * current_frame );
 
 		// Pipeline global uniform

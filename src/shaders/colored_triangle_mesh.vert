@@ -26,6 +26,8 @@ layout(set = 0, binding = 0) uniform SceneGlobalData {
 layout(set = 1, binding = 0) uniform RenderableFixedData {
 	mat4 model_matrix;
 	VertexBuffer vertexBuffer; // 8 bytes
+	// 8 bytes implicit padding to align vec4 to offset 80
+	vec4 uv_rect; // xy = uv offset, zw = uv scale
 } renderableData;
 
 void main() 
@@ -36,5 +38,5 @@ void main()
 	//output data
 	gl_Position = sceneGlobalData.project_view_matrix * renderableData.model_matrix * vec4(v.position, 1.0f);
 	outColor = v.color;
-	outUV = vec2( v.uv_x, v.uv_y );
+	outUV = vec2( v.uv_x, v.uv_y ) * renderableData.uv_rect.zw + renderableData.uv_rect.xy;
 }

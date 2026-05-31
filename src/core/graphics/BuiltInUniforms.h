@@ -9,8 +9,9 @@ namespace eage::graphics
 	{
 		alignas(64) glm::mat4 model;
 		alignas(8) uint64_t vertex_buffer_address;
+		alignas(16) glm::vec4 uv_rect; // xy = uv offset, zw = uv scale
 		// padding
-		float extra[46];
+		float extra[38];
 	};
 
 	struct SceneGlobalData

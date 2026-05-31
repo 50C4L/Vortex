@@ -22,6 +22,7 @@ namespace eage::graphics
 		uint32_t           index_count;
 		uint32_t           vertex_offset;
 		glm::mat4          model_matrix;
+		glm::vec4          uv_rect = { 0.f, 0.f, 1.f, 1.f }; // xy = uv offset, zw = uv scale
 	};
 }
 

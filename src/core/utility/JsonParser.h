@@ -14,7 +14,8 @@
 namespace utility
 {
 	static const rapidjson::Value empty_json_value;
-	bool parse_json_document( rapidjson::Document& doc, const std::string& file_path )
+
+	inline bool parse_json_document( rapidjson::Document& doc, const std::string& file_path )
 	{
 		std::ifstream ifs( file_path );
 		if( !ifs.is_open() )
@@ -36,7 +37,7 @@ namespace utility
 		return true;
 	}
 
-	const rapidjson::Value& get_json_object( const rapidjson::Value& parent, const std::string& key )
+	inline const rapidjson::Value& get_json_object( const rapidjson::Value& parent, const std::string& key )
 	{
 		if( !parent.HasMember( key.c_str() ) )
 		{
@@ -47,7 +48,7 @@ namespace utility
 		return parent[key.c_str()];
 	}
 
-	int get_json_int( const rapidjson::Value& parent, const std::string& key )
+	inline int get_json_int( const rapidjson::Value& parent, const std::string& key )
 	{
 		if( !parent.HasMember( key.c_str() ) || !parent[key.c_str()].IsInt() )
 		{
@@ -58,7 +59,7 @@ namespace utility
 		return parent[key.c_str()].GetInt();
 	}
 
-	const rapidjson::Value& get_json_array( const rapidjson::Value& parent, const std::string& key )
+	inline const rapidjson::Value& get_json_array( const rapidjson::Value& parent, const std::string& key )
 	{
 		if( !parent.HasMember( key.c_str() ) || !parent[key.c_str()].IsArray() )
 		{
@@ -69,7 +70,7 @@ namespace utility
 		return parent[key.c_str()].GetArray();
 	}
 
-	std::string get_json_string( const rapidjson::Value& parent, const std::string& key )
+	inline std::string get_json_string( const rapidjson::Value& parent, const std::string& key )
 	{
 		if( !parent.HasMember( key.c_str() ) || !parent[key.c_str()].IsString() )
 		{

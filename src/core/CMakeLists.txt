@@ -101,6 +101,11 @@ add_library(eage_core STATIC
 	./assets/ImageLoader.cpp
 	./assets/TextureAtlas.h
 	./assets/TextureAtlas.cpp
+	./assets/AnimationClip.h
+	./assets/AnimationClip.cpp
+
+	./animation/AnimatedSprite.h
+	./animation/AnimatedSprite.cpp
 
 	./events/InputController.h
 	./events/InputController.cpp

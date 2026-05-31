@@ -302,7 +302,11 @@ struct RenderSystem::Impl
 			GetUniformBuffer( ubo_id )->buffer,
 			sizeof( MeshUniformData ) );
 		mECSRegistry.AddComponent( entity, RenderComponent{
-			mesh_id, material_id, ubo_id, descriptor_id, visible } );
+			.mesh_buffer_id = mesh_id,
+			.material_id = material_id,
+			.mesh_uniform_data_dynamic_id = ubo_id,
+			.mesh_descriptor_id = descriptor_id,
+			.visible = visible } );
 	}
 
 	void AttachSprite( Entity entity, ResourceId material_id, float width, float height, glm::vec2 uv_min, glm::vec2 uv_max, bool visible )
@@ -380,6 +384,8 @@ struct RenderSystem::Impl
 			{
 				render_info.model_matrix = glm::mat4( 1.0f );
 			}
+
+			render_info.uv_rect = render_cmp.uv_rect;
 
 			mScenePass.AddRenderInfo( std::move( render_info ) );
 		}
