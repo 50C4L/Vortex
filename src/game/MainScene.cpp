@@ -26,14 +26,12 @@ using namespace vortex;
 using namespace vortex::config;
 using namespace utility;
 
-MainScene::MainScene( events::InputController& input_controller,
-					  eage::ecs::ECSRegistry& ecs_registry, eage::ecs::AudioSystem& audio_system, eage::ecs::RenderSystem& render_system,
-					  eage::ecs::PhysicsSystem& physics_system )
-	: mInputController( input_controller )
-	, mECSRegistry( ecs_registry )
-	, mAudioSystem( audio_system )
-	, mRenderSystem( render_system )
-	, mPhysicsSystem( physics_system )
+MainScene::MainScene( const EngineContext& ctx )
+	: mInputController( ctx.input )
+	, mECSRegistry( ctx.registry )
+	, mAudioSystem( ctx.audio_system )
+	, mRenderSystem( ctx.render_system )
+	, mPhysicsSystem( ctx.physics_system )
 {
 }
 

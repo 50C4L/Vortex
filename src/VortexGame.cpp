@@ -1,4 +1,5 @@
 #include "VortexGame.h"
+#include "EngineContext.h"
 
 #include <chrono>
 #include <iostream>
@@ -198,8 +199,8 @@ VortexGame::Init()
 	// Initialize SceneController
 	mSceneController = std::make_unique<SceneController>();
 	mSceneController->Subscribe( this );
-	mSceneController->AddScene( static_cast<int>( config::SceneID::MAIN_SCENE ), 
-		std::make_unique<MainScene>( *mInputController, *mECSRegistry, *mAudioSystem, *mRenderSystem, *mPhysicsSystem ) );
+	mSceneController->AddScene( static_cast<int>( config::SceneID::MAIN_SCENE ),
+		std::make_unique<MainScene>( EngineContext{ *mECSRegistry, *mRenderSystem, *mPhysicsSystem, *mAudioSystem, *mInputController } ) );
 	mSceneController->ChangeScene( static_cast<int>( config::SceneID::MAIN_SCENE ) );
 
 	// Initialize PerformanceTracker

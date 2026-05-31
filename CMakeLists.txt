@@ -9,6 +9,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/core)
 
 add_executable(Vortex 
 	./src/AbstractScene.h
+	./src/EngineContext.h
 	./src/main.cpp
 	./src/SceneController.h
 	./src/SceneController.cpp

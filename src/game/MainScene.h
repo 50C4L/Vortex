@@ -2,6 +2,7 @@
 #define _MAIN_SCENE_H
 
 #include "../AbstractScene.h"
+#include "../EngineContext.h"
 #include <ecs/ResourceManager.h>
 #include <ecs/ECS.h>
 
@@ -10,19 +11,6 @@
 namespace eage::graphics
 {
 	class OrthographicCamera;
-}
-
-namespace events
-{
-	class InputController;
-}
-
-namespace eage::ecs
-{
-	class AudioSystem;
-	class ECSRegistry;
-	class PhysicsSystem;
-	class RenderSystem;
 }
 
 namespace vortex
@@ -37,9 +25,7 @@ namespace vortex
 	class MainScene : public AbstractScene
 	{
 	public:
-		MainScene( events::InputController& input_controller, 
-				   eage::ecs::ECSRegistry& ecs_registry, eage::ecs::AudioSystem& audio_system, 
-				   eage::ecs::RenderSystem& render_system, eage::ecs::PhysicsSystem& physics_system );
+		explicit MainScene( const EngineContext& ctx );
 		virtual ~MainScene();
 
 		virtual void OnEnter() override;
