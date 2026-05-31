@@ -5,6 +5,7 @@
 #include <graphics/Material.h>
 #include <graphics/ManagedVulkanResources.h>
 #include <graphics/Renderer.h>
+#include <graphics/VMAWrapper.h>
 #include <graphics/VulkanDescriptor.h>
 #include <graphics/VulkanMesh.h>
 #include <graphics/VulkanPipeline.h>
@@ -29,13 +30,25 @@ namespace
 	}
 }
 
-SceneRenderPass::SceneRenderPass( Renderer& renderer, ManagedImage& color_target, ManagedImage& depth_target )
+SceneRenderPass::SceneRenderPass( Renderer& renderer, uint32_t width, uint32_t height )
 	: mRenderer( renderer )
-	, mColorTarget( color_target )
-	, mDepthTarget( depth_target )
+	, mColorTarget( ManagedImage::Create(
+		renderer.GetDevice(),
+		*renderer.GetMemoryAllocator().allocator.get(),
+		vk::Extent3D{ width, height, 1 },
+		renderer.GetColorFormat(),
+		vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferSrc,
+		vk::ImageAspectFlagBits::eColor ) )
+	, mDepthTarget( ManagedImage::Create(
+		renderer.GetDevice(),
+		*renderer.GetMemoryAllocator().allocator.get(),
+		vk::Extent3D{ width, height, 1 },
+		renderer.GetDepthFormat(),
+		vk::ImageUsageFlagBits::eDepthStencilAttachment,
+		vk::ImageAspectFlagBits::eDepth ) )
 {
-	mDesc.color_target = &mColorTarget;
-	mDesc.depth_target = &mDepthTarget;
+	mDesc.color_target = mColorTarget.get();
+	mDesc.depth_target = mDepthTarget.get();
 	mDesc.clear_color = glm::vec4{ 0.f, 0.f, 0.f, 1.f };
 	mDesc.clear_depth = 1.f;
 }
@@ -55,7 +68,7 @@ SceneRenderPass::Execute( vk::CommandBuffer& cmd, const ExecutionContext& ctx )
 		auto c = mDesc.clear_color.value();
 		color_clear = vk::ClearColorValue{ std::array<float,4>{ c.r, c.g, c.b, c.a } };
 	}
-	auto color_attachment = create_attachment_info( mColorTarget.image_view.get(), color_clear, vk::ImageLayout::eColorAttachmentOptimal );
+	auto color_attachment = create_attachment_info( mColorTarget->image_view.get(), color_clear, vk::ImageLayout::eColorAttachmentOptimal );
 
 	std::optional<vk::ClearValue> depth_clear;
 	if( mDesc.clear_depth.has_value() )
@@ -64,9 +77,9 @@ SceneRenderPass::Execute( vk::CommandBuffer& cmd, const ExecutionContext& ctx )
 		dv.depthStencil.depth = mDesc.clear_depth.value();
 		depth_clear = dv;
 	}
-	auto depth_attachment = create_attachment_info( mDepthTarget.image_view.get(), depth_clear, vk::ImageLayout::eDepthAttachmentOptimal );
+	auto depth_attachment = create_attachment_info( mDepthTarget->image_view.get(), depth_clear, vk::ImageLayout::eDepthAttachmentOptimal );
 
-	vk::Extent2D render_extent = { mColorTarget.extent.width, mColorTarget.extent.height };
+	vk::Extent2D render_extent = { mColorTarget->extent.width, mColorTarget->extent.height };
 	vk::RenderingInfo rendering_info{};
 	rendering_info.colorAttachmentCount = 1;
 	rendering_info.pColorAttachments = &color_attachment;
@@ -154,4 +167,10 @@ void
 SceneRenderPass::AddRenderInfo( RenderInfo info )
 {
 	mRenderQueue.push_back( std::move( info ) );
+}
+
+ManagedImage&
+SceneRenderPass::GetColorTarget()
+{
+	return *mColorTarget;
 }

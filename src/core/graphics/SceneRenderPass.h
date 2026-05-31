@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <graphics/AbstractRenderPass.h>
+#include <graphics/ManagedVulkanResources.h>
 #include <graphics/RenderInfo.h>
 
 namespace eage::graphics
@@ -13,7 +14,7 @@ namespace eage::graphics
 	class SceneRenderPass final : public AbstractRenderPass
 	{
 	public:
-		SceneRenderPass( Renderer& renderer, ManagedImage& color_target, ManagedImage& depth_target );
+		SceneRenderPass( Renderer& renderer, uint32_t width, uint32_t height );
 		~SceneRenderPass() override = default;
 
 		const RenderPassDesc& GetDesc() const override;
@@ -22,10 +23,12 @@ namespace eage::graphics
 
 		void AddRenderInfo( RenderInfo info );
 
+		ManagedImage& GetColorTarget();
+
 	private:
 		Renderer& mRenderer;
-		ManagedImage& mColorTarget;
-		ManagedImage& mDepthTarget;
+		ManagedImage::Ptr mColorTarget;
+		ManagedImage::Ptr mDepthTarget;
 		RenderPassDesc mDesc;
 		std::vector<RenderInfo> mRenderQueue;
 	};

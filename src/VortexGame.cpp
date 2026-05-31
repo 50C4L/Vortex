@@ -120,9 +120,7 @@ VortexGame::Init()
 
 	// Initialize Renderer
 	mRenderer = std::make_unique<eage::graphics::Renderer>( *mWindow );
-	if( !mRenderer->Init(
-			static_cast<uint32_t>( config::VirtualResolution::WIDTH ),
-			static_cast<uint32_t>( config::VirtualResolution::HEIGHT ) ) )
+	if( !mRenderer->Init() )
 	{
 		std::cerr << "Failed to initialize Renderer" << std::endl;
 		return false;
@@ -130,14 +128,16 @@ VortexGame::Init()
 
 	// Create render passes
 	mScenePass = std::make_unique<eage::graphics::SceneRenderPass>(
-		*mRenderer, *mRenderer->GetRenderImage(), *mRenderer->GetDepthImage() );
+		*mRenderer,
+		static_cast<uint32_t>( config::VirtualResolution::WIDTH ),
+		static_cast<uint32_t>( config::VirtualResolution::HEIGHT ) );
 	mImGuiPass = std::make_unique<eage::graphics::ImGuiRenderPass>(
 		mRenderer->GetVulkanContext(),
 		*mWindow,
 		mRenderer->GetSwapchainFormat(),
 		eage::graphics::Renderer::MAX_FRAMES_IN_FLIGHT,
 		mRenderer->GetSwapchainImageCount(),
-		*mRenderer->GetRenderImage() );
+		mScenePass->GetColorTarget() );
 	float ui_scale = config::get_scale_factor( screen_res.width, static_cast<int>( config::DesignResolution::WIDTH ) );
 	mImGuiPass->LoadFont( nullptr, 13.0f * ui_scale, eage::ecs::HudFontSize::SMALL );
 	mImGuiPass->LoadFont( nullptr, 24.0f * ui_scale, eage::ecs::HudFontSize::MEDIUM );
