@@ -8,6 +8,15 @@
 using namespace eage::physics;
 using namespace utility;
 
+namespace
+{
+	b2Rot quat_to_b2rot( const glm::quat& q )
+	{
+		float angle = 2.0f * atan2( q.z, q.w );
+		return b2MakeRot( angle );
+	}
+}
+
 // PhysicsBody implementation
 PhysicsBody::PhysicsBody( b2BodyId body_id )
 	: mBodyId( body_id )
@@ -81,13 +90,26 @@ PhysicsEngine::CreateWorld( glm::vec2 gravity )
 }
 
 std::unique_ptr<PhysicsBody>
-PhysicsEngine::CreateBody( const b2BodyDef& body_def )
+PhysicsEngine::CreateBody( const BodyDefinition& def )
 {
 	if( B2_IS_NULL( mWorldId ) )
 	{
 		LOG_ERROR() << "Cannot create body: Physics world is not initialized.";
 		return std::make_unique<PhysicsBody>( b2_nullBodyId );
 	}
+
+	b2BodyDef body_def = b2DefaultBodyDef();
+	switch( def.type )
+	{
+		case BodyDefinition::BodyType::Static:    body_def.type = b2_staticBody;    break;
+		case BodyDefinition::BodyType::Dynamic:   body_def.type = b2_dynamicBody;   break;
+		case BodyDefinition::BodyType::Kinematic: body_def.type = b2_kinematicBody; break;
+	}
+	body_def.position = b2Vec2{ def.position.x, def.position.y };
+	body_def.rotation = quat_to_b2rot( def.rotation );
+	body_def.isBullet = def.is_bullet;
+	body_def.userData = def.user_data;
+
 	return std::make_unique<PhysicsBody>( b2CreateBody( mWorldId, &body_def ) );
 }
 
@@ -134,9 +156,9 @@ PhysicsEngine::AddBoxColliderToBody( PhysicsBody& body, CollisionFilter filter, 
 }
 
 void
-PhysicsEngine::UpdateBodyTransform( PhysicsBody& body, glm::vec2 position, b2Rot rotation )
+PhysicsEngine::UpdateBodyTransform( PhysicsBody& body, glm::vec2 position, glm::quat rotation )
 {
-	b2Body_SetTransform( body.mBodyId, b2Vec2{ position.x, position.y }, rotation );
+	b2Body_SetTransform( body.mBodyId, b2Vec2{ position.x, position.y }, quat_to_b2rot( rotation ) );
 }
 
 void
@@ -200,6 +222,69 @@ PhysicsEngine::GetUserData( const PhysicsBody& body ) const
 	}
 
 	return b2Body_GetUserData( body.mBodyId );
+}
+
+void
+PhysicsEngine::ApplyForce( PhysicsBody& body, glm::vec2 force, bool wake )
+{
+	b2Body_ApplyForceToCenter( body.mBodyId, b2Vec2{ force.x, force.y }, wake );
+}
+
+void
+PhysicsEngine::ApplyLinearImpulse( PhysicsBody& body, glm::vec2 impulse, bool wake )
+{
+	b2Body_ApplyLinearImpulseToCenter( body.mBodyId, b2Vec2{ impulse.x, impulse.y }, wake );
+}
+
+void
+PhysicsEngine::ApplyTorque( PhysicsBody& body, float torque, bool wake )
+{
+	b2Body_ApplyTorque( body.mBodyId, torque, wake );
+}
+
+void
+PhysicsEngine::ApplyAngularImpulse( PhysicsBody& body, float impulse, bool wake )
+{
+	b2Body_ApplyAngularImpulse( body.mBodyId, impulse, wake );
+}
+
+void
+PhysicsEngine::SetLinearVelocity( PhysicsBody& body, glm::vec2 velocity )
+{
+	b2Body_SetLinearVelocity( body.mBodyId, b2Vec2{ velocity.x, velocity.y } );
+}
+
+void
+PhysicsEngine::SetAngularVelocity( PhysicsBody& body, float angular_velocity )
+{
+	b2Body_SetAngularVelocity( body.mBodyId, angular_velocity );
+}
+
+void
+PhysicsEngine::SetPosition( PhysicsBody& body, glm::vec2 position )
+{
+	auto current_rot = b2Body_GetRotation( body.mBodyId );
+	b2Body_SetTransform( body.mBodyId, b2Vec2{ position.x, position.y }, current_rot );
+}
+
+void
+PhysicsEngine::SetRotation( PhysicsBody& body, float angle_rad )
+{
+	auto current_pos = b2Body_GetPosition( body.mBodyId );
+	b2Body_SetTransform( body.mBodyId, current_pos, b2MakeRot( angle_rad ) );
+}
+
+glm::vec2
+PhysicsEngine::GetLinearVelocity( const PhysicsBody& body )
+{
+	auto vel = b2Body_GetLinearVelocity( body.mBodyId );
+	return glm::vec2{ vel.x, vel.y };
+}
+
+void
+PhysicsEngine::SetAwake( PhysicsBody& body, bool awake )
+{
+	b2Body_SetAwake( body.mBodyId, awake );
 }
 
 void

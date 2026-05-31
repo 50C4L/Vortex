@@ -10,19 +10,6 @@ using namespace eage::ecs;
 using namespace eage::physics;
 using namespace utility;
 
-namespace
-{
-	b2Rot quat_to_b2rot( const glm::quat& q )
-	{
-		// Extract Z-axis rotation from quaternion
-		float angle = 2.0f * atan2( q.z, q.w );
-		b2Rot rot;
-		rot.c = cos(angle);
-		rot.s = sin(angle);
-		return rot;
-	}
-}
-
 PhysicsSystem::PhysicsSystem( ECSRegistry& ecs_registry )
 	: mECSRegistry( ecs_registry )
 	, mPhysicsEngine( std::make_unique<eage::physics::PhysicsEngine>() )
@@ -67,55 +54,47 @@ PhysicsSystem::Update( float dt )
 				{
 					switch( event.type )
 					{
-						// @todo: Calls to b2Body_ functions should be wrapped in PhysicsEngine methods
 						case PhysicsComponent::EventType::ApplyForce:
 						{
 							glm::vec2 physics_force = PixelsToMeters( event.vector_data );
-							b2Body_ApplyForceToCenter( body->mBodyId, b2Vec2{ physics_force.x, physics_force.y }, event.wake_body );
+							mPhysicsEngine->ApplyForce( *body, physics_force, event.wake_body );
 						}
 							break;
 						case PhysicsComponent::EventType::ApplyImpulse:
-							b2Body_ApplyLinearImpulseToCenter( body->mBodyId, b2Vec2{ event.vector_data.x, event.vector_data.y }, event.wake_body );
+							mPhysicsEngine->ApplyLinearImpulse( *body, event.vector_data, event.wake_body );
 							break;
 						case PhysicsComponent::EventType::ApplyTorque:
-							b2Body_ApplyTorque( body->mBodyId, event.scalar_data, event.wake_body );
+							mPhysicsEngine->ApplyTorque( *body, event.scalar_data, event.wake_body );
 							break;
 						case PhysicsComponent::EventType::ApplyAngularImpulse:
-							b2Body_ApplyAngularImpulse( body->mBodyId, event.scalar_data, event.wake_body );
+							mPhysicsEngine->ApplyAngularImpulse( *body, event.scalar_data, event.wake_body );
 							break;
 						case PhysicsComponent::EventType::SetVelocity:
 						{
 							glm::vec2 physics_velocity = PixelsToMeters( event.vector_data );
-							b2Body_SetLinearVelocity( body->mBodyId, b2Vec2{ physics_velocity.x, physics_velocity.y } );
+							mPhysicsEngine->SetLinearVelocity( *body, physics_velocity );
 						}
 							break;
 						case PhysicsComponent::EventType::SetAngularVelocity:
-							b2Body_SetAngularVelocity( body->mBodyId, event.scalar_data );
+							mPhysicsEngine->SetAngularVelocity( *body, event.scalar_data );
 							break;
 						case PhysicsComponent::EventType::SetPosition:
 						{
-							auto current_rot = b2Body_GetRotation( body->mBodyId );
 							glm::vec2 physics_position = PixelsToMeters( event.vector_data );
-							b2Body_SetTransform( body->mBodyId, b2Vec2{ physics_position.x, physics_position.y }, current_rot );
+							mPhysicsEngine->SetPosition( *body, physics_position );
 							break;
 						}
 						case PhysicsComponent::EventType::SetRotation:
 						{
-							auto current_pos = b2Body_GetPosition( body->mBodyId );
-							b2Rot new_rot = b2MakeRot( event.scalar_data);
-							b2Body_SetTransform( body->mBodyId, current_pos, new_rot );
+							mPhysicsEngine->SetRotation( *body, event.scalar_data );
 							break;
 						}
 						case PhysicsComponent::EventType::AddVelocity:
 						{
-							// Get current velocity
-							auto current_vel_b2 = b2Body_GetLinearVelocity( body->mBodyId );
-							glm::vec2 current_velocity = MetersToPixels( glm::vec2(current_vel_b2.x, current_vel_b2.y) );
-							
-							// Add velocity change
+							glm::vec2 current_velocity = MetersToPixels( mPhysicsEngine->GetLinearVelocity( *body ) );
+
 							glm::vec2 new_velocity = current_velocity + event.vector_data;
-							
-							// Clamp to max speed
+
 							if( physics.max_linear_velocity > 0.0f )
 							{
 								float new_speed = glm::length( new_velocity );
@@ -124,25 +103,23 @@ PhysicsSystem::Update( float dt )
 									new_velocity = glm::normalize( new_velocity ) * physics.max_linear_velocity;
 								}
 							}
-							
-							// Set final velocity
+
 							glm::vec2 physics_velocity = PixelsToMeters( new_velocity );
-							b2Body_SetLinearVelocity( body->mBodyId, b2Vec2{ physics_velocity.x, physics_velocity.y } );
+							mPhysicsEngine->SetLinearVelocity( *body, physics_velocity );
 							break;
 						}
 						case PhysicsComponent::EventType::SetSleep:
 							if( event.scalar_data > 0.5f )
 							{
 								physics.enabled = false;
-								b2Body_SetAwake( body->mBodyId, false );
-								// Set velocity to zero when sleeping
-								b2Body_SetLinearVelocity( body->mBodyId, b2Vec2{ 0.0f, 0.0f } );
-								b2Body_SetAngularVelocity( body->mBodyId, 0.0f );
+								mPhysicsEngine->SetAwake( *body, false );
+								mPhysicsEngine->SetLinearVelocity( *body, glm::vec2( 0.0f, 0.0f ) );
+								mPhysicsEngine->SetAngularVelocity( *body, 0.0f );
 							}
 							else
 							{
 								physics.enabled = true;
-								b2Body_SetAwake( body->mBodyId, true );
+								mPhysicsEngine->SetAwake( *body, true );
 							}
 							break;
 						default:
@@ -294,30 +271,27 @@ PhysicsSystem::CreateCollisionBodyFromComponents( uint64_t entity )
 	// Convert pixel position to meters for Box2D
 	glm::vec2 physics_position = PixelsToMeters( glm::vec2(transform.position.x, transform.position.y) );
 
-	// Create Box2D body definition
-	b2BodyDef body_def = b2DefaultBodyDef();
+	PhysicsEngine::BodyDefinition body_def;
 	switch( physics.body_type )
 	{
 		case PhysicsComponent::BodyType::STATIC:
-			body_def.type = b2_staticBody;
+			body_def.type = PhysicsEngine::BodyDefinition::BodyType::Static;
 			break;
 		case PhysicsComponent::BodyType::DYNAMIC:
-			body_def.type = b2_dynamicBody;
+			body_def.type = PhysicsEngine::BodyDefinition::BodyType::Dynamic;
 			break;
 		case PhysicsComponent::BodyType::KINEMATIC:
-			body_def.type = b2_kinematicBody;
+			body_def.type = PhysicsEngine::BodyDefinition::BodyType::Kinematic;
 			break;
 		default:
 			LOG_ERROR() << "Unknown body type for entity " << entity << ". Defaulting to STATIC.";
-			body_def.type = b2_staticBody;
+			body_def.type = PhysicsEngine::BodyDefinition::BodyType::Static;
 			break;
 	}
-	body_def.position = b2Vec2{ physics_position.x, physics_position.y };
-	body_def.rotation = quat_to_b2rot( transform.rotation );
-	body_def.isBullet = physics.is_bullet;
-
-	// Store entity ID in userData by casting it to a pointer
-	body_def.userData = reinterpret_cast<void*>( static_cast<uintptr_t>( entity ) );
+	body_def.position = physics_position;
+	body_def.rotation = transform.rotation;
+	body_def.is_bullet = physics.is_bullet;
+	body_def.user_data = reinterpret_cast<void*>( static_cast<uintptr_t>( entity ) );
 
 	auto physics_body = mPhysicsEngine->CreateBody( body_def );
 

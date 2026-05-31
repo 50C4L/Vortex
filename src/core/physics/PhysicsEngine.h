@@ -46,7 +46,18 @@ namespace eage::physics
 		///
 		/// Create a new physics body in the world with specified body definition
 		///
-		std::unique_ptr<PhysicsBody> CreateBody( const b2BodyDef& body_def );
+		struct BodyDefinition
+		{
+			enum class BodyType { Static, Dynamic, Kinematic };
+
+			BodyType type = BodyType::Static;
+			glm::vec2 position = glm::vec2( 0.0f );
+			glm::quat rotation = glm::quat();
+			bool is_bullet = false;
+			void* user_data = nullptr;
+		};
+
+		std::unique_ptr<PhysicsBody> CreateBody( const BodyDefinition& body_def );
 
 		///
 		/// Add a circle collider to the specified body
@@ -61,7 +72,7 @@ namespace eage::physics
 		///
 		/// Update the transform of the specified body
 		///
-		void UpdateBodyTransform( PhysicsBody& body, glm::vec2 position, b2Rot rotation );
+		void UpdateBodyTransform( PhysicsBody& body, glm::vec2 position, glm::quat rotation );
 
 		///
 		/// Step the physics simulation forward
@@ -77,6 +88,17 @@ namespace eage::physics
 			glm::quat rotation = glm::quat();
 		};
 		PhysicsBodyTransform GetBodyTransform( const PhysicsBody& body );
+
+		void ApplyForce( PhysicsBody& body, glm::vec2 force, bool wake );
+		void ApplyLinearImpulse( PhysicsBody& body, glm::vec2 impulse, bool wake );
+		void ApplyTorque( PhysicsBody& body, float torque, bool wake );
+		void ApplyAngularImpulse( PhysicsBody& body, float impulse, bool wake );
+		void SetLinearVelocity( PhysicsBody& body, glm::vec2 velocity );
+		void SetAngularVelocity( PhysicsBody& body, float angular_velocity );
+		void SetPosition( PhysicsBody& body, glm::vec2 position );
+		void SetRotation( PhysicsBody& body, float angle_rad );
+		glm::vec2 GetLinearVelocity( const PhysicsBody& body );
+		void SetAwake( PhysicsBody& body, bool awake );
 
 		///
 		/// Set the event listener for physics events
