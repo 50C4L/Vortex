@@ -107,6 +107,7 @@ add_library(eage_core STATIC
 	./animation/AnimatedSprite.h
 	./animation/AnimatedSprite.cpp
 
+	./events/KeyCode.h
 	./events/InputController.h
 	./events/InputController.cpp
 

@@ -13,6 +13,7 @@
 #include <graphics/ImGuiRenderPass.h>
 #include <graphics/ManagedVulkanResources.h>
 #include <events/InputController.h>
+#include <events/KeyCode.h>
 #include <audio/AudioMixer.h>
 #include <ecs/ECS.h>
 #include <ecs/systems/AudioSystem.h>
@@ -168,11 +169,11 @@ VortexGame::Init()
 	mAudioMixer = std::make_unique<eage::audio::AudioMixer>();
 
 	// Initialize InputController
-	std::unordered_map<SDL_Keycode, uint64_t> keycode_to_event = {
-		{ SDLK_a, static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_LEFT ) },
-		{ SDLK_d, static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_RIGHT ) },
-		{ SDLK_w, static_cast<uint64_t>( GameEvents::PLAYER_THRUST ) },
-		{ SDLK_j, static_cast<uint64_t>( GameEvents::PLAYER_SHOOT ) },
+	std::unordered_map<events::KeyCode, uint64_t> keycode_to_event = {
+		{ events::KeyCode::A, static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_LEFT ) },
+		{ events::KeyCode::D, static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_RIGHT ) },
+		{ events::KeyCode::W, static_cast<uint64_t>( GameEvents::PLAYER_THRUST ) },
+		{ events::KeyCode::J, static_cast<uint64_t>( GameEvents::PLAYER_SHOOT ) },
 	};
 	mInputController = std::make_unique<events::InputController>( std::move( keycode_to_event ) );
 
