@@ -54,8 +54,8 @@ namespace eage::ecs
 		///
 		void Shutdown();
 
-		void RegisterObserver( Observer* observer );
-		void UnregisterObserver( Observer* observer );
+		void Subscribe( Observer* observer );
+		void Unsubscribe( Observer* observer );
 
 		// PhysicsEventListener interface
 		void OnSensorEnter( physics::PhysicsBody* sensor, physics::PhysicsBody* visitor ) override;

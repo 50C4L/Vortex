@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 namespace vortex
 {
@@ -14,6 +15,16 @@ namespace vortex
 	class SceneController
 	{
 	public:
+		///
+		/// Observer interface notified whenever the active scene changes.
+		///
+		class Observer
+		{
+		public:
+			virtual ~Observer() = default;
+			virtual void OnSceneChanged( uint64_t scene_root ) = 0;
+		};
+
 		SceneController();
 		virtual ~SceneController();
 
@@ -27,10 +38,16 @@ namespace vortex
 
 		uint64_t GetCurrentSceneRoot();
 
+		void Subscribe( Observer* observer );
+		void Unsubscribe( Observer* observer );
+
 	private:
+		void NotifyObservers( uint64_t scene_root );
+
 		std::unordered_map<int, std::unique_ptr<AbstractScene>> mScenes;
 		AbstractScene* mCurrentScene;
 		int mCurrentSceneId;
+		std::vector<Observer*> mObservers;
 	};
 }
 

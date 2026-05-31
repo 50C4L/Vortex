@@ -29,7 +29,7 @@ AsteroidGameplaySystem::AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry
 	, mRenderSystem( render_system )
 	, mPhysicsSystem( physics_system )
 {
-	mPhysicsSystem.RegisterObserver( this );
+	mPhysicsSystem.Subscribe( this );
 	float half_width = static_cast<float>( config::DesignResolution::WIDTH) * 0.5f;
 	float half_height = static_cast<float>( config::DesignResolution::HEIGHT) * 0.5f;
 	mScreenTopLeft = glm::vec2( -half_width, half_height );
@@ -38,7 +38,7 @@ AsteroidGameplaySystem::AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry
 
 AsteroidGameplaySystem::~AsteroidGameplaySystem()
 {
-	mPhysicsSystem.UnregisterObserver( this );
+	mPhysicsSystem.Unsubscribe( this );
 }
 
 void

@@ -3,6 +3,8 @@
 
 #include <memory>
 
+#include "SceneController.h"
+
 struct SDL_Window;
 
 namespace eage::graphics
@@ -39,9 +41,7 @@ namespace eage::profiling
 
 namespace vortex
 {
-	class SceneController;
-
-	class VortexGame
+	class VortexGame : public SceneController::Observer
 	{
 	public:
 		VortexGame();
@@ -50,6 +50,9 @@ namespace vortex
 		bool Init();
 
 		void Run();
+
+		// SceneController::Observer
+		void OnSceneChanged( uint64_t scene_root ) override;
 
 	private:
 		std::shared_ptr<SDL_Window> mWindow;

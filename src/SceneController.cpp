@@ -1,5 +1,7 @@
 #include "SceneController.h"
 
+#include <algorithm>
+
 #include "AbstractScene.h"
 
 using namespace vortex;
@@ -39,6 +41,7 @@ SceneController::ChangeScene( int id )
 		mCurrentSceneId = id;
 
 		mCurrentScene->OnEnter();
+		NotifyObservers( mCurrentScene->GetSceneRoot() );
 	}
 }
 
@@ -67,4 +70,27 @@ SceneController::GetCurrentSceneRoot()
 		return mCurrentScene->GetSceneRoot();
 	}
 	return 0;
+}
+
+void
+SceneController::Subscribe( Observer* observer )
+{
+	mObservers.push_back( observer );
+}
+
+void
+SceneController::Unsubscribe( Observer* observer )
+{
+	mObservers.erase(
+		std::remove( mObservers.begin(), mObservers.end(), observer ),
+		mObservers.end() );
+}
+
+void
+SceneController::NotifyObservers( uint64_t scene_root )
+{
+	for( auto* observer : mObservers )
+	{
+		observer->OnSceneChanged( scene_root );
+	}
 }

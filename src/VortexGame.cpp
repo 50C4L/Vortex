@@ -33,6 +33,15 @@ VortexGame::VortexGame()
 {
 }
 
+void
+VortexGame::OnSceneChanged( uint64_t scene_root )
+{
+	if( mSceneGraphSystem )
+	{
+		mSceneGraphSystem->SetSceneRoot( scene_root );
+	}
+}
+
 VortexGame::~VortexGame()
 {
 	// GPU resources must be released before the renderer (which owns VMA/device).
@@ -181,10 +190,10 @@ VortexGame::Init()
 
 	// Initialize SceneController
 	mSceneController = std::make_unique<SceneController>();
+	mSceneController->Subscribe( this );
 	mSceneController->AddScene( static_cast<int>( config::SceneID::MAIN_SCENE ), 
 		std::make_unique<MainScene>( *mInputController, *mECSRegistry, *mAudioSystem, *mRenderSystem, *mPhysicsSystem ) );
 	mSceneController->ChangeScene( static_cast<int>( config::SceneID::MAIN_SCENE ) );
-	mSceneGraphSystem->SetSceneRoot( mSceneController->GetCurrentSceneRoot() );
 
 	// Initialize PerformanceTracker
 	mPerformanceTracker = std::make_unique<eage::profiling::PerformanceTracker>( *mRenderer );

@@ -14,12 +14,12 @@ WarpSystem::WarpSystem( eage::ecs::ECSRegistry& registry, eage::ecs::PhysicsSyst
 	: mRegistry( registry )
 	, mPhysicsSystem( physics_system )
 {
-	mPhysicsSystem.RegisterObserver( this );
+	mPhysicsSystem.Subscribe( this );
 }
 
 WarpSystem::~WarpSystem()
 {
-	mPhysicsSystem.UnregisterObserver( this );
+	mPhysicsSystem.Unsubscribe( this );
 }
 
 void

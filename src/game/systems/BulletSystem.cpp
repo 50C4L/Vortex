@@ -25,7 +25,7 @@ BulletSystem::BulletSystem( eage::ecs::ECSRegistry& registry, eage::ecs::RenderS
 	, mRenderSystem( render_system )
 	, mPhysicsSystem( physics_system )
 {
-	mPhysicsSystem.RegisterObserver( this );
+	mPhysicsSystem.Subscribe( this );
 
 	float half_width = static_cast<float>( config::DesignResolution::WIDTH ) * 0.5f;
 	float half_height = static_cast<float>( config::DesignResolution::HEIGHT ) * 0.5f;
@@ -35,7 +35,7 @@ BulletSystem::BulletSystem( eage::ecs::ECSRegistry& registry, eage::ecs::RenderS
 
 BulletSystem::~BulletSystem()
 {
-	mPhysicsSystem.UnregisterObserver( this );
+	mPhysicsSystem.Unsubscribe( this );
 }
 
 BulletPoolId

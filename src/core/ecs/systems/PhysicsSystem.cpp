@@ -178,13 +178,13 @@ PhysicsSystem::Shutdown()
 }
 
 void
-PhysicsSystem::RegisterObserver( Observer* observer )
+PhysicsSystem::Subscribe( Observer* observer )
 {
 	mObservers.insert( observer );
 }
 
 void
-PhysicsSystem::UnregisterObserver( Observer* observer )
+PhysicsSystem::Unsubscribe( Observer* observer )
 {
 	mObservers.erase( observer );
 }
