@@ -32,7 +32,7 @@ namespace vortex
 
 		void ChangeScene( int id );
 
-		void Update();
+		void Update( float dt );
 
 		void FreeAllScenes();
 

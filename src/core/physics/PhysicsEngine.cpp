@@ -22,7 +22,6 @@ PhysicsBody::~PhysicsBody()
 // PhysicsEngine implementation
 PhysicsEngine::PhysicsEngine()
 	: mWorldId( b2_nullWorldId )
-	, mLastUpdateTime( std::chrono::steady_clock::now() )
 {
 }
 
@@ -141,7 +140,7 @@ PhysicsEngine::UpdateBodyTransform( PhysicsBody& body, glm::vec2 position, b2Rot
 }
 
 void
-PhysicsEngine::Update()
+PhysicsEngine::Update( float dt )
 {
 	if( B2_IS_NULL( mWorldId ) )
 	{
@@ -149,14 +148,13 @@ PhysicsEngine::Update()
 		return;
 	}
 
-	// Only step the world if the fixed timestep has elapsed
-	if( std::chrono::steady_clock::now() - mLastUpdateTime < std::chrono::milliseconds(16) )
+	constexpr float FIXED_STEP = 1.f / 60.f;
+	mAccumulator += dt;
+	while( mAccumulator >= FIXED_STEP )
 	{
-		return;
+		b2World_Step( mWorldId, FIXED_STEP, 4 );
+		mAccumulator -= FIXED_STEP;
 	}
-
-	b2World_Step( mWorldId, 1.f / 60.f, 4 );
-	mLastUpdateTime = std::chrono::steady_clock::now();
 
 	ProcessSensorEvents();
 	ProcessContactEvents();

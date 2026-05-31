@@ -34,7 +34,6 @@ MainScene::MainScene( events::InputController& input_controller,
 	, mAudioSystem( audio_system )
 	, mRenderSystem( render_system )
 	, mPhysicsSystem( physics_system )
-	, mLastUpdateTime( std::chrono::high_resolution_clock::now() )
 {
 }
 
@@ -84,14 +83,10 @@ MainScene::OnExit()
 }
 
 void
-MainScene::Update()
+MainScene::Update( float dt )
 {
-	std::chrono::time_point<std::chrono::steady_clock> current_time = std::chrono::steady_clock::now();
-	std::chrono::duration<float, std::milli> delta_time_ms = current_time - mLastUpdateTime;
-	mLastUpdateTime = current_time;
-
 	// System update
-	mPlayerGameplaySystem->Update( delta_time_ms.count() / 1000.f );
+	mPlayerGameplaySystem->Update( dt );
 	mBulletSystem->Update();
 	mAsteroidGameplaySystem->Update();
 

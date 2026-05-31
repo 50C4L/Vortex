@@ -43,7 +43,7 @@ PhysicsSystem::Initialize( glm::vec2 gravity, float pixels_per_meter )
 }
 
 void
-PhysicsSystem::Update() 
+PhysicsSystem::Update( float dt ) 
 {
 	for( auto& [entity, physics] : mECSRegistry.GetComponentMap<PhysicsComponent>() )
 	{
@@ -166,7 +166,7 @@ PhysicsSystem::Update()
 		SyncTransformFromBodies( entity );
 	}
 
-	mPhysicsEngine->Update();
+	mPhysicsEngine->Update( dt );
 }
 
 void

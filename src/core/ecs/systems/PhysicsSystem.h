@@ -47,7 +47,7 @@ namespace eage::ecs
 		///
 		/// Update the physics simulation and sync transforms
 		///
-		void Update();
+		void Update( float dt );
 
 		///
 		/// Shutdown the physics system and clean up resources

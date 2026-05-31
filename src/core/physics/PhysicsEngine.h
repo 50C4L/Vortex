@@ -2,7 +2,6 @@
 #define _EAGE_PHYSICS_ENGINE_H_
 
 #include <memory>
-#include <chrono>
 
 #include <box2d/box2d.h>
 #include <glm/glm.hpp>
@@ -67,7 +66,7 @@ namespace eage::physics
 		///
 		/// Step the physics simulation forward
 		///
-		void Update();
+		void Update( float dt );
 
 		///
 		/// Get the current transform of the specified body
@@ -95,7 +94,7 @@ namespace eage::physics
 
 		b2WorldId mWorldId;
 		b2DebugDraw mDebugDraw;
-		std::chrono::time_point<std::chrono::steady_clock> mLastUpdateTime;
+		float mAccumulator = 0.f;
 
 		PhysicsEventListener* mEventListener = nullptr;
 	};

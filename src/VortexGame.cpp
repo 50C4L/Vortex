@@ -1,5 +1,6 @@
 #include "VortexGame.h"
 
+#include <chrono>
 #include <iostream>
 
 #include <SDL2/SDL.h>
@@ -67,9 +68,13 @@ VortexGame::~VortexGame()
 void
 VortexGame::Run()
 {
+	auto last_frame_time = std::chrono::steady_clock::now();
 	bool quit = false;
 	while( !quit )
 	{
+		auto now = std::chrono::steady_clock::now();
+		float dt = std::chrono::duration<float>( now - last_frame_time ).count();
+		last_frame_time = now;
 		SDL_Event event;
 		while( SDL_PollEvent( &event ) )
 		{
@@ -89,11 +94,10 @@ VortexGame::Run()
 		// Update performance tracker
 		mPerformanceTracker->Update();
 
-		// @todo: delta time should be calulated here and pass down
-		mSceneController->Update();
+		mSceneController->Update( dt );
 
-		mPhysicsSystem->Update();
-		mAudioSystem->Update( 0.f );
+		mPhysicsSystem->Update( dt );
+		mAudioSystem->Update( dt );
 		mSceneGraphSystem->Update();
 		mRenderSystem->Update();
 		mRenderer->Render();

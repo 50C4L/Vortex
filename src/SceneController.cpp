@@ -46,11 +46,11 @@ SceneController::ChangeScene( int id )
 }
 
 void
-SceneController::Update()
+SceneController::Update( float dt )
 {
 	if( mCurrentScene )
 	{
-		mCurrentScene->Update();
+		mCurrentScene->Update( dt );
 	}
 }
 

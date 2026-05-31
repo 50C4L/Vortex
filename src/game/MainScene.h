@@ -6,7 +6,6 @@
 #include <ecs/ECS.h>
 
 #include <memory>
-#include <chrono>
 
 namespace eage::graphics
 {
@@ -46,7 +45,7 @@ namespace vortex
 		virtual void OnEnter() override;
 		virtual uint64_t GetSceneRoot() override;
 		virtual void OnExit() override;
-		virtual void Update() override;
+		virtual void Update( float dt ) override;
 
 	private:
 		void InitializeGenericSystems();
@@ -77,8 +76,6 @@ namespace vortex
 		uint64_t mOnScreenZoneEntity = 0;
 		uint64_t mBackgroundEntity = 0;
 		eage::ecs::Entity mKillCountHudEntity = 0;
-
-		std::chrono::time_point<std::chrono::steady_clock> mLastUpdateTime;
 	};
 }
 
