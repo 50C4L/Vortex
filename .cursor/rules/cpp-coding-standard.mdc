@@ -1,0 +1,49 @@
+---
+description: "C++ coding standard for the Vortex project. Enforces naming conventions, brace style, include guards, and ASCII-only source. Auto-applied to all C++ files."
+globs: ["**/*.cpp", "**/*.h"]
+alwaysApply: false
+---
+
+# C++ Coding Standard — Vortex Project
+
+Always follow these rules when generating or editing C++ code in this workspace.
+
+| Element | Convention | Example |
+|---|---|---|
+| Class / Struct name | PascalCase | `AudioSystem`, `SoundConfig` |
+| Member function | PascalCase | `LoadSound()`, `Update()` |
+| Free function | snake_case | `check_validation_layer_support()` |
+| Local variable | snake_case | `found_layer`, `player_entity` |
+| Class member variable | `m` + PascalCase | `mRegistry`, `mNextSoundId` |
+| Struct public field | snake_case | `pool_size`, `body_id` |
+| Constant | ALL_CAPS | `MAX_FRAMES_IN_FLIGHT` |
+| Enum value | ALL_CAPS | `STATIC`, `DYNAMIC` |
+| Spaces in parens | Always | `SDL_Init( SDL_INIT_VIDEO )` |
+| Braces | Allman | opening brace on its own line |
+| Return type (out-of-line) | Separate line | `void\nVortexGame::Run()` |
+| Indentation | Hard tabs | one tab per level |
+
+## Include Guards
+
+**Never use `#pragma once`. Always use `#ifndef` include guards.**
+
+- Guard name format: `_SCREAMING_SNAKE_CASE_H` (leading underscore, filename words separated by underscores, trailing `_H`)
+- Examples: `VortexGame.h` -> `_VORTEX_GAME_H`, `MainScene.h` -> `_MAIN_SCENE_H`, `UIStyle.h` -> `_UI_STYLE_H`
+- Close with `#endif // _GUARD_NAME` (comment required)
+
+```cpp
+#ifndef _MY_CLASS_H
+#define _MY_CLASS_H
+
+// ... content ...
+
+#endif // _MY_CLASS_H
+```
+
+## Character Encoding
+
+**All source files must use ASCII-only characters in comments, identifiers, and string literals.**
+
+- Never use Unicode punctuation in comments or strings: em-dash (`--`), en-dash, curly quotes, ellipsis, etc.
+- Use plain ASCII equivalents instead: `-` or `--` for dashes, `"` and `'` for quotes, `...` for ellipsis.
+- Reason: MSVC on non-Unicode system code pages (e.g. 936) raises **C4819** for any non-ASCII character in a source file, treating it as a build warning.

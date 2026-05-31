@@ -1,0 +1,84 @@
+---
+description: "Asset loading pipeline for Vortex. Covers ImageLoader (STB), TextureAtlas (JSON UV atlas), and AnimationClip (JSON frame sequences). Auto-applied when editing src/core/assets/."
+globs: ["src/core/assets/**/*.cpp", "src/core/assets/**/*.h"]
+alwaysApply: false
+---
+
+# Assets Module
+
+## Purpose
+
+Data-driven asset loading pipeline. `ImageLoader` reads image files from disk; `TextureAtlas` maps subtexture names to UV rectangles from a JSON atlas file; `AnimationClip` defines a frame sequence (with per-frame durations) referencing a texture atlas.
+
+## Key Classes
+
+| Class | Responsibility |
+|---|---|
+| `ImageLoader` | Wraps STB image; loads PNG/JPEG/BMP into a raw `Image` struct |
+| `ImageLoader::Image` | POD: `data` (raw bytes), `width`, `height`, `num_channels` |
+| `TextureAtlas` | Parses JSON atlas; maps subtexture name -> `SubTexture` (uv_min / uv_max); supports V-flip |
+| `TextureAtlas::SubTexture` | `name`, `uv_min` (vec2), `uv_max` (vec2) |
+| `AnimationClip` | Parses JSON clip definition; stores ordered `Frame` array |
+| `AnimationClip::Frame` | `uv_min`, `uv_max`, `duration_sec` |
+
+## API
+
+```cpp
+// Load a raw image (used by Renderer::UploadImage)
+auto img = ImageLoader::LoadImage( "textures/ship.png" );
+// img.data, img.width, img.height, img.num_channels
+
+// Load a texture atlas
+TextureAtlas atlas( "resources/textures/ship/ship_texatlas.json" );
+auto sub = atlas.GetSubTexture( "ship_idle" );  // returns (0,0)-(1,1) default if not found
+atlas.Flip();  // invert V for OpenGL-style coordinate systems
+
+// Load an animation clip (references an atlas internally)
+AnimationClip clip( "resources/textures/ship/ship.ftpp" );
+int frame_count = clip.GetFrameCount();
+auto frame = clip.GetFrame( 0 );  // frame.uv_min, frame.uv_max, frame.duration_sec
+```
+
+## JSON Formats
+
+**TextureAtlas** (`*.json`):
+```json
+{
+  "frames": [
+    { "name": "ship_idle", "x": 0, "y": 0, "w": 64, "h": 64 }
+  ],
+  "meta": { "size": { "w": 256, "h": 256 } }
+}
+```
+UVs are computed as `uv = pixel / atlas_size`.
+
+**AnimationClip** (`*.ftpp`):
+```json
+{
+  "atlas": "ship_texatlas.json",
+  "flip": false,
+  "frames": [
+    { "name": "ship_idle_0", "duration": 0.1 },
+    { "name": "ship_idle_1", "duration": 0.1 }
+  ]
+}
+```
+
+## Key Patterns
+
+- **Composition:** `AnimationClip` loads a `TextureAtlas` internally and resolves frame UV rects at construction time -- no runtime atlas lookup during animation.
+- **UV flip:** Different rendering backends use different Y-axis conventions. Call `atlas.Flip()` (or set `"flip": true` in clip JSON) when the atlas was authored top-origin.
+- **Default fallback:** `GetSubTexture()` returns `(0,0)-(1,1)` if the name is not found -- logs a warning but won't crash.
+- **STB ownership:** `Image::data` is heap-allocated by STB. Lifetime matches the `Image` struct.
+
+## DOs
+
+- Pass `ImageLoader::Image` directly to `Renderer::UploadImage()` -- they pair naturally
+- Use `AnimationClip` as the source of truth for animated sprites; don't hardcode UV rects
+- Check `GetFrameCount() > 0` before using a clip (JSON parse failures produce empty clips)
+
+## DON'Ts
+
+- Don't call `Flip()` on an atlas that's already been flipped -- UVs will be wrong
+- Don't store `Image::data` pointer beyond the `Image` struct lifetime
+- Don't bypass `AnimationClip` and manually index `TextureAtlas` for animation -- use `AnimatedSprite` from the animation module

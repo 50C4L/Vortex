@@ -1,0 +1,52 @@
+---
+description: "Project-wide instructions for the Vortex C++20 game engine. Always applied."
+alwaysApply: true
+---
+
+# Project Instructions
+
+This is a modern C++20 project. Using a custom Vulkan render engine as backend. The game layer uses ECS architecture.
+
+## Guidelines
+
+- Prefer RAII over manual memory management
+- Avoid raw pointers unless required
+- Follow the C++ coding standard (see `cpp-coding-standard` rule — auto-applied to all `.cpp`/`.h` files):
+  - Classes and structs: PascalCase
+  - Member functions: PascalCase
+  - Free functions: snake_case
+  - Local variables: snake_case
+  - Class member variables: `m` prefix + PascalCase (e.g. `mRegistry`)
+  - Struct public fields: snake_case (no prefix)
+  - Spaces inside parentheses: always (e.g. `Foo( arg )`)
+  - Brace style: Allman (opening brace on its own line)
+  - Out-of-line function definitions: return type on its own line above `Class::Method()`
+  - Indentation: hard tabs
+
+## Architecture
+
+Under directory `src/`:
+- Immediate files: game entry point and main loop
+- `core/`: Core engine code (windowing, input, logging)
+  - Each folder under `core/` is a module
+  - Code in `core/` must be platform-agnostic and not depend on game-specific code
+- `game/`: Game layer — ECS systems, components, game logic
+
+## Build System
+
+CMake
+
+## Module Rules
+
+The following rules are auto-applied based on file path. They contain architecture details, key APIs, and DOs/DON'Ts for each module:
+
+| Module path | Rule |
+|---|---|
+| `src/core/graphics/` | `graphics-module` |
+| `src/core/ecs/` | `ecs-module` |
+| `src/core/assets/` | `assets-module` |
+| `src/core/audio/` | `audio-module` |
+| `src/core/physics/` | `physics-module` |
+| `src/core/animation/` | `animation-module` |
+| `src/core/events/` | `events-module` |
+| `src/core/utility/` | `utility-module` |
