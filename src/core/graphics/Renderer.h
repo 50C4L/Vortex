@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <vulkan/vulkan.hpp>
+#include <profiling/AbstractGPUTimingProvider.h>
 
 struct SDL_Window;
 
@@ -27,7 +28,7 @@ namespace eage::graphics
 	///
 	/// Renderer class
 	///
-	class Renderer
+	class Renderer : public eage::profiling::AbstractGPUTimingProvider
 	{
 	public:
 		struct Frame
@@ -102,7 +103,7 @@ namespace eage::graphics
 		};
 		BuiltInDescriptorSetLayouts& GetBuiltInDescriptorSetLayouts();
 
-		float GetGPUFrameTime() const { return mGPUFrameTime; }
+		float GetGPUFrameTime() const override { return mGPUFrameTime; }
 
 		// -- Render pass management --
 

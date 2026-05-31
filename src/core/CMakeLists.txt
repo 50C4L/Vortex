@@ -135,6 +135,7 @@ add_library(eage_core STATIC
 	./physics/PhysicsEngine.cpp
 	./physics/PhysicsEventListener.h
 
+	./profiling/AbstractGPUTimingProvider.h
 	./profiling/PerformanceTracker.h
 	./profiling/PerformanceTracker.cpp
 

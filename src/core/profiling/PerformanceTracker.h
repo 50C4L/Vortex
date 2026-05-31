@@ -3,17 +3,14 @@
 
 #include <chrono>
 
-namespace eage::graphics
-{
-	class Renderer;
-}
+#include "AbstractGPUTimingProvider.h"
 
 namespace eage::profiling
 {
 	class PerformanceTracker
 	{
 	public:
-		PerformanceTracker( graphics::Renderer& renderer );
+		PerformanceTracker( AbstractGPUTimingProvider& gpu_timing_provider );
 		
 		void Update();
 		void DrawDebugGUI();
@@ -26,7 +23,7 @@ namespace eage::profiling
 		float GetGPUFrameTime() const { return mGPUFrameTime; }
 		
 	private:
-		graphics::Renderer& mRenderer;
+		AbstractGPUTimingProvider& mGPUTimingProvider;
 
 		bool mEnabled = true;
 		float mFPS = 0.0f;

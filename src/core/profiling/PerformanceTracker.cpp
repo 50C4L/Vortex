@@ -1,12 +1,11 @@
 #include "PerformanceTracker.h"
 
 #include <imgui/imgui.h>
-#include <graphics/Renderer.h>
 
 using namespace eage::profiling;
 
-PerformanceTracker::PerformanceTracker( graphics::Renderer& renderer )
-	: mRenderer( renderer )
+PerformanceTracker::PerformanceTracker( AbstractGPUTimingProvider& gpu_timing_provider )
+	: mGPUTimingProvider( gpu_timing_provider )
 	, mLastFrameTime(std::chrono::steady_clock::now())
 {
 }
@@ -32,7 +31,7 @@ PerformanceTracker::Update()
 	mFPS = 1000.0f / mCPUFrameTime;
 	
 	// Get actual GPU frame time from renderer
-	mGPUFrameTime = mRenderer.GetGPUFrameTime();
+	mGPUFrameTime = mGPUTimingProvider.GetGPUFrameTime();
 }
 
 void
