@@ -30,3 +30,10 @@ Build system:
 
 Module Skills (load before working in these areas):
 - `src/core/graphics/` → `.github/skills/graphics-module/SKILL.md`
+- `src/core/ecs/` → `.github/skills/ecs-module/SKILL.md`
+- `src/core/assets/` → `.github/skills/assets-module/SKILL.md`
+- `src/core/audio/` → `.github/skills/audio-module/SKILL.md`
+- `src/core/physics/` → `.github/skills/physics-module/SKILL.md`
+- `src/core/animation/` → `.github/skills/animation-module/SKILL.md`
+- `src/core/events/` → `.github/skills/events-module/SKILL.md`
+- `src/core/utility/` → `.github/skills/utility-module/SKILL.md`
