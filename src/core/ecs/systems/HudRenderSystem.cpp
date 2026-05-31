@@ -1,19 +1,18 @@
 #include "HudRenderSystem.h"
+#include "AbstractHudRenderer.h"
 
-#include <imgui/imgui.h>
+#include <glm/glm.hpp>
 
 #include <ecs/ECS.h>
 #include <ecs/components/Hud.h>
-#include <graphics/ImGuiRenderPass.h>
 
 using namespace eage::ecs;
-using namespace eage::graphics;
 
 namespace
 {
-	ImVec2 resolve_anchor( const glm::vec2& norm_pos, const glm::vec2& offset_px,
-						   HudAnchor anchor, const ImVec2& viewport_size,
-						   const ImVec2& widget_size )
+	glm::vec2 resolve_anchor( const glm::vec2& norm_pos, const glm::vec2& offset_px,
+						   HudAnchor anchor, const glm::vec2& viewport_size,
+						   const glm::vec2& widget_size )
 	{
 		float base_x = norm_pos.x * viewport_size.x + offset_px.x;
 		float base_y = norm_pos.y * viewport_size.y + offset_px.y;
@@ -52,24 +51,22 @@ namespace
 			break;
 		}
 
-		return ImVec2( base_x, base_y );
+		return glm::vec2( base_x, base_y );
 	}
 }
 
-HudRenderSystem::HudRenderSystem( ECSRegistry& registry, ImGuiRenderPass& imgui_pass, float scale_factor )
+HudRenderSystem::HudRenderSystem( ECSRegistry& registry, AbstractHudRenderer& hud_renderer, float scale_factor )
 	: mRegistry( registry )
-	, mImGuiPass( imgui_pass )
+	, mHudRenderer( hud_renderer )
 	, mScaleFactor( scale_factor )
 {
-	mImGuiPass.AddOverlayCallback( [this]() { Render(); } );
+	mHudRenderer.RegisterRenderCallback( [this]() { Render(); } );
 }
 
 void
 HudRenderSystem::Render()
 {
-	ImDrawList* draw_list = ImGui::GetForegroundDrawList();
-	const ImGuiViewport* vp = ImGui::GetMainViewport();
-	ImVec2 viewport_size = vp->Size;
+	glm::vec2 viewport_size = mHudRenderer.GetViewportSize();
 
 	for( const auto& [entity, hud_tf] : mRegistry.GetComponentMap<HudTransformComponent>() )
 	{
@@ -81,21 +78,14 @@ HudRenderSystem::Render()
 		if( mRegistry.HasComponent<HudTextComponent>( entity ) )
 		{
 			const auto& text_cmp = mRegistry.GetComponent<HudTextComponent>( entity );
-			ImFont* font = mImGuiPass.GetFont( text_cmp.font_size );
 
-			ImVec2 text_size = font->CalcTextSizeA(
-				font->FontSize, FLT_MAX, 0.0f, text_cmp.text.c_str() );
+			glm::vec2 text_size = mHudRenderer.MeasureText( text_cmp.text, text_cmp.font_size );
 
-			ImVec2 screen_pos = resolve_anchor(
+			glm::vec2 screen_pos = resolve_anchor(
 				hud_tf.position, hud_tf.offset_px * mScaleFactor, hud_tf.anchor,
 				viewport_size, text_size );
 
-			ImU32 color = ImGui::ColorConvertFloat4ToU32( ImVec4(
-				text_cmp.color.r, text_cmp.color.g,
-				text_cmp.color.b, text_cmp.color.a ) );
-
-			draw_list->AddText( font, font->FontSize, screen_pos, color,
-				text_cmp.text.c_str() );
+			mHudRenderer.DrawText( screen_pos, text_cmp.text, text_cmp.color, text_cmp.font_size );
 		}
 	}
 }

@@ -65,6 +65,8 @@ add_library(eage_core STATIC
 	./graphics/SceneRenderPass.cpp
 	./graphics/ImGuiRenderPass.h
 	./graphics/ImGuiRenderPass.cpp
+	./graphics/ImGuiHudRenderer.h
+	./graphics/ImGuiHudRenderer.cpp
 	./graphics/ImageUtilities.h
 	./graphics/ImageUtilities.cpp
 	./graphics/ImGUILifetime.h
@@ -123,6 +125,7 @@ add_library(eage_core STATIC
 	./ecs/components/Render.h
 	./ecs/systems/AudioSystem.h
 	./ecs/systems/AudioSystem.cpp
+	./ecs/systems/AbstractHudRenderer.h
 	./ecs/systems/HudRenderSystem.h
 	./ecs/systems/HudRenderSystem.cpp
 	./ecs/systems/PhysicsSystem.h

@@ -12,6 +12,7 @@ namespace eage::graphics
 	class Renderer;
 	class SceneRenderPass;
 	class ImGuiRenderPass;
+	class ImGuiHudRenderer;
 }
 
 namespace events
@@ -59,6 +60,7 @@ namespace vortex
 		std::unique_ptr<eage::graphics::Renderer> mRenderer;
 		std::unique_ptr<eage::graphics::SceneRenderPass> mScenePass;
 		std::unique_ptr<eage::graphics::ImGuiRenderPass> mImGuiPass;
+		std::unique_ptr<eage::graphics::ImGuiHudRenderer> mImGuiHudRenderer;
 		std::unique_ptr<SceneController> mSceneController;
 		std::unique_ptr<events::InputController> mInputController;
 		std::unique_ptr<eage::audio::AudioMixer> mAudioMixer;

@@ -11,6 +11,7 @@
 #include <graphics/Renderer.h>
 #include <graphics/SceneRenderPass.h>
 #include <graphics/ImGuiRenderPass.h>
+#include <graphics/ImGuiHudRenderer.h>
 #include <graphics/ManagedVulkanResources.h>
 #include <events/InputController.h>
 #include <events/KeyCode.h>
@@ -53,6 +54,7 @@ VortexGame::~VortexGame()
 
 	mPerformanceTracker.reset();
 	mHudRenderSystem.reset();
+	mImGuiHudRenderer.reset();
 	mRenderSystem.reset();
 	mSceneGraphSystem.reset();
 	mPhysicsSystem.reset();
@@ -208,7 +210,8 @@ VortexGame::Init()
 	} );
 
 	// Initialize HudRenderSystem (registers its own overlay callback)
-	mHudRenderSystem = std::make_unique<eage::ecs::HudRenderSystem>( *mECSRegistry, *mImGuiPass, ui_scale );
+	mImGuiHudRenderer = std::make_unique<eage::graphics::ImGuiHudRenderer>( *mImGuiPass );
+	mHudRenderSystem = std::make_unique<eage::ecs::HudRenderSystem>( *mECSRegistry, *mImGuiHudRenderer, ui_scale );
 
 	return true;
 }
