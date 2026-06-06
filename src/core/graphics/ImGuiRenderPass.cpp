@@ -154,17 +154,21 @@ ImGuiRenderPass::Prepare( size_t frame_index )
 }
 
 void
-ImGuiRenderPass::Execute( vk::CommandBuffer& cmd, const ExecutionContext& ctx )
+ImGuiRenderPass::Execute( CommandBuffer& buffer, const FrameContext& ctx )
 {
+	vk::CommandBuffer cmd( static_cast<VkCommandBuffer>( buffer.GetNativeHandle() ) );
+	vk::ImageView swapchain_view( static_cast<VkImageView>( ctx.swapchain_image_view_handle ) );
+	vk::Extent2D extent{ ctx.swapchain_width, ctx.swapchain_height };
+
 	vk::ClearValue clear_value;
 	clear_value.color = vk::ClearColorValue{ std::array<float,4>{ 0.f, 0.f, 0.f, 1.f } };
 	vk::RenderingAttachmentInfo color_attachment_info = create_attachment_info(
-		ctx.swapchain_image_view, clear_value, vk::ImageLayout::eColorAttachmentOptimal );
+		swapchain_view, clear_value, vk::ImageLayout::eColorAttachmentOptimal );
 
 	vk::RenderingInfo render_info{};
 	render_info.colorAttachmentCount = 1;
 	render_info.pColorAttachments = &color_attachment_info;
-	render_info.renderArea = vk::Rect2D{ vk::Offset2D{ 0, 0 }, ctx.swapchain_extent };
+	render_info.renderArea = vk::Rect2D{ vk::Offset2D{ 0, 0 }, extent };
 	render_info.layerCount = 1;
 
 	cmd.beginRendering( render_info );

@@ -1,11 +1,13 @@
 #ifndef _EAGE_ABSTRACT_RENDER_PASS_H_
 #define _EAGE_ABSTRACT_RENDER_PASS_H_
 
+#include <cstdint>
 #include <vector>
 #include <optional>
 
 #include <glm/glm.hpp>
-#include <vulkan/vulkan.hpp>
+
+#include <graphics/CommandBuffer.h>
 
 namespace eage::graphics
 {
@@ -20,11 +22,15 @@ namespace eage::graphics
 		std::optional<float>       clear_depth;
 	};
 
-	struct ExecutionContext
+	/// Per-frame execution context passed to AbstractRenderPass::Execute().
+	/// All platform-specific handle types are stored as opaque void* to avoid
+	/// leaking Vulkan types through this interface.
+	struct FrameContext
 	{
-		vk::ImageView  swapchain_image_view;
-		vk::Extent2D   swapchain_extent;
-		size_t         frame_index;
+		void*    swapchain_image_view_handle; ///< VkImageView; cast in graphics internals only.
+		uint32_t swapchain_width;
+		uint32_t swapchain_height;
+		size_t   frame_index;
 	};
 
 	class AbstractRenderPass
@@ -40,7 +46,7 @@ namespace eage::graphics
 		}
 
 		/// Record GPU commands into cmd. Barriers already inserted by Renderer.
-		virtual void Execute( vk::CommandBuffer& cmd, const ExecutionContext& ctx ) = 0;
+		virtual void Execute( CommandBuffer& cmd, const FrameContext& ctx ) = 0;
 	};
 }
 

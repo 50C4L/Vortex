@@ -60,8 +60,9 @@ SceneRenderPass::GetDesc() const
 }
 
 void
-SceneRenderPass::Execute( vk::CommandBuffer& cmd, const ExecutionContext& ctx )
+SceneRenderPass::Execute( CommandBuffer& buffer, const FrameContext& ctx )
 {
+	vk::CommandBuffer cmd( static_cast<VkCommandBuffer>( buffer.GetNativeHandle() ) );
 	std::optional<vk::ClearValue> color_clear;
 	if( mDesc.clear_color.has_value() )
 	{

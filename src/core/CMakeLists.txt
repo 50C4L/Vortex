@@ -61,6 +61,7 @@ add_library(eage_core STATIC
 	./graphics/BuiltInMeshes.h
 	./graphics/BuiltInMeshes.cpp
 	./graphics/AbstractRenderPass.h
+	./graphics/CommandBuffer.h
 	./graphics/SceneRenderPass.h
 	./graphics/SceneRenderPass.cpp
 	./graphics/ImGuiRenderPass.h

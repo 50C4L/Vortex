@@ -47,7 +47,7 @@ namespace eage::graphics
 
 		void Prepare( size_t frame_index ) override;
 
-		void Execute( vk::CommandBuffer& cmd, const ExecutionContext& ctx ) override;
+		void Execute( CommandBuffer& cmd, const FrameContext& ctx ) override;
 
 		void AddOverlayCallback( std::function<void()> callback );
 

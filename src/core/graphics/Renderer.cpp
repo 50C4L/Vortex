@@ -159,12 +159,15 @@ Renderer::Render()
 			transition_image( cmd, desc.depth_target->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal );
 		}
 
-		ExecutionContext ctx{};
-		ctx.swapchain_image_view = *mSwapChain->GetImageViews()[ next_image_index ];
-		ctx.swapchain_extent = mSwapChain->GetExtent();
-		ctx.frame_index = current_frame;
+		CommandBuffer cmd_buffer( static_cast<void*>( cmd  ) );
 
-		pass->Execute( cmd, ctx );
+		FrameContext frame_ctx{};
+		frame_ctx.swapchain_image_view_handle = static_cast<void*>( static_cast<VkImageView>( *mSwapChain->GetImageViews()[ next_image_index ] ) );
+		frame_ctx.swapchain_width = mSwapChain->GetExtent().width;
+		frame_ctx.swapchain_height = mSwapChain->GetExtent().height;
+		frame_ctx.frame_index = current_frame;
+
+		pass->Execute( cmd_buffer, frame_ctx );
 	}
 
 	// Transition swapchain to present

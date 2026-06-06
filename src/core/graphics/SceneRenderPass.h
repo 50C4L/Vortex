@@ -19,7 +19,7 @@ namespace eage::graphics
 
 		const RenderPassDesc& GetDesc() const override;
 
-		void Execute( vk::CommandBuffer& cmd, const ExecutionContext& ctx ) override;
+		void Execute( CommandBuffer& cmd, const FrameContext& ctx ) override;
 
 		void AddRenderInfo( RenderInfo info );
 
