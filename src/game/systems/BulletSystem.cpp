@@ -146,7 +146,7 @@ BulletSystem::Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 directio
 void
 BulletSystem::Update()
 {
-	for( auto& [entity, bullet] : mRegistry.GetComponentMap<BulletComponent>() )
+	for( auto [entity, bullet] : mRegistry.GetComponentMap<BulletComponent>() )
 	{
 		if( !bullet.is_alive )
 		{

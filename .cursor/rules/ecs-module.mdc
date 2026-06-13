@@ -14,7 +14,8 @@ Provides the Entity-Component-System architecture for the game layer. `ECSRegist
 
 | Class | Responsibility |
 |---|---|
-| `ECSRegistry` | Type-erased component store; template API for compile-time safety; uses `std::type_index` -> `std::any` internally |
+| `ComponentPool<T>` | Sparse-set dense storage per component type; cache-friendly iteration over `mDense` |
+| `ECSRegistry` | Type-erased component store; template API for compile-time safety; uses `std::type_index` -> `ComponentPool<T>` internally |
 | `ResourceManager<PtrType>` | Generic ref-counted resource pool; stores any smart-pointer type; returns opaque `ResourceId` |
 | `TransformComponent` | Position / rotation / scale with dirty-flag caching; world matrix updated by `SceneGraphSystem` |
 | `SceneGraphComponent` | Parent entity ID + children list; drives hierarchical transform propagation |
@@ -43,11 +44,13 @@ if( registry.HasComponent<RenderComponent>( entity ) )
     auto& render = registry.GetComponent<RenderComponent>( entity );
 }
 
-// Iterate all entities with a given component type
-for( auto& [entity, transform] : registry.GetComponentMap<TransformComponent>() )
+// Iterate all entities with a given component type (dense array walk)
+for( auto [entity, transform] : registry.GetComponentMap<TransformComponent>() )
 {
     // ...
 }
+
+registry.RemoveComponent<TransformComponent>( entity );
 ```
 
 ## ResourceManager API
@@ -109,7 +112,7 @@ physics_system.RegisterObserver( &my_listener );
 
 ## DON'Ts
 
-- Don't store raw pointers to components across frames -- component maps can reallocate
+- Don't store raw pointers to components across frames -- dense pools can reallocate on `Remove`
 - Don't call `PhysicsEngine` methods directly from game code -- go through `PhysicsSystem`
 - Don't add engine-specific (graphics/audio/physics) includes to component headers -- keep them POD-friendly
 - Don't manually manage `ResourceId` ref counts unless you explicitly call `AddReference()`

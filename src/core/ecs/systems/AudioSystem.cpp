@@ -83,7 +83,7 @@ AudioSystem::Stop( eage::ecs::ResourceId sound_id )
 void
 AudioSystem::ProcessAudioEvents()
 {
-	for( auto& [entity, audio_event] : mRegistry.GetComponentMap<AudioEventComponent>() )
+	for( auto [entity, audio_event] : mRegistry.GetComponentMap<AudioEventComponent>() )
 	{
 		if( !mRegistry.HasComponent<AudioSourceComponent>( entity ) )
 		{

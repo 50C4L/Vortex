@@ -30,7 +30,7 @@ PlayerInputSystem::OnInputEvent( uint64_t event_id, bool on )
 {
 	auto event = static_cast<GameEvents>( event_id );
 	// Update player component based on events
-	for( auto& [entity, player] : mRegistry.GetComponentMap<PlayerComponent>() )
+	for( auto [entity, player] : mRegistry.GetComponentMap<PlayerComponent>() )
 	{
 		switch( event ) 
 		{

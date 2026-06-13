@@ -68,7 +68,7 @@ HudRenderSystem::Render()
 {
 	glm::vec2 viewport_size = mHudRenderer.GetViewportSize();
 
-	for( const auto& [entity, hud_tf] : mRegistry.GetComponentMap<HudTransformComponent>() )
+	for( auto [entity, hud_tf] : mRegistry.GetComponentMap<HudTransformComponent>() )
 	{
 		if( !hud_tf.visible )
 		{

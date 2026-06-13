@@ -2,15 +2,30 @@
 #define _EAGE_ECS_H_
 
 #include <cstdint>
-#include <unordered_map>
+#include <memory>
 #include <typeindex>
-#include <any>
+#include <unordered_map>
+
+#include <ecs/ComponentPool.h>
 
 namespace eage
 {
 namespace ecs
 {
 using Entity = uint64_t;
+
+class AbstractComponentPool
+{
+public:
+	virtual ~AbstractComponentPool() = default;
+};
+
+template<typename T>
+class TypedComponentPool : public AbstractComponentPool
+{
+public:
+	ComponentPool<T> pool;
+};
 
 ///
 /// ECSRegistry: Manages entities and their components
@@ -20,15 +35,15 @@ class ECSRegistry
 public:
 	ECSRegistry() = default;
 
-	ECSRegistry(const ECSRegistry&) = delete;
-	ECSRegistry& operator=(const ECSRegistry&) = delete;
+	ECSRegistry( const ECSRegistry& ) = delete;
+	ECSRegistry& operator=( const ECSRegistry& ) = delete;
 
 	///
 	/// Create a new entity
 	///
 	/// @return
 	///   New entity ID
-	/// 
+	///
 	Entity CreateEntity()
 	{
 		return mNextEntity++;
@@ -38,66 +53,88 @@ public:
 	/// Add a component to an entity
 	///
 	template<typename T>
-	void AddComponent(Entity e, T&& component )
+	void AddComponent( Entity e, T&& component )
 	{
-		auto& map = GetComponentMap<T>();
-		map.emplace( e, std::move(component) );
+		GetComponentMap<T>().Add( e, std::forward<T>( component ) );
 	}
 
 	///
 	/// Check if an entity has a specific component
 	///
 	template<typename T>
-	bool HasComponent(Entity e) const
+	bool HasComponent( Entity e ) const
 	{
-		auto& map = GetComponentMap<T>();
-		return map.find(e) != map.end();
+		return GetComponentMap<T>().Has( e );
 	}
 
 	///
 	/// Get a component of an entity
 	///
 	template<typename T>
-	T& GetComponent(Entity e)
+	T& GetComponent( Entity e )
 	{
-		return GetComponentMap<T>().at(e);
+		return GetComponentMap<T>().Get( e );
 	}
 
 	///
-	/// Get a map of all entities and their components of a specific type
+	/// Get a component of an entity (const)
 	///
 	template<typename T>
-	const std::unordered_map<Entity, T>& GetComponentMap() const
+	const T& GetComponent( Entity e ) const
 	{
-		auto type = std::type_index( typeid(T) );
+		return GetComponentMap<T>().Get( e );
+	}
+
+	///
+	/// Remove a component from an entity
+	///
+	template<typename T>
+	void RemoveComponent( Entity e )
+	{
+		GetComponentMap<T>().Remove( e );
+	}
+
+	///
+	/// Get the dense component pool for a specific type
+	///
+	template<typename T>
+	const ComponentPool<T>& GetComponentMap() const
+	{
+		auto type = std::type_index( typeid( T ) );
 		auto it = mComponents.find( type );
-		
+
 		if( it == mComponents.end() )
 		{
-			// Return empty map if component type doesn't exist
-			static const std::unordered_map<Entity, T> empty_map;
-			return empty_map;
+			static const ComponentPool<T> empty_pool;
+			return empty_pool;
 		}
-		return std::any_cast<const std::unordered_map<Entity, T>&>( it->second );
+
+		return static_cast<const TypedComponentPool<T>*>( it->second.get() )->pool;
 	}
 
 	///
-	/// Get a map of all entities and their components of a specific type (non-const)
+	/// Get the dense component pool for a specific type (non-const)
 	///
 	template<typename T>
-	std::unordered_map<Entity, T>& GetComponentMap() 
+	ComponentPool<T>& GetComponentMap()
 	{
-		auto type = std::type_index(typeid(T));
-		if( mComponents.find(type) == mComponents.end() )
+		auto type = std::type_index( typeid( T ) );
+		auto it = mComponents.find( type );
+
+		if( it == mComponents.end() )
 		{
-			mComponents.emplace( type, std::unordered_map<Entity, T>{} ); // Use emplace to avoid copying
+			auto typed_pool = std::make_unique<TypedComponentPool<T>>();
+			auto* pool = &typed_pool->pool;
+			mComponents.emplace( type, std::move( typed_pool ) );
+			return *pool;
 		}
-		return std::any_cast<std::unordered_map<Entity, T>&>(mComponents[type]);
+
+		return static_cast<TypedComponentPool<T>*>( it->second.get() )->pool;
 	}
 
 private:
 	Entity mNextEntity = 1;
-	std::unordered_map<std::type_index, std::any> mComponents;
+	std::unordered_map<std::type_index, std::unique_ptr<AbstractComponentPool>> mComponents;
 };
 
 }

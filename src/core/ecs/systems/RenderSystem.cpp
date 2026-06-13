@@ -329,7 +329,7 @@ struct RenderSystem::Impl
 	void Update()
 	{
 		auto& renderable_entities = mECSRegistry.GetComponentMap<RenderComponent>();
-		for( const auto& [entity, render_cmp] : renderable_entities )
+		for( auto [entity, render_cmp] : renderable_entities )
 		{
 			if( !render_cmp.visible )
 			{

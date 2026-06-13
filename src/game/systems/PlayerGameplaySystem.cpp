@@ -173,7 +173,7 @@ void
 PlayerGameplaySystem::Update( float delta_time_sec )
 {
 	// Get only entities with PlayerComponent (much smaller set)
-	for( auto& [entity, player] : mRegistry.GetComponentMap<PlayerComponent>() )
+	for( auto [entity, player] : mRegistry.GetComponentMap<PlayerComponent>() )
 	{
 		if( !mRegistry.HasComponent<HealthComponent>( entity ) )
 		{

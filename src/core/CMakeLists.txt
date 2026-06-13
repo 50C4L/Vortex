@@ -117,6 +117,7 @@ add_library(eage_core STATIC
 	./audio/AudioMixer.h
 	./audio/AudioMixer.cpp
 
+	./ecs/ComponentPool.h
 	./ecs/ECS.h
 	./ecs/ResourceManager.h
 	./ecs/components/Audio.h
