@@ -20,10 +20,10 @@ using namespace animtool;
 
 namespace
 {
-	constexpr int WINDOW_WIDTH = 1280;
-	constexpr int WINDOW_HEIGHT = 720;
-	constexpr uint32_t SCENE_WIDTH = 640;
-	constexpr uint32_t SCENE_HEIGHT = 360;
+	constexpr int WINDOW_WIDTH = 1920;
+	constexpr int WINDOW_HEIGHT = 1080;
+	constexpr uint32_t SCENE_WIDTH = 1920;
+	constexpr uint32_t SCENE_HEIGHT = 1080;
 }
 
 AnimToolApp::AnimToolApp()
