@@ -9,6 +9,7 @@
 
 #include <utility/Pointers.h>
 #include <utility/Logger.h>
+#include <utility/Filesystem.h>
 #include <graphics/Renderer.h>
 #include <graphics/SceneRenderPass.h>
 #include <graphics/ImGuiRenderPass.h>
@@ -114,6 +115,7 @@ bool
 VortexGame::Init()
 {
 	utility::GetLogger().RegisterThread( std::this_thread::get_id(), "Main" );
+	utility::init_content_working_directory();
 
 	// Initialize SDL
 	if( SDL_Init( SDL_INIT_VIDEO ) != 0 )

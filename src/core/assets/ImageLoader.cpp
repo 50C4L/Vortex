@@ -3,7 +3,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
+#include <utility/Logger.h>
+
 using namespace assets;
+using namespace utility;
 
 ImageLoader::ImageLoader()
 {
@@ -25,6 +28,10 @@ ImageLoader::LoadImage( const std::string& filename )
 	{
 		image.data = std::vector<unsigned char>( data, data + image.width * image.height * image.num_channels );
 		stbi_image_free( data );
+	}
+	else
+	{
+		LOG_ERROR( "Failed to load image: " + filename );
 	}
 
 	return image;

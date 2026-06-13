@@ -102,6 +102,12 @@ ManagedBuffer::Create( VmaAllocator& allocator, size_t buffer_size, vk::BufferUs
 		delete buffer;
 	} );
 
+	if( buffer_size == 0 )
+	{
+		LOG_ERROR( "Cannot create buffer with zero size" );
+		throw std::runtime_error( "Cannot create buffer with zero size" );
+	}
+
 	if( vmaCreateBuffer(
 		allocator,
 		reinterpret_cast<VkBufferCreateInfo*>( &buffer_info ),

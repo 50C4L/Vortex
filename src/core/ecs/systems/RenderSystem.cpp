@@ -272,6 +272,11 @@ struct RenderSystem::Impl
 
 		assets::ImageLoader image_loader;
 		auto image = image_loader.LoadImage( file_path );
+		if( image.data.empty() || image.width <= 0 || image.height <= 0 )
+		{
+			LOG_ERROR( "Invalid image data for: " + file_path );
+			throw std::runtime_error( "Failed to load image: " + file_path );
+		}
 
 		auto texture = mRenderer.UploadImage(
 			image.data.data(), sizeof( unsigned char ) * image.data.size(),

@@ -146,6 +146,7 @@ add_library(eage_core STATIC
 	./profiling/PerformanceTracker.cpp
 
 	./utility/Filesystem.h
+	./utility/Filesystem.cpp
 	./utility/Pointers.h
 	./utility/Logger.h
 	./utility/JsonParser.h

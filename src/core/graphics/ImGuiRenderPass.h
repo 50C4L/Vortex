@@ -53,6 +53,12 @@ namespace eage::graphics
 
 		void ProcessEvent( const SDL_Event& event );
 
+		/// Reserve the top portion of the work area (below the main menu bar) for tool UI.
+		/// 0.0 = full-scene background (game). e.g. 0.3 = scene image starts below the top 30%.
+		void SetSceneViewportTopRatio( float ratio );
+
+		void* GetSceneTextureId() const;
+
 	private:
 		std::unique_ptr<ImGUILifetime> mLifetime;
 		ManagedImage& mSceneColorTarget;
@@ -64,6 +70,7 @@ namespace eage::graphics
 		std::vector<std::function<void()>> mOverlayCallbacks;
 
 		std::array<ImFont*, static_cast<size_t>( eage::ecs::HudFontSize::COUNT )> mFonts{};
+		float mSceneViewportTopRatio = 0.f;
 	};
 }
 

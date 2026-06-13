@@ -124,27 +124,30 @@ ImGuiRenderPass::Prepare( size_t frame_index )
 	ImGui_ImplSDL2_NewFrame();
 	ImGui::NewFrame();
 
-	// Fullscreen borderless window displaying the scene texture
-	const ImGuiViewport* vp = ImGui::GetMainViewport();
-	ImGui::SetNextWindowPos( vp->Pos );
-	ImGui::SetNextWindowSize( vp->Size );
-
-	constexpr ImGuiWindowFlags flags =
-		ImGuiWindowFlags_NoDecoration          |
-		ImGuiWindowFlags_NoMove                |
-		ImGuiWindowFlags_NoBringToFrontOnFocus |
-		ImGuiWindowFlags_NoSavedSettings       |
-		ImGuiWindowFlags_NoBackground;
-
-	ImGui::PushStyleVar( ImGuiStyleVar_WindowPadding, ImVec2( 0, 0 ) );
-	if( ImGui::Begin( "GameViewport", nullptr, flags ) )
+	if( mSceneViewportTopRatio <= 0.f )
 	{
-		ImGui::Image( (ImTextureID)mSceneDescriptorSet, vp->Size );
-	}
-	ImGui::End();
-	ImGui::PopStyleVar();
+		// Fullscreen borderless window displaying the scene texture (game mode)
+		const ImGuiViewport* vp = ImGui::GetMainViewport();
+		ImGui::SetNextWindowPos( vp->Pos, ImGuiCond_Always );
+		ImGui::SetNextWindowSize( vp->Size, ImGuiCond_Always );
 
-	// Debug overlay components
+		constexpr ImGuiWindowFlags flags =
+			ImGuiWindowFlags_NoDecoration          |
+			ImGuiWindowFlags_NoMove                |
+			ImGuiWindowFlags_NoBringToFrontOnFocus |
+			ImGuiWindowFlags_NoSavedSettings       |
+			ImGuiWindowFlags_NoBackground;
+
+		ImGui::PushStyleVar( ImGuiStyleVar_WindowPadding, ImVec2( 0, 0 ) );
+		if( ImGui::Begin( "GameViewport", nullptr, flags ) )
+		{
+			ImGui::Image( (ImTextureID)mSceneDescriptorSet, vp->Size );
+		}
+		ImGui::End();
+		ImGui::PopStyleVar();
+	}
+
+	// Tool UI overlays
 	for( auto& fn : mOverlayCallbacks )
 	{
 		fn();
@@ -180,6 +183,18 @@ void
 ImGuiRenderPass::AddOverlayCallback( std::function<void()> callback )
 {
 	mOverlayCallbacks.push_back( std::move( callback ) );
+}
+
+void
+ImGuiRenderPass::SetSceneViewportTopRatio( float ratio )
+{
+	mSceneViewportTopRatio = ratio;
+}
+
+void*
+ImGuiRenderPass::GetSceneTextureId() const
+{
+	return reinterpret_cast<void*>( mSceneDescriptorSet );
 }
 
 void

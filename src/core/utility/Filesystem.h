@@ -6,10 +6,10 @@
 
 namespace utility
 {
-	bool is_file_exist( const std::string& filename )
-	{
-		return std::filesystem::exists( std::filesystem::path{ filename } );
-	}
+	bool is_file_exist( const std::string& filename );
+
+	std::filesystem::path get_executable_directory();
+	void init_content_working_directory();
 }
 
 #endif // _EAGE_FILESYSTEM_H_
