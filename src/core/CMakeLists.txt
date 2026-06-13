@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(THIRDPARTY_DEBUG_PATH ${CMAKE_CURRENT_LIST_DIR}/../../thirdparty/debug)
 set(THIRDPARTY_RELEASE_PATH ${CMAKE_CURRENT_LIST_DIR}/../../thirdparty/release)
+set(THIRDPARTY_INCLUDE_PATH ${CMAKE_CURRENT_LIST_DIR}/../../thirdparty/include)
 set(THIRDPARTY_SRC_PATH ${CMAKE_CURRENT_LIST_DIR}/../../thirdparty/src)
 
 # IMGUI static library
@@ -30,13 +31,12 @@ add_library(imgui STATIC
 	${IMGUI_PATH}/imgui_impl_vulkan.cpp
 )
 
-target_include_directories(imgui PUBLIC 
-	debug ${THIRDPARTY_DEBUG_PATH}/include
-	optimized ${THIRDPARTY_RELEASE_PATH}/include
+target_include_directories(imgui PUBLIC
+	${THIRDPARTY_INCLUDE_PATH}
 )
-target_link_directories(imgui PUBLIC 
-	debug ${THIRDPARTY_DEBUG_PATH}/lib
-	optimized ${THIRDPARTY_RELEASE_PATH}/lib
+target_link_directories(imgui PUBLIC
+	$<$<CONFIG:Debug>:${THIRDPARTY_DEBUG_PATH}/lib>
+	$<$<NOT:$<CONFIG:Debug>>:${THIRDPARTY_RELEASE_PATH}/lib>
 )
 
 # Thirdparty

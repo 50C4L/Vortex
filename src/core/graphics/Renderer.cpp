@@ -25,18 +25,37 @@ namespace
 {
 	const uint32_t DEFAULT_DESCRIPTOR_SET_COUNT = 1000u;
 
-	vk::SubmitInfo2 create_submit_info( vk::CommandBufferSubmitInfo cmd_submit_info, std::optional<vk::SemaphoreSubmitInfo> semaphore_wait_info, std::optional<vk::SemaphoreSubmitInfo> semaphore_signal_info )
+	struct SubmitInfoBundle
 	{
+		vk::CommandBufferSubmitInfo cmd_info{};
+		vk::SemaphoreSubmitInfo wait_info{};
+		vk::SemaphoreSubmitInfo signal_info{};
 		vk::SubmitInfo2 submit_info{};
-		submit_info.waitSemaphoreInfoCount = semaphore_wait_info.has_value() ? 1 : 0;
-		submit_info.pWaitSemaphoreInfos = semaphore_wait_info.has_value() ? &semaphore_wait_info.value() : nullptr;
-		submit_info.signalSemaphoreInfoCount = semaphore_signal_info.has_value() ? 1 : 0;
-		submit_info.pSignalSemaphoreInfos = semaphore_signal_info.has_value() ? &semaphore_signal_info.value() : nullptr;
-		submit_info.commandBufferInfoCount = 1;
-		submit_info.pCommandBufferInfos = &cmd_submit_info;
 
-		return submit_info;
-	}
+		SubmitInfoBundle(
+			vk::CommandBufferSubmitInfo cmd_submit_info,
+			std::optional<vk::SemaphoreSubmitInfo> semaphore_wait_info,
+			std::optional<vk::SemaphoreSubmitInfo> semaphore_signal_info )
+			: cmd_info( cmd_submit_info )
+		{
+			submit_info.commandBufferInfoCount = 1;
+			submit_info.pCommandBufferInfos = &cmd_info;
+
+			if( semaphore_wait_info.has_value() )
+			{
+				wait_info = semaphore_wait_info.value();
+				submit_info.waitSemaphoreInfoCount = 1;
+				submit_info.pWaitSemaphoreInfos = &wait_info;
+			}
+
+			if( semaphore_signal_info.has_value() )
+			{
+				signal_info = semaphore_signal_info.value();
+				submit_info.signalSemaphoreInfoCount = 1;
+				submit_info.pSignalSemaphoreInfos = &signal_info;
+			}
+		}
+	};
 }
 
 
@@ -371,13 +390,13 @@ Renderer::Submit()
 {
 	auto& frame = GetCurrentFrame();
 
-	auto submit_info = create_submit_info( 
-		frame.command_context->GetSubmitInfo(), 
+	auto submit_bundle = SubmitInfoBundle(
+		frame.command_context->GetSubmitInfo(),
 		frame.command_context->GetSwapchainSemaphoreSubmitInfo( vk::PipelineStageFlagBits2::eColorAttachmentOutput ),
 		frame.command_context->GetPresentSemaphoreSubmitInfo( vk::PipelineStageFlagBits2::eColorAttachmentOutput )
 	);
 
-	mContext->graphics_queue.submit2( submit_info, frame.command_context->GetFence() );
+	mContext->graphics_queue.submit2( submit_bundle.submit_info, frame.command_context->GetFence() );
 }
 
 void
@@ -499,11 +518,11 @@ Renderer::ImmediateSubmit( std::function<void( vk::CommandBuffer& )> work )
 
 	mImmidiateCommandContext->End();
 
-	auto submit_info = create_submit_info(
+	auto submit_bundle = SubmitInfoBundle(
 		mImmidiateCommandContext->GetSubmitInfo(), std::nullopt, std::nullopt
 	);
 
-	mContext->graphics_queue.submit2( submit_info, mImmidiateCommandContext->GetFence() );
+	mContext->graphics_queue.submit2( submit_bundle.submit_info, mImmidiateCommandContext->GetFence() );
 	mImmidiateCommandContext->WaitForCompletion();
 }
 
@@ -525,20 +544,19 @@ Renderer::InitGPUTiming()
 	query_pool_info.queryType = vk::QueryType::eTimestamp;
 	query_pool_info.queryCount = MAX_FRAMES_IN_FLIGHT * 2; // Start and end per frame
 	
-	vk::Device raw_device = *mContext->logical_device;
-	mTimestampQueryPool = raw_device.createQueryPoolUnique(query_pool_info);
+	mTimestampQueryPool = ( *mContext->logical_device ).createQueryPoolUnique( query_pool_info );
 	
 	// Reset the query pool
 	auto& cmd = mImmidiateCommandContext->GetPrimaryBuffer();
 	mImmidiateCommandContext->Reset();
 	mImmidiateCommandContext->Begin();
-	cmd.resetQueryPool(mTimestampQueryPool.get(), 0, MAX_FRAMES_IN_FLIGHT * 2);
+	cmd.resetQueryPool( mTimestampQueryPool.get(), 0, MAX_FRAMES_IN_FLIGHT * 2 );
 	mImmidiateCommandContext->End();
 	
-	auto submit_info = create_submit_info(
+	auto submit_bundle = SubmitInfoBundle(
 		mImmidiateCommandContext->GetSubmitInfo(), std::nullopt, std::nullopt
 	);
-	mContext->graphics_queue.submit2(submit_info, mImmidiateCommandContext->GetFence());
+	mContext->graphics_queue.submit2( submit_bundle.submit_info, mImmidiateCommandContext->GetFence() );
 	mImmidiateCommandContext->WaitForCompletion();
 	
 	LOG() << "GPU timing initialized successfully";

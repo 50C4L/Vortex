@@ -35,3 +35,14 @@ add_executable(Vortex
 target_link_libraries(Vortex PRIVATE
 	eage_core
 )
+
+add_executable(AnimTool
+	./src/tools/animtool/main.cpp
+	./src/tools/animtool/AnimToolApp.h
+	./src/tools/animtool/AnimToolApp.cpp
+	./src/tools/animtool/ToolUIStyle.h
+)
+
+target_link_libraries(AnimTool PRIVATE
+	eage_core
+)
