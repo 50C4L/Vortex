@@ -5,10 +5,8 @@
 #include <thread>
 
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_syswm.h>
 #include <imgui/imgui.h>
 #include <vulkan/vulkan.h>
-#include <nfd/nfd.h>
 
 #include <utility/Pointers.h>
 #include <utility/Logger.h>
@@ -17,6 +15,7 @@
 #include <graphics/SceneRenderPass.h>
 #include <graphics/ImGuiRenderPass.h>
 
+#include "FileDialog.h"
 #include "ToolUIStyle.h"
 
 using namespace animtool;
@@ -75,7 +74,7 @@ namespace
 		ImGui::Begin( title, nullptr, flags );
 	}
 
-	void draw_main_menu_bar( SDL_Window* window )
+	void draw_main_menu_bar( FileDialog& file_dialog )
 	{
 		if( !ImGui::BeginMainMenuBar() )
 		{
@@ -86,28 +85,9 @@ namespace
 		{
 			if( ImGui::MenuItem( "Open Project" ) )
 			{
-				nfdwindowhandle_t native_window = {};
-				SDL_SysWMinfo wm_info;
-				SDL_VERSION( &wm_info.version );
-				if( SDL_GetWindowWMInfo( window, &wm_info ) && wm_info.subsystem == SDL_SYSWM_WINDOWS )
+				if( auto path = file_dialog.GetFilePath( { "json" } ) )
 				{
-					native_window.type = NFD_WINDOW_HANDLE_TYPE_WINDOWS;
-					native_window.handle = wm_info.info.win.window;
-				}
-
-				nfdopendialogu8args_t args = {};
-				args.parentWindow = native_window;
-
-				nfdu8char_t* out_path = nullptr;
-				const nfdresult_t result = NFD_OpenDialogU8_With( &out_path, &args );
-				if( result == NFD_OKAY )
-				{
-					utility::LOG() << "Open Project: " << out_path;
-					NFD_FreePathU8( out_path );
-				}
-				else if( result == NFD_ERROR )
-				{
-					utility::LOG_ERROR() << "NFD error: " << NFD_GetError();
+					utility::LOG() << "Open Project: " << *path;
 				}
 			}
 
@@ -118,7 +98,10 @@ namespace
 
 			if( ImGui::MenuItem( "Load Images" ) )
 			{
-				// TODO: load images
+				if( auto path = file_dialog.GetFilePath( { "png", "gif" } ) )
+				{
+					utility::LOG() << "Load Images: " << *path;
+				}
 			}
 
 			if( ImGui::MenuItem( "Export" ) )
@@ -186,8 +169,8 @@ AnimToolApp::~AnimToolApp()
 	mImGuiPass.reset();
 	mScenePass.reset();
 	mRenderer.reset();
+	mFileDialog.reset();
 	mWindow.reset();
-	NFD_Quit();
 	SDL_Quit();
 }
 
@@ -215,11 +198,7 @@ AnimToolApp::Init()
 		return false;
 	}
 
-	if( NFD_Init() != NFD_OKAY )
-	{
-		std::cerr << "Failed to initialize NFD: " << NFD_GetError() << std::endl;
-		return false;
-	}
+	mFileDialog = std::make_unique<FileDialog>( mWindow.get() );
 
 	mRenderer = std::make_unique<eage::graphics::Renderer>( *mWindow );
 	if( !mRenderer->Init() )
@@ -251,7 +230,7 @@ AnimToolApp::Init()
 		draw_work_space();
 		draw_preview( *mImGuiPass );
 		draw_editor_panel();
-		draw_main_menu_bar( mWindow.get() );
+		draw_main_menu_bar( *mFileDialog );
 	} );
 
 	mRenderer->AddRenderPass( mScenePass.get() );

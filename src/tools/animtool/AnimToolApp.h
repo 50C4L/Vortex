@@ -15,6 +15,8 @@ namespace eage::graphics
 namespace animtool
 {
 
+class FileDialog;
+
 class AnimToolApp
 {
 public:
@@ -26,6 +28,7 @@ public:
 
 private:
 	std::shared_ptr<SDL_Window> mWindow;
+	std::unique_ptr<FileDialog> mFileDialog;
 	std::unique_ptr<eage::graphics::Renderer> mRenderer;
 	std::unique_ptr<eage::graphics::SceneRenderPass> mScenePass;
 	std::unique_ptr<eage::graphics::ImGuiRenderPass> mImGuiPass;
