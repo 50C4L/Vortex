@@ -5,8 +5,10 @@
 #include <thread>
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_syswm.h>
 #include <imgui/imgui.h>
 #include <vulkan/vulkan.h>
+#include <nfd/nfd.h>
 
 #include <utility/Pointers.h>
 #include <utility/Logger.h>
@@ -73,7 +75,7 @@ namespace
 		ImGui::Begin( title, nullptr, flags );
 	}
 
-	void draw_main_menu_bar()
+	void draw_main_menu_bar( SDL_Window* window )
 	{
 		if( !ImGui::BeginMainMenuBar() )
 		{
@@ -84,7 +86,29 @@ namespace
 		{
 			if( ImGui::MenuItem( "Open Project" ) )
 			{
-				// TODO: open project
+				nfdwindowhandle_t native_window = {};
+				SDL_SysWMinfo wm_info;
+				SDL_VERSION( &wm_info.version );
+				if( SDL_GetWindowWMInfo( window, &wm_info ) && wm_info.subsystem == SDL_SYSWM_WINDOWS )
+				{
+					native_window.type = NFD_WINDOW_HANDLE_TYPE_WINDOWS;
+					native_window.handle = wm_info.info.win.window;
+				}
+
+				nfdopendialogu8args_t args = {};
+				args.parentWindow = native_window;
+
+				nfdu8char_t* out_path = nullptr;
+				const nfdresult_t result = NFD_OpenDialogU8_With( &out_path, &args );
+				if( result == NFD_OKAY )
+				{
+					utility::LOG() << "Open Project: " << out_path;
+					NFD_FreePathU8( out_path );
+				}
+				else if( result == NFD_ERROR )
+				{
+					utility::LOG_ERROR() << "NFD error: " << NFD_GetError();
+				}
 			}
 
 			if( ImGui::MenuItem( "Save Project" ) )
@@ -163,6 +187,7 @@ AnimToolApp::~AnimToolApp()
 	mScenePass.reset();
 	mRenderer.reset();
 	mWindow.reset();
+	NFD_Quit();
 	SDL_Quit();
 }
 
@@ -187,6 +212,12 @@ AnimToolApp::Init()
 	if( !mWindow )
 	{
 		std::cerr << "Failed to create SDL window: " << SDL_GetError() << std::endl;
+		return false;
+	}
+
+	if( NFD_Init() != NFD_OKAY )
+	{
+		std::cerr << "Failed to initialize NFD: " << NFD_GetError() << std::endl;
 		return false;
 	}
 
@@ -220,7 +251,7 @@ AnimToolApp::Init()
 		draw_work_space();
 		draw_preview( *mImGuiPass );
 		draw_editor_panel();
-		draw_main_menu_bar();
+		draw_main_menu_bar( mWindow.get() );
 	} );
 
 	mRenderer->AddRenderPass( mScenePass.get() );

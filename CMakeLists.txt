@@ -43,6 +43,34 @@ add_executable(AnimTool
 	./src/tools/animtool/ToolUIStyle.h
 )
 
+target_link_directories(AnimTool PRIVATE
+	$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/debug/lib>
+	$<$<NOT:$<CONFIG:Debug>>:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/release/lib>
+)
+
 target_link_libraries(AnimTool PRIVATE
 	eage_core
+	nfd.lib
 )
+
+if(WIN32)
+target_link_libraries(AnimTool PRIVATE
+	ole32.lib
+	uuid.lib
+	shell32.lib
+)
+endif()
+
+function( vortex_copy_runtime_assets target_name )
+	add_custom_command( TARGET ${target_name} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+			${CMAKE_SOURCE_DIR}/resources
+			$<TARGET_FILE_DIR:${target_name}>/resources
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+			${CMAKE_SOURCE_DIR}/src/shaders
+			$<TARGET_FILE_DIR:${target_name}>/src/shaders
+	)
+endfunction()
+
+vortex_copy_runtime_assets( Vortex )
+vortex_copy_runtime_assets( AnimTool )
