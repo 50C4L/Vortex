@@ -24,19 +24,28 @@ public:
 	FrameThumbnail( FrameThumbnail&& ) = default;
 	FrameThumbnail& operator=( FrameThumbnail&& ) = default;
 
-	void Upload( eage::graphics::Renderer& renderer, const std::filesystem::path& source_path, const assets::ImageLoader::Image& image );
+	void Upload(
+		eage::graphics::Renderer& renderer,
+		const std::filesystem::path& source_path,
+		const assets::ImageLoader::Image& image,
+		int frame_index_in_source = 0,
+		int delay_ms = 100 );
 	void ReleaseImGuiTexture();
 
 	ImTextureID GetTextureId() const;
 
 	const std::filesystem::path& GetSourcePath() const { return mSourcePath; }
+	int GetFrameIndexInSource() const { return mFrameIndexInSource; }
 	int GetWidth() const { return mWidth; }
 	int GetHeight() const { return mHeight; }
+	int GetDelayMs() const { return mDelayMs; }
 
 private:
 	std::filesystem::path mSourcePath;
+	int mFrameIndexInSource = 0;
 	int mWidth = 0;
 	int mHeight = 0;
+	int mDelayMs = 100;
 
 	eage::graphics::ManagedImage::Ptr mGpuImage;
 	vk::UniqueSampler mSampler;

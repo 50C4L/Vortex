@@ -17,10 +17,17 @@ namespace assets
 			int num_channels;
 		};
 
+		struct GifFrame
+		{
+			Image image;
+			int delay_ms = 0;
+		};
+
 		ImageLoader();
 		virtual ~ImageLoader();
 
 		Image LoadImage( const std::string& filename );
+		std::vector<GifFrame> LoadGifFrames( const std::string& filename );
 	};
 }
 

@@ -12,6 +12,8 @@ using namespace animtool;
 
 namespace
 {
+	constexpr int DEFAULT_FRAME_DELAY_MS = 100;
+
 	bool is_png_file( const std::filesystem::path& path )
 	{
 		if( !std::filesystem::is_regular_file( path ) )
@@ -82,6 +84,54 @@ FrameSequence::GetFrame( size_t index ) const
 	return mFrames.at( index );
 }
 
+std::optional<size_t>
+FrameSequence::GetSelectedFrame() const
+{
+	return mSelectedFrame;
+}
+
+void
+FrameSequence::SetSelectedFrame( std::optional<size_t> index )
+{
+	if( index.has_value() && index.value() >= mFrames.size() )
+	{
+		mSelectedFrame = std::nullopt;
+		return;
+	}
+
+	mSelectedFrame = index;
+}
+
+size_t
+FrameSequence::AppendFrame(
+	eage::graphics::Renderer& renderer,
+	const std::filesystem::path& source_path,
+	const assets::ImageLoader::Image& image,
+	int frame_index_in_source,
+	int delay_ms )
+{
+	if( ContainsFrame( source_path, frame_index_in_source ) )
+	{
+		return 0;
+	}
+
+	if( image.data.empty() || image.width <= 0 || image.height <= 0 )
+	{
+		return 0;
+	}
+
+	FrameThumbnail frame;
+	frame.Upload( renderer, source_path, image, frame_index_in_source, delay_ms );
+	mFrames.push_back( std::move( frame ) );
+
+	if( !mSelectedFrame.has_value() )
+	{
+		mSelectedFrame = mFrames.size() - 1u;
+	}
+
+	return 1;
+}
+
 size_t
 FrameSequence::AppendPngFolder( const std::filesystem::path& folder, eage::graphics::Renderer& renderer )
 {
@@ -98,11 +148,6 @@ FrameSequence::AppendPngFolder( const std::filesystem::path& folder, eage::graph
 	for( const std::filesystem::path& png_path : png_files )
 	{
 		const std::filesystem::path absolute_path = canonical_path( png_path );
-		if( ContainsPath( absolute_path ) )
-		{
-			continue;
-		}
-
 		const assets::ImageLoader::Image image = image_loader.LoadImage( png_path.string() );
 		if( image.data.empty() || image.width <= 0 || image.height <= 0 )
 		{
@@ -110,10 +155,35 @@ FrameSequence::AppendPngFolder( const std::filesystem::path& folder, eage::graph
 			continue;
 		}
 
-		FrameThumbnail frame;
-		frame.Upload( renderer, absolute_path, image );
-		mFrames.push_back( std::move( frame ) );
-		++added_count;
+		added_count += AppendFrame( renderer, absolute_path, image, 0, DEFAULT_FRAME_DELAY_MS );
+	}
+
+	return added_count;
+}
+
+size_t
+FrameSequence::AppendGif( const std::filesystem::path& gif_path, eage::graphics::Renderer& renderer )
+{
+	const std::filesystem::path absolute_path = canonical_path( gif_path );
+
+	assets::ImageLoader image_loader;
+	const std::vector<assets::ImageLoader::GifFrame> gif_frames = image_loader.LoadGifFrames( gif_path.string() );
+	if( gif_frames.empty() )
+	{
+		utility::LOG_ERROR() << "No frames loaded from GIF: " << gif_path.string();
+		return 0;
+	}
+
+	size_t added_count = 0;
+	for( size_t frame_index = 0; frame_index < gif_frames.size(); ++frame_index )
+	{
+		const assets::ImageLoader::GifFrame& gif_frame = gif_frames[frame_index];
+		added_count += AppendFrame(
+			renderer,
+			absolute_path,
+			gif_frame.image,
+			static_cast<int>( frame_index ),
+			gif_frame.delay_ms );
 	}
 
 	return added_count;
@@ -128,14 +198,15 @@ FrameSequence::Clear()
 	}
 
 	mFrames.clear();
+	mSelectedFrame = std::nullopt;
 }
 
 bool
-FrameSequence::ContainsPath( const std::filesystem::path& path ) const
+FrameSequence::ContainsFrame( const std::filesystem::path& path, int frame_index_in_source ) const
 {
 	for( const FrameThumbnail& frame : mFrames )
 	{
-		if( frame.GetSourcePath() == path )
+		if( frame.GetSourcePath() == path && frame.GetFrameIndexInSource() == frame_index_in_source )
 		{
 			return true;
 		}
