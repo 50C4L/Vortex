@@ -10,6 +10,51 @@ FrameThumbnail::~FrameThumbnail()
 	ReleaseImGuiTexture();
 }
 
+FrameThumbnail::FrameThumbnail( FrameThumbnail&& other ) noexcept
+	: mSourcePath( std::move( other.mSourcePath ) )
+	, mFrameIndexInSource( other.mFrameIndexInSource )
+	, mWidth( other.mWidth )
+	, mHeight( other.mHeight )
+	, mDelayMs( other.mDelayMs )
+	, mGpuImage( std::move( other.mGpuImage ) )
+	, mSampler( std::move( other.mSampler ) )
+	, mImGuiDescriptor( other.mImGuiDescriptor )
+{
+	other.mFrameIndexInSource = 0;
+	other.mWidth = 0;
+	other.mHeight = 0;
+	other.mDelayMs = 100;
+	other.mImGuiDescriptor = VK_NULL_HANDLE;
+}
+
+FrameThumbnail&
+FrameThumbnail::operator=( FrameThumbnail&& other ) noexcept
+{
+	if( this == &other )
+	{
+		return *this;
+	}
+
+	ReleaseImGuiTexture();
+
+	mSourcePath = std::move( other.mSourcePath );
+	mFrameIndexInSource = other.mFrameIndexInSource;
+	mWidth = other.mWidth;
+	mHeight = other.mHeight;
+	mDelayMs = other.mDelayMs;
+	mGpuImage = std::move( other.mGpuImage );
+	mSampler = std::move( other.mSampler );
+	mImGuiDescriptor = other.mImGuiDescriptor;
+
+	other.mFrameIndexInSource = 0;
+	other.mWidth = 0;
+	other.mHeight = 0;
+	other.mDelayMs = 100;
+	other.mImGuiDescriptor = VK_NULL_HANDLE;
+
+	return *this;
+}
+
 void
 FrameThumbnail::Upload(
 	eage::graphics::Renderer& renderer,

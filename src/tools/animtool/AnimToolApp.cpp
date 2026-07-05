@@ -1,5 +1,8 @@
 #include "AnimToolApp.h"
 
+#include <algorithm>
+#include <cstring>
+#include <filesystem>
 #include <functional>
 #include <iostream>
 #include <cctype>
@@ -17,6 +20,7 @@
 #include <graphics/ImGuiRenderPass.h>
 
 #include "FileDialog.h"
+#include "AnimationExporter.h"
 #include "FrameSequence.h"
 #include "FrameThumbnail.h"
 #include "ToolUIStyle.h"
@@ -31,7 +35,59 @@ namespace
 	constexpr uint32_t SCENE_HEIGHT = 1080;
 	constexpr float WORKSPACE_HEIGHT_RATIO = 0.30f;
 	constexpr float PREVIEW_WIDTH_RATIO = 0.50f;
-	constexpr float THUMBNAIL_HEIGHT = 96.f;
+	constexpr ImVec2 FRAME_IMAGE_UV_MIN( 0.f, 1.f );
+	constexpr ImVec2 FRAME_IMAGE_UV_MAX( 1.f, 0.f );
+
+	void draw_export_modal(
+		ExportDialogState& export_state,
+		FileDialog& file_dialog,
+		const FrameSequence& frame_sequence )
+	{
+		if( !export_state.show_modal )
+		{
+			return;
+		}
+
+		ImGui::OpenPopup( "Export Animation" );
+		export_state.show_modal = false;
+
+		const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos( center, ImGuiCond_Appearing, ImVec2( 0.5f, 0.5f ) );
+
+		if( ImGui::BeginPopupModal( "Export Animation", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+		{
+			ImGui::TextUnformatted( "Animation directory name:" );
+			ImGui::InputText( "##export_name", export_state.animation_name, sizeof( export_state.animation_name ) );
+
+			if( ImGui::Button( "Choose Location and Export", ImVec2( 240.f, 0.f ) ) )
+			{
+				if( frame_sequence.GetFrameCount() == 0 )
+				{
+					utility::LOG_ERROR() << "Cannot export an empty frame sequence.";
+				}
+				else if( auto parent_folder = file_dialog.GetFolderPath() )
+				{
+					const std::filesystem::path output_directory =
+						std::filesystem::path( *parent_folder ) / export_state.animation_name;
+
+					if( AnimationExporter::Export( frame_sequence, output_directory ) )
+					{
+						utility::LOG() << "Exported animation to: " << output_directory.string();
+						ImGui::CloseCurrentPopup();
+					}
+				}
+			}
+
+			ImGui::SameLine();
+
+			if( ImGui::Button( "Cancel", ImVec2( 120.f, 0.f ) ) )
+			{
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+	}
 
 	struct ToolLayout
 	{
@@ -81,7 +137,8 @@ namespace
 	void draw_main_menu_bar(
 		FileDialog& file_dialog,
 		FrameSequence& frame_sequence,
-		eage::graphics::Renderer& renderer )
+		eage::graphics::Renderer& renderer,
+		ExportDialogState& export_state )
 	{
 		if( !ImGui::BeginMainMenuBar() )
 		{
@@ -121,9 +178,9 @@ namespace
 				}
 			}
 
-			if( ImGui::MenuItem( "Export" ) )
+			if( ImGui::MenuItem( "Export..." ) )
 			{
-				// TODO: export
+				export_state.show_modal = true;
 			}
 
 			ImGui::Separator();
@@ -142,18 +199,24 @@ namespace
 	void draw_frame_thumbnail_strip( FrameSequence& frame_sequence )
 	{
 		const ImVec2 avail = ImGui::GetContentRegionAvail();
+		if( avail.x <= 0.f || avail.y <= 0.f )
+		{
+			return;
+		}
 
 		ImGui::BeginChild(
 			"##frame_strip",
-			ImVec2( avail.x, THUMBNAIL_HEIGHT ),
+			avail,
 			ImGuiChildFlags_None,
 			ImGuiWindowFlags_HorizontalScrollbar );
+
+		const float thumb_height = ImGui::GetContentRegionAvail().y;
 
 		for( size_t i = 0; i < frame_sequence.GetFrameCount(); ++i )
 		{
 			const FrameThumbnail& frame = frame_sequence.GetFrame( i );
 			const float aspect = static_cast<float>( frame.GetWidth() ) / static_cast<float>( frame.GetHeight() );
-			const ImVec2 thumb_size( THUMBNAIL_HEIGHT * aspect, THUMBNAIL_HEIGHT );
+			const ImVec2 thumb_size( thumb_height * aspect, thumb_height );
 
 			ImGui::PushID( static_cast<int>( i ) );
 
@@ -166,7 +229,7 @@ namespace
 				ImGui::PushStyleVar( ImGuiStyleVar_FrameBorderSize, 2.f );
 			}
 
-			if( ImGui::ImageButton( "##thumb", frame.GetTextureId(), thumb_size ) )
+			if( ImGui::ImageButton( "##thumb", frame.GetTextureId(), thumb_size, FRAME_IMAGE_UV_MIN, FRAME_IMAGE_UV_MAX ) )
 			{
 				frame_sequence.SetSelectedFrame( i );
 			}
@@ -186,8 +249,6 @@ namespace
 		}
 
 		ImGui::EndChild();
-
-		ImGui::Text( "%zu frame(s)", frame_sequence.GetFrameCount() );
 	}
 
 	void draw_work_space( FrameSequence& frame_sequence )
@@ -237,7 +298,7 @@ namespace
 			cursor_pos.x + ( avail.x - display_size.x ) * 0.5f,
 			cursor_pos.y + ( avail.y - display_size.y ) * 0.5f ) );
 
-		ImGui::Image( frame.GetTextureId(), display_size );
+		ImGui::Image( frame.GetTextureId(), display_size, FRAME_IMAGE_UV_MIN, FRAME_IMAGE_UV_MAX );
 
 		ImGui::End();
 	}
@@ -356,7 +417,8 @@ AnimToolApp::Init()
 		draw_work_space( *mFrameSequence );
 		draw_preview( *mFrameSequence );
 		draw_editor_panel( *mFrameSequence );
-		draw_main_menu_bar( *mFileDialog, *mFrameSequence, *mRenderer );
+		draw_export_modal( mExportState, *mFileDialog, *mFrameSequence );
+		draw_main_menu_bar( *mFileDialog, *mFrameSequence, *mRenderer, mExportState );
 	} );
 
 	mRenderer->AddRenderPass( mScenePass.get() );

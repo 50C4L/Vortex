@@ -46,6 +46,8 @@ add_executable(AnimTool
 	./src/tools/animtool/FrameThumbnail.cpp
 	./src/tools/animtool/FrameSequence.h
 	./src/tools/animtool/FrameSequence.cpp
+	./src/tools/animtool/AnimationExporter.h
+	./src/tools/animtool/AnimationExporter.cpp
 	./src/tools/animtool/ToolUIStyle.h
 )
 

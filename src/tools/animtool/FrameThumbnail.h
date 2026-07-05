@@ -21,8 +21,8 @@ public:
 
 	FrameThumbnail( const FrameThumbnail& ) = delete;
 	FrameThumbnail& operator=( const FrameThumbnail& ) = delete;
-	FrameThumbnail( FrameThumbnail&& ) = default;
-	FrameThumbnail& operator=( FrameThumbnail&& ) = default;
+	FrameThumbnail( FrameThumbnail&& other ) noexcept;
+	FrameThumbnail& operator=( FrameThumbnail&& other ) noexcept;
 
 	void Upload(
 		eage::graphics::Renderer& renderer,

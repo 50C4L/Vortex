@@ -102,6 +102,8 @@ add_library(eage_core STATIC
 
 	./assets/ImageLoader.h
 	./assets/ImageLoader.cpp
+	./assets/ImageWriter.h
+	./assets/ImageWriter.cpp
 	./assets/TextureAtlas.h
 	./assets/TextureAtlas.cpp
 	./assets/AnimationClip.h

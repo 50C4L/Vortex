@@ -9,15 +9,15 @@ namespace eage::animation
 	///
 	/// AnimatedSprite: drives frame-based sprite animation for a single entity.
 	///
-	/// Requires the entity to have a RenderComponent attached with unit UVs
-	/// (uv_min={0,0}, uv_max={1,1}) so that uv_rect fully controls the visible region.
+	/// Updates uv_rect on the entity RenderComponent each frame from an AnimationClip.
+	/// The sprite mesh must use unit UVs (uv_min={0,0}, uv_max={1,1}) so uv_rect
+	/// controls the visible region.
 	///
 	/// Usage:
 	///   assets::AnimationClip clip( "path/to/clip.json" );
 	///   eage::animation::AnimatedSprite anim( clip, entity, registry );
 	///   anim.SetLoop( true );
 	///   anim.Play();
-	///   // each frame:
 	///   anim.Update( delta_time_sec );
 	///
 	class AnimatedSprite
