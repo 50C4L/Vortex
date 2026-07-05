@@ -35,6 +35,8 @@ namespace
 	constexpr uint32_t SCENE_HEIGHT = 1080;
 	constexpr float WORKSPACE_HEIGHT_RATIO = 0.30f;
 	constexpr float PREVIEW_WIDTH_RATIO = 0.50f;
+	constexpr float THUMBNAIL_MAX_HEIGHT = 96.f;
+	constexpr float WORKSPACE_STRIP_VERTICAL_PADDING = 12.f;
 	constexpr ImVec2 FRAME_IMAGE_UV_MIN( 0.f, 1.f );
 	constexpr ImVec2 FRAME_IMAGE_UV_MAX( 1.f, 0.f );
 
@@ -204,9 +206,19 @@ namespace
 			return;
 		}
 
+		const float frame_count_height = ImGui::GetTextLineHeightWithSpacing();
+		const float strip_height = std::min(
+			THUMBNAIL_MAX_HEIGHT,
+			avail.y - ( WORKSPACE_STRIP_VERTICAL_PADDING * 2.f ) - frame_count_height );
+
+		const float content_height = strip_height + frame_count_height;
+		const float top_spacer = std::max( WORKSPACE_STRIP_VERTICAL_PADDING, ( avail.y - content_height ) * 0.5f );
+
+		ImGui::Dummy( ImVec2( 0.f, top_spacer ) );
+
 		ImGui::BeginChild(
 			"##frame_strip",
-			avail,
+			ImVec2( avail.x, strip_height ),
 			ImGuiChildFlags_None,
 			ImGuiWindowFlags_HorizontalScrollbar );
 
@@ -249,6 +261,8 @@ namespace
 		}
 
 		ImGui::EndChild();
+
+		ImGui::Text( "%zu frame(s)", frame_sequence.GetFrameCount() );
 	}
 
 	void draw_work_space( FrameSequence& frame_sequence )
