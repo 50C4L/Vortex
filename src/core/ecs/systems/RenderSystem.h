@@ -45,8 +45,6 @@ namespace eage::ecs
 		void AttachRenderable( eage::ecs::Entity entity, ResourceId mesh_id, ResourceId material_id, bool visible = true );
 		void AttachSprite( eage::ecs::Entity entity, ResourceId material_id, float width, float height, glm::vec2 uv_min, glm::vec2 uv_max, bool visible = true );
 
-		void SetMaterialTexture( ResourceId material_id, const std::string& texture_path );
-
 		// Camera
 		void SetCamera( const eage::graphics::AbstractCamera& camera, glm::vec2 virtual_resolution );
 

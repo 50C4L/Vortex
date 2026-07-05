@@ -11,7 +11,7 @@ namespace assets
 	///
 	/// AnimationClip: loads a frame-sequence animation from a JSON file.
 	///
-	/// Atlas-based format (packed texture):
+	/// The JSON references a TextureAtlas and lists frames by name with per-frame durations:
 	///
 	///   {
 	///     "atlas": "./resources/textures/ship/ship_texatlas.json",
@@ -22,17 +22,8 @@ namespace assets
 	///     ]
 	///   }
 	///
-	/// Per-frame texture format (AnimTool export):
-	///
-	///   {
-	///     "flip": false,
-	///     "frames": [
-	///       { "texture": "frame_000.png", "duration_ms": 100 },
-	///       { "texture": "frame_001.png", "duration_ms": 100 }
-	///     ]
-	///   }
-	///
-	/// Texture paths are relative to the animation JSON file directory.
+	/// The entity's sprite mesh must have been attached with unit UVs (uv_min={0,0}, uv_max={1,1})
+	/// so that AnimatedSprite can drive the visible region entirely through uv_rect.
 	///
 	class AnimationClip
 	{
@@ -42,7 +33,6 @@ namespace assets
 			glm::vec2 uv_min;
 			glm::vec2 uv_max;
 			float duration_sec;
-			std::string texture_path;
 		};
 
 		AnimationClip( const std::string& clip_json_path );
@@ -51,15 +41,9 @@ namespace assets
 		const Frame& GetFrame( int index ) const;
 		int GetFrameCount() const;
 
-		bool UsesPerFrameTextures() const;
-		const std::string& GetClipDirectory() const;
-		std::string GetResolvedTexturePath( int index ) const;
-
 	private:
 		Frame mDefaultFrame;
 		std::vector<Frame> mFrames;
-		std::string mClipDirectory;
-		bool mUsesPerFrameTextures = false;
 	};
 }
 

@@ -3,46 +3,17 @@
 #include <algorithm>
 
 #include <ecs/components/Render.h>
-#include <ecs/systems/RenderSystem.h>
-#include <utility/Logger.h>
 
 using namespace eage::animation;
 using namespace eage::ecs;
 using namespace assets;
-using namespace utility;
 
 
-AnimatedSprite::AnimatedSprite(
-	const AnimationClip& clip,
-	Entity entity,
-	ECSRegistry& registry,
-	RenderSystem* render_system,
-	ResourceId material_id )
+AnimatedSprite::AnimatedSprite( const AnimationClip& clip, Entity entity, ECSRegistry& registry )
 	: mClip( clip )
 	, mEntity( entity )
 	, mRegistry( registry )
-	, mRenderSystem( render_system )
-	, mMaterialId( material_id )
 {
-	if( mClip.UsesPerFrameTextures() )
-	{
-		if( !mRenderSystem || mMaterialId == INVALID_ID )
-		{
-			LOG_ERROR( "AnimatedSprite: per-frame texture clips require RenderSystem and material id." );
-		}
-		else
-		{
-			for( int frame_index = 0; frame_index < mClip.GetFrameCount(); ++frame_index )
-			{
-				const std::string texture_path = mClip.GetResolvedTexturePath( frame_index );
-				if( !texture_path.empty() )
-				{
-					mRenderSystem->CreateImageBuffer( texture_path );
-				}
-			}
-		}
-	}
-
 	if( mClip.GetFrameCount() > 0 )
 	{
 		ShowFrame( 0 );
@@ -87,15 +58,6 @@ AnimatedSprite::ShowFrame( int index )
 		frame.uv_max.x - frame.uv_min.x,
 		frame.uv_max.y - frame.uv_min.y
 	};
-
-	if( mClip.UsesPerFrameTextures() && mRenderSystem && mMaterialId != INVALID_ID )
-	{
-		const std::string texture_path = mClip.GetResolvedTexturePath( mCurrentFrame );
-		if( !texture_path.empty() )
-		{
-			mRenderSystem->SetMaterialTexture( mMaterialId, texture_path );
-		}
-	}
 }
 
 void
