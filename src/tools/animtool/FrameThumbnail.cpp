@@ -11,13 +11,20 @@ FrameThumbnail::~FrameThumbnail()
 }
 
 void
-FrameThumbnail::Upload( eage::graphics::Renderer& renderer, const std::filesystem::path& source_path, const assets::ImageLoader::Image& image )
+FrameThumbnail::Upload(
+	eage::graphics::Renderer& renderer,
+	const std::filesystem::path& source_path,
+	const assets::ImageLoader::Image& image,
+	int frame_index_in_source,
+	int delay_ms )
 {
 	ReleaseImGuiTexture();
 
 	mSourcePath = source_path;
+	mFrameIndexInSource = frame_index_in_source;
 	mWidth = image.width;
 	mHeight = image.height;
+	mDelayMs = delay_ms;
 
 	mGpuImage = renderer.UploadImage(
 		const_cast<void*>( static_cast<const void*>( image.data.data() ) ),

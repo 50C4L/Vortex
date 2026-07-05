@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <iostream>
+#include <cctype>
 #include <thread>
 
 #include <SDL2/SDL.h>
@@ -111,6 +112,15 @@ namespace
 				}
 			}
 
+			if( ImGui::MenuItem( "Load GIF..." ) )
+			{
+				if( auto path = file_dialog.GetFilePath( { "gif" } ) )
+				{
+					const size_t added_count = frame_sequence.AppendGif( *path, renderer );
+					utility::LOG() << "Added " << added_count << " frame(s) from GIF: " << *path;
+				}
+			}
+
 			if( ImGui::MenuItem( "Export" ) )
 			{
 				// TODO: export
@@ -129,7 +139,7 @@ namespace
 		ImGui::EndMainMenuBar();
 	}
 
-	void draw_frame_thumbnail_strip( const FrameSequence& frame_sequence )
+	void draw_frame_thumbnail_strip( FrameSequence& frame_sequence )
 	{
 		const ImVec2 avail = ImGui::GetContentRegionAvail();
 
@@ -145,7 +155,29 @@ namespace
 			const float aspect = static_cast<float>( frame.GetWidth() ) / static_cast<float>( frame.GetHeight() );
 			const ImVec2 thumb_size( THUMBNAIL_HEIGHT * aspect, THUMBNAIL_HEIGHT );
 
-			ImGui::Image( frame.GetTextureId(), thumb_size );
+			ImGui::PushID( static_cast<int>( i ) );
+
+			const bool is_selected = frame_sequence.GetSelectedFrame().has_value()
+				&& frame_sequence.GetSelectedFrame().value() == i;
+
+			if( is_selected )
+			{
+				ImGui::PushStyleColor( ImGuiCol_Border, ImVec4( 0.00f, 0.83f, 1.00f, 1.00f ) );
+				ImGui::PushStyleVar( ImGuiStyleVar_FrameBorderSize, 2.f );
+			}
+
+			if( ImGui::ImageButton( "##thumb", frame.GetTextureId(), thumb_size ) )
+			{
+				frame_sequence.SetSelectedFrame( i );
+			}
+
+			if( is_selected )
+			{
+				ImGui::PopStyleVar();
+				ImGui::PopStyleColor();
+			}
+
+			ImGui::PopID();
 
 			if( i + 1 < frame_sequence.GetFrameCount() )
 			{
@@ -158,7 +190,7 @@ namespace
 		ImGui::Text( "%zu frame(s)", frame_sequence.GetFrameCount() );
 	}
 
-	void draw_work_space( const FrameSequence& frame_sequence )
+	void draw_work_space( FrameSequence& frame_sequence )
 	{
 		const ToolLayout layout = compute_tool_layout();
 		begin_fixed_panel( "Work Space", layout.workspace_pos, layout.workspace_size );
@@ -166,26 +198,78 @@ namespace
 		ImGui::End();
 	}
 
-	void draw_preview( eage::graphics::ImGuiRenderPass& imgui_pass )
+	void draw_preview( const FrameSequence& frame_sequence )
 	{
 		const ToolLayout layout = compute_tool_layout();
 		begin_fixed_panel( "Preview", layout.preview_pos, layout.preview_size );
 
 		const ImVec2 avail = ImGui::GetContentRegionAvail();
-		if( avail.x > 0.f && avail.y > 0.f )
+		if( avail.x <= 0.f || avail.y <= 0.f )
 		{
-			ImGui::Image( reinterpret_cast<ImTextureID>( imgui_pass.GetSceneTextureId() ), avail );
+			ImGui::End();
+			return;
 		}
+
+		const std::optional<size_t> selected_frame = frame_sequence.GetSelectedFrame();
+		if( !selected_frame.has_value() )
+		{
+			ImGui::TextUnformatted( "No frame selected" );
+			ImGui::End();
+			return;
+		}
+
+		const FrameThumbnail& frame = frame_sequence.GetFrame( selected_frame.value() );
+		const float aspect = static_cast<float>( frame.GetWidth() ) / static_cast<float>( frame.GetHeight() );
+		const float avail_aspect = avail.x / avail.y;
+
+		ImVec2 display_size = avail;
+		if( aspect > avail_aspect )
+		{
+			display_size.y = avail.x / aspect;
+		}
+		else
+		{
+			display_size.x = avail.y * aspect;
+		}
+
+		const ImVec2 cursor_pos = ImGui::GetCursorPos();
+		ImGui::SetCursorPos( ImVec2(
+			cursor_pos.x + ( avail.x - display_size.x ) * 0.5f,
+			cursor_pos.y + ( avail.y - display_size.y ) * 0.5f ) );
+
+		ImGui::Image( frame.GetTextureId(), display_size );
 
 		ImGui::End();
 	}
 
-	void draw_editor_panel()
+	void draw_editor_panel( const FrameSequence& frame_sequence )
 	{
 		const ToolLayout layout = compute_tool_layout();
 		begin_fixed_panel( "Editor Panel", layout.editor_pos, layout.editor_size );
-		// TODO: animation editor controls
-		ImGui::Text( "Editor Panel" );
+
+		const std::optional<size_t> selected_frame = frame_sequence.GetSelectedFrame();
+		if( !selected_frame.has_value() )
+		{
+			ImGui::TextUnformatted( "Select a frame to inspect" );
+			ImGui::End();
+			return;
+		}
+
+		const FrameThumbnail& frame = frame_sequence.GetFrame( selected_frame.value() );
+		ImGui::Text( "Frame: %zu", selected_frame.value() + 1 );
+		ImGui::Text( "Size: %d x %d", frame.GetWidth(), frame.GetHeight() );
+		ImGui::Text( "Duration: %d ms", frame.GetDelayMs() );
+		ImGui::Text( "Source: %s", frame.GetSourcePath().filename().string().c_str() );
+
+		const std::string source_extension = frame.GetSourcePath().extension().string();
+		if( source_extension.size() == 4
+			&& std::tolower( static_cast<unsigned char>( source_extension[1] ) ) == 'g'
+			&& std::tolower( static_cast<unsigned char>( source_extension[2] ) ) == 'i'
+			&& std::tolower( static_cast<unsigned char>( source_extension[3] ) ) == 'f' )
+		{
+			ImGui::Text( "GIF frame index: %d", frame.GetFrameIndexInSource() );
+		}
+
 		ImGui::End();
 	}
 }
@@ -270,8 +354,8 @@ AnimToolApp::Init()
 	mImGuiPass->AddOverlayCallback( [this]()
 	{
 		draw_work_space( *mFrameSequence );
-		draw_preview( *mImGuiPass );
-		draw_editor_panel();
+		draw_preview( *mFrameSequence );
+		draw_editor_panel( *mFrameSequence );
 		draw_main_menu_bar( *mFileDialog, *mFrameSequence, *mRenderer );
 	} );
 
