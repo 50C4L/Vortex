@@ -18,6 +18,12 @@ namespace animtool
 class FileDialog;
 class FrameSequence;
 
+struct ExportDialogState
+{
+	bool show_modal = false;
+	char animation_name[128] = "animation";
+};
+
 class AnimToolApp
 {
 public:
@@ -34,6 +40,7 @@ private:
 	std::unique_ptr<eage::graphics::SceneRenderPass> mScenePass;
 	std::unique_ptr<eage::graphics::ImGuiRenderPass> mImGuiPass;
 	std::unique_ptr<FrameSequence> mFrameSequence;
+	ExportDialogState mExportState;
 };
 
 }

@@ -3,27 +3,31 @@
 
 #include <assets/AnimationClip.h>
 #include <ecs/ECS.h>
+#include <ecs/ResourceManager.h>
+
+namespace eage::ecs
+{
+	class RenderSystem;
+}
 
 namespace eage::animation
 {
 	///
 	/// AnimatedSprite: drives frame-based sprite animation for a single entity.
 	///
-	/// Requires the entity to have a RenderComponent attached with unit UVs
-	/// (uv_min={0,0}, uv_max={1,1}) so that uv_rect fully controls the visible region.
-	///
-	/// Usage:
-	///   assets::AnimationClip clip( "path/to/clip.json" );
-	///   eage::animation::AnimatedSprite anim( clip, entity, registry );
-	///   anim.SetLoop( true );
-	///   anim.Play();
-	///   // each frame:
-	///   anim.Update( delta_time_sec );
+	/// Atlas-based clips update UV rects on the entity RenderComponent.
+	/// Per-frame texture clips (AnimTool export) require a RenderSystem and material id
+	/// so each frame can swap the bound texture.
 	///
 	class AnimatedSprite
 	{
 	public:
-		AnimatedSprite( const assets::AnimationClip& clip, eage::ecs::Entity entity, eage::ecs::ECSRegistry& registry );
+		AnimatedSprite(
+			const assets::AnimationClip& clip,
+			eage::ecs::Entity entity,
+			eage::ecs::ECSRegistry& registry,
+			eage::ecs::RenderSystem* render_system = nullptr,
+			eage::ecs::ResourceId material_id = eage::ecs::INVALID_ID );
 		~AnimatedSprite();
 
 		void Play();
@@ -37,6 +41,8 @@ namespace eage::animation
 		const assets::AnimationClip& mClip;
 		eage::ecs::Entity mEntity;
 		eage::ecs::ECSRegistry& mRegistry;
+		eage::ecs::RenderSystem* mRenderSystem = nullptr;
+		eage::ecs::ResourceId mMaterialId = eage::ecs::INVALID_ID;
 
 		int mCurrentFrame = 0;
 		float mElapsed = 0.f;

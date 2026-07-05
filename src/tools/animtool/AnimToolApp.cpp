@@ -1,5 +1,7 @@
 #include "AnimToolApp.h"
 
+#include <cstring>
+#include <filesystem>
 #include <functional>
 #include <iostream>
 #include <cctype>
@@ -17,6 +19,7 @@
 #include <graphics/ImGuiRenderPass.h>
 
 #include "FileDialog.h"
+#include "AnimationExporter.h"
 #include "FrameSequence.h"
 #include "FrameThumbnail.h"
 #include "ToolUIStyle.h"
@@ -32,6 +35,57 @@ namespace
 	constexpr float WORKSPACE_HEIGHT_RATIO = 0.30f;
 	constexpr float PREVIEW_WIDTH_RATIO = 0.50f;
 	constexpr float THUMBNAIL_HEIGHT = 96.f;
+
+	void draw_export_modal(
+		ExportDialogState& export_state,
+		FileDialog& file_dialog,
+		const FrameSequence& frame_sequence )
+	{
+		if( !export_state.show_modal )
+		{
+			return;
+		}
+
+		ImGui::OpenPopup( "Export Animation" );
+		export_state.show_modal = false;
+
+		const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos( center, ImGuiCond_Appearing, ImVec2( 0.5f, 0.5f ) );
+
+		if( ImGui::BeginPopupModal( "Export Animation", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+		{
+			ImGui::TextUnformatted( "Animation directory name:" );
+			ImGui::InputText( "##export_name", export_state.animation_name, sizeof( export_state.animation_name ) );
+
+			if( ImGui::Button( "Choose Location and Export", ImVec2( 240.f, 0.f ) ) )
+			{
+				if( frame_sequence.GetFrameCount() == 0 )
+				{
+					utility::LOG_ERROR() << "Cannot export an empty frame sequence.";
+				}
+				else if( auto parent_folder = file_dialog.GetFolderPath() )
+				{
+					const std::filesystem::path output_directory =
+						std::filesystem::path( *parent_folder ) / export_state.animation_name;
+
+					if( AnimationExporter::Export( frame_sequence, output_directory ) )
+					{
+						utility::LOG() << "Exported animation to: " << output_directory.string();
+						ImGui::CloseCurrentPopup();
+					}
+				}
+			}
+
+			ImGui::SameLine();
+
+			if( ImGui::Button( "Cancel", ImVec2( 120.f, 0.f ) ) )
+			{
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+	}
 
 	struct ToolLayout
 	{
@@ -81,7 +135,8 @@ namespace
 	void draw_main_menu_bar(
 		FileDialog& file_dialog,
 		FrameSequence& frame_sequence,
-		eage::graphics::Renderer& renderer )
+		eage::graphics::Renderer& renderer,
+		ExportDialogState& export_state )
 	{
 		if( !ImGui::BeginMainMenuBar() )
 		{
@@ -121,9 +176,9 @@ namespace
 				}
 			}
 
-			if( ImGui::MenuItem( "Export" ) )
+			if( ImGui::MenuItem( "Export..." ) )
 			{
-				// TODO: export
+				export_state.show_modal = true;
 			}
 
 			ImGui::Separator();
@@ -356,7 +411,8 @@ AnimToolApp::Init()
 		draw_work_space( *mFrameSequence );
 		draw_preview( *mFrameSequence );
 		draw_editor_panel( *mFrameSequence );
-		draw_main_menu_bar( *mFileDialog, *mFrameSequence, *mRenderer );
+		draw_export_modal( mExportState, *mFileDialog, *mFrameSequence );
+		draw_main_menu_bar( *mFileDialog, *mFrameSequence, *mRenderer, mExportState );
 	} );
 
 	mRenderer->AddRenderPass( mScenePass.get() );

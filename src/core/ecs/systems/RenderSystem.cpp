@@ -1,5 +1,7 @@
 #include "RenderSystem.h"
 
+#include <optional>
+
 #include <assets/ImageLoader.h>
 #include <ecs/components/Basics.h>
 #include <ecs/components/Render.h>
@@ -28,6 +30,13 @@ namespace
 {
 	constexpr uint32_t GLOBAL_SCENE_DATA_BINDING = 0;
 	constexpr uint32_t PER_OBJECT_MESH_DATA_BINDING = 0;
+
+	struct MaterialTextureSlot
+	{
+		uint32_t binding = 0;
+		TextureFilter min_filter = TextureFilter::NEAREST;
+		TextureFilter mag_filter = TextureFilter::NEAREST;
+	};
 }
 
 // ---------------------------------------------------------------------------
@@ -141,6 +150,7 @@ struct RenderSystem::Impl
 
 		// Write textures: match by name first, then fall back to order-based matching
 		size_t order_index = 0;
+		std::optional<MaterialTextureSlot> primary_texture_slot;
 		for( const auto& texture_binding : material_property.textures )
 		{
 			const DescriptorBindingInfo* reflected = nullptr;
@@ -194,6 +204,14 @@ struct RenderSystem::Impl
 				texture->image_view.get(),
 				vk::ImageLayout::eShaderReadOnlyOptimal,
 				sampler );
+
+			if( !primary_texture_slot.has_value() )
+			{
+				primary_texture_slot = MaterialTextureSlot{
+					reflected->binding,
+					texture_binding.min_filter,
+					texture_binding.mag_filter };
+			}
 		}
 
 		// Write uniforms: match by name first, then by order among reflected uniform bindings
@@ -260,7 +278,13 @@ struct RenderSystem::Impl
 			mOwnedDescriptorSetLayouts.push_back( std::move( layout ) );
 		}
 
-		return mMaterials.Store( std::move( material ) );
+		const ResourceId material_id = mMaterials.Store( std::move( material ) );
+		if( primary_texture_slot.has_value() )
+		{
+			mMaterialPrimaryTextureBindings[material_id] = primary_texture_slot.value();
+		}
+
+		return material_id;
 	}
 
 	ResourceId CreateImageBuffer( const std::string& file_path )
@@ -318,6 +342,49 @@ struct RenderSystem::Impl
 	{
 		auto mesh_id = CreateSpriteMesh( width, height, uv_min, uv_max );
 		AttachRenderable( entity, mesh_id, material_id, visible );
+	}
+
+	void SetMaterialTexture( ResourceId material_id, const std::string& texture_path )
+	{
+		const auto slot_it = mMaterialPrimaryTextureBindings.find( material_id );
+		if( slot_it == mMaterialPrimaryTextureBindings.end() )
+		{
+			LOG_ERROR() << "No texture binding found for material: " << material_id;
+			return;
+		}
+
+		auto material = mMaterials.Get( material_id );
+		if( !material || !material->descriptor )
+		{
+			LOG_ERROR() << "Invalid material for texture swap: " << material_id;
+			return;
+		}
+
+		CreateImageBuffer( texture_path );
+
+		const auto image_it = mImagePathToIdMap.find( texture_path );
+		if( image_it == mImagePathToIdMap.end() )
+		{
+			LOG_ERROR() << "Failed to load texture for material swap: " << texture_path;
+			return;
+		}
+
+		auto texture = mImages.Get( image_it->second );
+		if( !texture )
+		{
+			LOG_ERROR() << "Invalid image buffer for material swap: " << texture_path;
+			return;
+		}
+
+		const ResourceId sampler_id = CreateSampler( slot_it->second.min_filter, slot_it->second.mag_filter );
+		const vk::Sampler sampler = GetSampler( sampler_id );
+
+		material->descriptor->WriteImage(
+			slot_it->second.binding,
+			vk::DescriptorType::eCombinedImageSampler,
+			texture->image_view.get(),
+			vk::ImageLayout::eShaderReadOnlyOptimal,
+			sampler );
 	}
 
 	void SetCamera( const AbstractCamera& camera, glm::vec2 virtual_resolution )
@@ -558,6 +625,7 @@ struct RenderSystem::Impl
 	std::unordered_map<size_t, std::shared_ptr<RenderPipeline>> mPipelineCache;
 	std::unordered_map<std::string, ResourceId> mImagePathToIdMap;
 	std::unordered_map<size_t, ResourceId> mSamplerCache;
+	std::unordered_map<ResourceId, MaterialTextureSlot> mMaterialPrimaryTextureBindings;
 
 	std::vector<vk::UniqueDescriptorSetLayout> mOwnedDescriptorSetLayouts;
 };
@@ -608,6 +676,12 @@ void
 RenderSystem::AttachSprite( Entity entity, ResourceId material_id, float width, float height, glm::vec2 uv_min, glm::vec2 uv_max, bool visible )
 {
 	mImpl->AttachSprite( entity, material_id, width, height, uv_min, uv_max, visible );
+}
+
+void
+RenderSystem::SetMaterialTexture( ResourceId material_id, const std::string& texture_path )
+{
+	mImpl->SetMaterialTexture( material_id, texture_path );
 }
 
 void
