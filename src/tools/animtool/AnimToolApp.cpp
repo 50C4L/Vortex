@@ -34,7 +34,6 @@ namespace
 	constexpr uint32_t SCENE_HEIGHT = 1080;
 	constexpr float WORKSPACE_HEIGHT_RATIO = 0.30f;
 	constexpr float PREVIEW_WIDTH_RATIO = 0.50f;
-	constexpr float THUMBNAIL_HEIGHT = 96.f;
 	constexpr ImVec2 FRAME_IMAGE_UV_MIN( 0.f, 1.f );
 	constexpr ImVec2 FRAME_IMAGE_UV_MAX( 1.f, 0.f );
 
