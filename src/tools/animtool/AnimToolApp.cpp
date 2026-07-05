@@ -1,5 +1,6 @@
 #include "AnimToolApp.h"
 
+#include <algorithm>
 #include <cstring>
 #include <filesystem>
 #include <functional>
@@ -198,18 +199,24 @@ namespace
 	void draw_frame_thumbnail_strip( FrameSequence& frame_sequence )
 	{
 		const ImVec2 avail = ImGui::GetContentRegionAvail();
+		if( avail.x <= 0.f || avail.y <= 0.f )
+		{
+			return;
+		}
 
 		ImGui::BeginChild(
 			"##frame_strip",
-			ImVec2( avail.x, THUMBNAIL_HEIGHT ),
+			avail,
 			ImGuiChildFlags_None,
 			ImGuiWindowFlags_HorizontalScrollbar );
+
+		const float thumb_height = ImGui::GetContentRegionAvail().y;
 
 		for( size_t i = 0; i < frame_sequence.GetFrameCount(); ++i )
 		{
 			const FrameThumbnail& frame = frame_sequence.GetFrame( i );
 			const float aspect = static_cast<float>( frame.GetWidth() ) / static_cast<float>( frame.GetHeight() );
-			const ImVec2 thumb_size( THUMBNAIL_HEIGHT * aspect, THUMBNAIL_HEIGHT );
+			const ImVec2 thumb_size( thumb_height * aspect, thumb_height );
 
 			ImGui::PushID( static_cast<int>( i ) );
 
@@ -242,8 +249,6 @@ namespace
 		}
 
 		ImGui::EndChild();
-
-		ImGui::Text( "%zu frame(s)", frame_sequence.GetFrameCount() );
 	}
 
 	void draw_work_space( FrameSequence& frame_sequence )
