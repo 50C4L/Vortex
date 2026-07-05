@@ -16,6 +16,7 @@ namespace animtool
 {
 
 class FileDialog;
+class FrameSequence;
 
 class AnimToolApp
 {
@@ -32,6 +33,7 @@ private:
 	std::unique_ptr<eage::graphics::Renderer> mRenderer;
 	std::unique_ptr<eage::graphics::SceneRenderPass> mScenePass;
 	std::unique_ptr<eage::graphics::ImGuiRenderPass> mImGuiPass;
+	std::unique_ptr<FrameSequence> mFrameSequence;
 };
 
 }

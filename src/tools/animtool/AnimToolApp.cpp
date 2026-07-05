@@ -16,6 +16,8 @@
 #include <graphics/ImGuiRenderPass.h>
 
 #include "FileDialog.h"
+#include "FrameSequence.h"
+#include "FrameThumbnail.h"
 #include "ToolUIStyle.h"
 
 using namespace animtool;
@@ -28,6 +30,7 @@ namespace
 	constexpr uint32_t SCENE_HEIGHT = 1080;
 	constexpr float WORKSPACE_HEIGHT_RATIO = 0.30f;
 	constexpr float PREVIEW_WIDTH_RATIO = 0.50f;
+	constexpr float THUMBNAIL_HEIGHT = 96.f;
 
 	struct ToolLayout
 	{
@@ -74,7 +77,10 @@ namespace
 		ImGui::Begin( title, nullptr, flags );
 	}
 
-	void draw_main_menu_bar( FileDialog& file_dialog )
+	void draw_main_menu_bar(
+		FileDialog& file_dialog,
+		FrameSequence& frame_sequence,
+		eage::graphics::Renderer& renderer )
 	{
 		if( !ImGui::BeginMainMenuBar() )
 		{
@@ -96,11 +102,12 @@ namespace
 				// TODO: save project
 			}
 
-			if( ImGui::MenuItem( "Load Images" ) )
+			if( ImGui::MenuItem( "Load PNG Folder..." ) )
 			{
-				if( auto path = file_dialog.GetFilePath( { "png", "gif" } ) )
+				if( auto path = file_dialog.GetFolderPath() )
 				{
-					utility::LOG() << "Load Images: " << *path;
+					const size_t added_count = frame_sequence.AppendPngFolder( *path, renderer );
+					utility::LOG() << "Added " << added_count << " frame(s) from: " << *path;
 				}
 			}
 
@@ -122,12 +129,40 @@ namespace
 		ImGui::EndMainMenuBar();
 	}
 
-	void draw_work_space()
+	void draw_frame_thumbnail_strip( const FrameSequence& frame_sequence )
+	{
+		const ImVec2 avail = ImGui::GetContentRegionAvail();
+
+		ImGui::BeginChild(
+			"##frame_strip",
+			ImVec2( avail.x, THUMBNAIL_HEIGHT ),
+			ImGuiChildFlags_None,
+			ImGuiWindowFlags_HorizontalScrollbar );
+
+		for( size_t i = 0; i < frame_sequence.GetFrameCount(); ++i )
+		{
+			const FrameThumbnail& frame = frame_sequence.GetFrame( i );
+			const float aspect = static_cast<float>( frame.GetWidth() ) / static_cast<float>( frame.GetHeight() );
+			const ImVec2 thumb_size( THUMBNAIL_HEIGHT * aspect, THUMBNAIL_HEIGHT );
+
+			ImGui::Image( frame.GetTextureId(), thumb_size );
+
+			if( i + 1 < frame_sequence.GetFrameCount() )
+			{
+				ImGui::SameLine();
+			}
+		}
+
+		ImGui::EndChild();
+
+		ImGui::Text( "%zu frame(s)", frame_sequence.GetFrameCount() );
+	}
+
+	void draw_work_space( const FrameSequence& frame_sequence )
 	{
 		const ToolLayout layout = compute_tool_layout();
 		begin_fixed_panel( "Work Space", layout.workspace_pos, layout.workspace_size );
-		// TODO: frame thumbnail strip
-		ImGui::Text( "Animation sequence" );
+		draw_frame_thumbnail_strip( frame_sequence );
 		ImGui::End();
 	}
 
@@ -166,9 +201,15 @@ AnimToolApp::~AnimToolApp()
 		mRenderer->WaitForIdle();
 	}
 
+	if( mFrameSequence )
+	{
+		mFrameSequence->Clear();
+	}
+
 	mImGuiPass.reset();
 	mScenePass.reset();
 	mRenderer.reset();
+	mFrameSequence.reset();
 	mFileDialog.reset();
 	mWindow.reset();
 	SDL_Quit();
@@ -199,6 +240,7 @@ AnimToolApp::Init()
 	}
 
 	mFileDialog = std::make_unique<FileDialog>( mWindow.get() );
+	mFrameSequence = std::make_unique<FrameSequence>();
 
 	mRenderer = std::make_unique<eage::graphics::Renderer>( *mWindow );
 	if( !mRenderer->Init() )
@@ -227,10 +269,10 @@ AnimToolApp::Init()
 
 	mImGuiPass->AddOverlayCallback( [this]()
 	{
-		draw_work_space();
+		draw_work_space( *mFrameSequence );
 		draw_preview( *mImGuiPass );
 		draw_editor_panel();
-		draw_main_menu_bar( *mFileDialog );
+		draw_main_menu_bar( *mFileDialog, *mFrameSequence, *mRenderer );
 	} );
 
 	mRenderer->AddRenderPass( mScenePass.get() );

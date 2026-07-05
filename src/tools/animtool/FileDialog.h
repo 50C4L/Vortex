@@ -17,6 +17,7 @@ public:
 	~FileDialog();
 
 	std::optional<std::string> GetFilePath( std::vector<std::string> extensions );
+	std::optional<std::string> GetFolderPath();
 
 	FileDialog( const FileDialog& ) = delete;
 	FileDialog& operator=( const FileDialog& ) = delete;

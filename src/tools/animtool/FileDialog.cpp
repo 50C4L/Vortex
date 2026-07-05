@@ -125,4 +125,27 @@ FileDialog::GetFilePath( std::vector<std::string> extensions )
 	return std::nullopt;
 }
 
+std::optional<std::string>
+FileDialog::GetFolderPath()
+{
+	nfdpickfolderu8args_t args = {};
+	args.parentWindow = get_native_window_handle( mWindow );
+
+	nfdu8char_t* out_path = nullptr;
+	const nfdresult_t result = NFD_PickFolderU8_With( &out_path, &args );
+	if( result == NFD_OKAY )
+	{
+		const std::string selected_path( out_path );
+		NFD_FreePathU8( out_path );
+		return selected_path;
+	}
+
+	if( result == NFD_ERROR )
+	{
+		utility::LOG_ERROR() << "NFD error: " << NFD_GetError();
+	}
+
+	return std::nullopt;
+}
+
 }

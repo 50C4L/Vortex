@@ -1,0 +1,48 @@
+#ifndef _ANIMTOOL_FRAME_THUMBNAIL_H_
+#define _ANIMTOOL_FRAME_THUMBNAIL_H_
+
+#include <filesystem>
+
+#include <imgui/imgui.h>
+#include <vulkan/vulkan.hpp>
+
+#include <assets/ImageLoader.h>
+#include <graphics/ManagedVulkanResources.h>
+#include <graphics/Renderer.h>
+
+namespace animtool
+{
+
+class FrameThumbnail
+{
+public:
+	FrameThumbnail() = default;
+	~FrameThumbnail();
+
+	FrameThumbnail( const FrameThumbnail& ) = delete;
+	FrameThumbnail& operator=( const FrameThumbnail& ) = delete;
+	FrameThumbnail( FrameThumbnail&& ) = default;
+	FrameThumbnail& operator=( FrameThumbnail&& ) = default;
+
+	void Upload( eage::graphics::Renderer& renderer, const std::filesystem::path& source_path, const assets::ImageLoader::Image& image );
+	void ReleaseImGuiTexture();
+
+	ImTextureID GetTextureId() const;
+
+	const std::filesystem::path& GetSourcePath() const { return mSourcePath; }
+	int GetWidth() const { return mWidth; }
+	int GetHeight() const { return mHeight; }
+
+private:
+	std::filesystem::path mSourcePath;
+	int mWidth = 0;
+	int mHeight = 0;
+
+	eage::graphics::ManagedImage::Ptr mGpuImage;
+	vk::UniqueSampler mSampler;
+	VkDescriptorSet mImGuiDescriptor = VK_NULL_HANDLE;
+};
+
+}
+
+#endif // _ANIMTOOL_FRAME_THUMBNAIL_H_
