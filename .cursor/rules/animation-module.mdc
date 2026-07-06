@@ -10,6 +10,8 @@ alwaysApply: false
 
 Frame-based sprite animation. `AnimatedSprite` reads an `AnimationClip` and writes UV rects directly into the entity's `RenderComponent` each frame. The full atlas texture is uploaded once; the UV rect selects the current frame sub-region.
 
+Static sprites use bindless `texture_index` instead of atlas UV rects. Animation continues to use `uv_rect` for frame sub-regions within a single atlas texture.
+
 ## Key Class
 
 | Class | Responsibility |
@@ -49,7 +51,7 @@ sprite.Update( delta_time_sec );
 ## DOs
 
 - Call `Update( delta_time )` every frame for playing sprites -- missing frames causes visible hitches
-- Pair `AnimatedSprite` with `RenderSystem::AttachSprite()` which sets up the `RenderComponent` correctly
+- Pair `AnimatedSprite` with `RenderSystem::AttachSprite( entity, material_id, w, h, texture_index )` which sets up the `RenderComponent` correctly
 - Use `ShowFrame( 0 )` + `Pause()` to display a static frame from the atlas without running animation
 
 ## DON'Ts

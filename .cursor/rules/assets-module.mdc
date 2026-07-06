@@ -10,6 +10,15 @@ alwaysApply: false
 
 Data-driven asset loading pipeline. `ImageLoader` reads image files from disk; `TextureAtlas` maps subtexture names to UV rectangles from a JSON atlas file; `AnimationClip` defines a frame sequence (with per-frame durations) referencing a texture atlas.
 
+## Static Sprites vs Animation
+
+| Use case | Asset format | Loading path |
+|---|---|---|
+| **Static sprites** (ship, bullet, asteroid, background) | Standalone PNG per sprite | `RenderSystem::CreateTexture( path )` -> bindless index on `RenderComponent` |
+| **Animated sprites** (in progress) | Atlas PNG + JSON + `.ftpp` clip | `AnimationClip` -> `AnimatedSprite` drives `RenderComponent::uv_rect` against one atlas texture |
+
+`TextureAtlas` remains in use for the animation pipeline. Static game sprites no longer use atlas JSON for UV lookup -- each sprite is a standalone image registered in the bindless array.
+
 ## Key Classes
 
 | Class | Responsibility |
@@ -24,11 +33,14 @@ Data-driven asset loading pipeline. `ImageLoader` reads image files from disk; `
 ## API
 
 ```cpp
-// Load a raw image (used by Renderer::UploadImage)
+// Load a raw image (used internally by RenderSystem::CreateTexture)
 auto img = ImageLoader::LoadImage( "textures/ship.png" );
 // img.data, img.width, img.height, img.num_channels
 
-// Load a texture atlas
+// Static sprite (preferred for non-animated sprites -- from game/ECS layer):
+uint32_t tex_index = render_system.CreateTexture( "resources/textures/ship/Ship.png" );
+
+// Load a texture atlas (animation pipeline)
 TextureAtlas atlas( "resources/textures/ship/ship_texatlas.json" );
 auto sub = atlas.GetSubTexture( "ship_idle" );  // returns (0,0)-(1,1) default if not found
 atlas.Flip();  // invert V for OpenGL-style coordinate systems
@@ -70,15 +82,17 @@ UVs are computed as `uv = pixel / atlas_size`.
 - **UV flip:** Different rendering backends use different Y-axis conventions. Call `atlas.Flip()` (or set `"flip": true` in clip JSON) when the atlas was authored top-origin.
 - **Default fallback:** `GetSubTexture()` returns `(0,0)-(1,1)` if the name is not found -- logs a warning but won't crash.
 - **STB ownership:** `Image::data` is heap-allocated by STB. Lifetime matches the `Image` struct.
+- **Atlas slicing:** Standalone sprite PNGs can be exported from atlas JSON frame rects (see `tools/slice_atlas.py`).
 
 ## DOs
 
-- Pass `ImageLoader::Image` directly to `Renderer::UploadImage()` -- they pair naturally
+- Use `RenderSystem::CreateTexture()` for static sprite textures from standalone PNGs
 - Use `AnimationClip` as the source of truth for animated sprites; don't hardcode UV rects
 - Check `GetFrameCount() > 0` before using a clip (JSON parse failures produce empty clips)
 
 ## DON'Ts
 
+- Don't use `TextureAtlas` for static game sprites -- use standalone PNGs + `CreateTexture()` instead
 - Don't call `Flip()` on an atlas that's already been flipped -- UVs will be wrong
 - Don't store `Image::data` pointer beyond the `Image` struct lifetime
 - Don't bypass `AnimationClip` and manually index `TextureAtlas` for animation -- use `AnimatedSprite` from the animation module

@@ -21,9 +21,10 @@ Layer 4: Material & Pipeline       Material, MaterialProperty, MaterialBuilder
 
 Layer 3: Descriptor System         StaticDescriptor, DynamicDescriptor
          Set allocation/binding    DynamicDescriptorAllocator, DescriptorWriter
+         Bindless texture array     Renderer-owned set 2 (sampler2D[])
 
 Layer 2: Resource Management       ManagedImage, ManagedBuffer (RAII + VMA)
-         GPU memory lifecycle       VulkanShader, ShaderReflection
+         GPU memory lifecycle       VulkanShader
 
 Layer 1: Vulkan Metal              VulkanContext, VulkanSwapChain
          Raw vk::raii types        VulkanCommandContext, VMAWrapper
@@ -36,20 +37,19 @@ Layer 1: Vulkan Metal              VulkanContext, VulkanSwapChain
 
 | Class | Responsibility |
 |---|---|
-| `Renderer` | Owns all GPU resources; orchestrates frame loop (MAX_FRAMES_IN_FLIGHT=2); provides `ImmediateSubmit()`, `GetGPUFrameTime()` |
+| `Renderer` | Owns all GPU resources; orchestrates frame loop (MAX_FRAMES_IN_FLIGHT=2); owns global bindless texture array; provides `RegisterBindlessTexture()`, `ImmediateSubmit()`, `GetGPUFrameTime()` |
 | `VulkanContext` | Initialises Vulkan instance, physical/logical device, queues, surface |
 | `AbstractRenderPass` | Base for all render passes; two-phase: `Prepare()` (CPU) -> `Execute()` (GPU); declares `RenderPassDesc` |
-| `SceneRenderPass` | Main geometry pass; accepts `RenderInfo` via `AddRenderInfo()`; owns off-screen color + depth targets |
-| `Material` | Runtime instance = shared `RenderPipeline` + unique `StaticDescriptor` |
-| `MaterialBuilder` | Fluent builder for `MaterialProperty` -> compiles to `Material` |
-| `StaticDescriptor` | Single descriptor set for textures/constants (don't change per-frame) |
+| `SceneRenderPass` | Main geometry pass; accepts `RenderInfo` via `AddRenderInfo()`; owns off-screen color + depth targets; binds global bindless set at draw time |
+| `Material` | Runtime instance = shared `RenderPipeline` only (pipeline state; no texture ownership) |
+| `MaterialBuilder` | Fluent builder for `MaterialProperty` -> compiles to `Material` (shaders + blend/depth/topology; textures are separate) |
+| `StaticDescriptor` | Single descriptor set for static uniforms (still used for global/per-object sets; not for sprite textures) |
 | `DynamicDescriptor` | Per-frame descriptor sets with dynamic offsets (matrices, per-object data) |
 | `DynamicDescriptorAllocator` | Pool-based allocator; grows on demand, resets each frame |
 | `ManagedImage` / `ManagedBuffer` | RAII GPU resources via VMA; use `::Ptr` alias (`unique_ptr` with custom deleter) |
 | `AbstractCamera` | Interface: `GetViewMatrix()`, `GetProjectionMatrix()`, `GetViewProjectionMatrix()`, `SetPosition()` |
 | `OrthographicCamera` | Concrete `AbstractCamera`; constructed with left/right/bottom/top/near/far bounds |
 | `VulkanPipelineBuilder` | Fluent builder for `vk::Pipeline`; encapsulates state (blend, depth, topology) |
-| `ShaderReflection` | SPIR-V reflection to auto-generate descriptor set layouts from shaders |
 | `BuiltInMeshes` | Helper: `made_rect_vertices( center, width, height )` -> `BuiltInRect` (vertices + indices) |
 
 ## Descriptor Set Convention
@@ -59,15 +59,16 @@ Shader descriptor sets follow a fixed binding convention:
 | Set | Content | Type |
 |---|---|---|
 | 0 | Global scene data (`SceneGlobalData`: view, proj, view_proj matrices, virtual_resolution) | `DynamicDescriptor` |
-| 1 | Per-object data (`MeshUniformData`: model matrix, vertex buffer address, uv_rect) | `DynamicDescriptor` |
-| 2 | Material-specific textures / constants | `StaticDescriptor` |
+| 1 | Per-object data (`MeshUniformData`: model matrix, vertex buffer address, uv_rect, texture_index) | `DynamicDescriptor` |
+| 2 | Global bindless texture array (`sampler2D textures[]`) | `Renderer`-owned; bound once per draw |
 
 **`MeshUniformData`** (set 1):
 ```cpp
 struct MeshUniformData {
-    alignas(64) glm::mat4  model;
-    alignas(8)  uint64_t   vertex_buffer_address;
-    alignas(16) glm::vec4  uv_rect;  // xy = uv offset, zw = uv scale
+    alignas(64) glm::mat4   model;
+    alignas(8)  uint64_t    vertex_buffer_address;
+    alignas(16) glm::vec4   uv_rect;         // xy = uv offset, zw = uv scale
+    alignas(4)  uint32_t    texture_index;   // index into bindless array (set 2)
 };
 ```
 
@@ -81,11 +82,13 @@ struct SceneGlobalData {
 };
 ```
 
+Fragment shader samples via `texture( textures[nonuniformEXT(texture_index)], uv )` (`GL_EXT_nonuniform_qualifier` required).
+
 ## Resource Ownership
 
 - **Unique ownership** for frame resources and GPU objects: `std::unique_ptr<VulkanCommandContext>`
 - **Shared ownership** for pipelines (shared across material instances): `std::shared_ptr<RenderPipeline>`
-- **Per-instance** descriptor: each `Material` owns its own `StaticDescriptor`
+- **Global bindless array:** `Renderer` owns the set-2 layout, update-after-bind pool, descriptor set, and default sampler; textures registered via `RegisterBindlessTexture()`
 - **Per-frame** allocators: `DynamicDescriptorAllocator` resets at frame start
 - **`ManagedImage::Ptr` / `ManagedBuffer::Ptr`**: `unique_ptr` with custom VMA deleter -- always use these aliases, never raw `unique_ptr<ManagedImage>`
 
@@ -93,11 +96,21 @@ struct SceneGlobalData {
 
 ### Creating a Material
 ```cpp
-auto mat = MaterialBuilder()
+auto property = MaterialBuilder()
     .SetShaders( "vert.spv", "frag.spv" )
-    .AddTexture( "albedo.png" )
     .SetAlphaBlending()
-    .Build( renderer );
+    .Build();
+// Textures are NOT part of Material -- register separately (see RenderSystem::CreateTexture)
+```
+
+### Registering a Texture (bindless)
+```cpp
+// Via RenderSystem (preferred from game layer):
+uint32_t tex_index = render_system.CreateTexture( "textures/ship/Ship.png" );
+
+// Low-level (Renderer internals):
+uint32_t index = renderer.RegisterBindlessTexture( image_view, sampler );
+// Index 0 is reserved for a bright-magenta fallback texture
 ```
 
 ### Submitting a Draw (via SceneRenderPass)
@@ -114,7 +127,8 @@ scene_render_pass.AddRenderInfo( RenderInfo{
     .index_count               = index_count,
     .vertex_offset             = 0,
     .model_matrix              = transform,
-    .uv_rect                   = { 0.f, 0.f, 1.f, 1.f }  // offset + scale
+    .uv_rect                   = { 0.f, 0.f, 1.f, 1.f },  // offset + scale
+    .texture_index             = tex_index
 } );
 ```
 
@@ -165,11 +179,12 @@ float gpu_ms = renderer.GetGPUFrameTime();  // milliseconds; 0 if unsupported
 
 - Use `MaterialBuilder` for all material creation -- never construct `Material` directly
 - Use `DynamicDescriptor` for per-frame data (matrices, lighting, time)
-- Use `StaticDescriptor` for textures and data that doesn't change per-frame
+- Register sprite textures via `RenderSystem::CreateTexture()` and pass the returned bindless index per entity
+- Use `uv_rect` for animation sub-regions (atlas frames); use `texture_index` for which texture to sample
 - Extend `AbstractRenderPass` for any custom rendering step; register via `Renderer::AddRenderPass( &pass )` (raw pointer)
 - Use `Renderer::ImmediateSubmit()` for one-off GPU submissions (uploads, transitions)
 - Allocate GPU memory through `ManagedImage::Create()` / `ManagedBuffer::Create()` -- store in `::Ptr` alias
-- Submit draws via `SceneRenderPass::AddRenderInfo()` -- fill all `RenderInfo` fields including `uv_rect`
+- Submit draws via `SceneRenderPass::AddRenderInfo()` -- fill all `RenderInfo` fields including `uv_rect` and `texture_index`
 - Use `made_rect_vertices()` for simple quad/sprite meshes
 - Sort render queue by depth (back-to-front) when alpha blending is involved
 
@@ -178,8 +193,9 @@ float gpu_ms = renderer.GetGPUFrameTime();  // milliseconds; 0 if unsupported
 - Don't call `renderer.Submit()` directly -- it's private; draws go through render passes
 - Don't pass `std::make_unique<Pass>()` to `AddRenderPass` -- it takes a raw pointer; you own the lifetime
 - Don't create raw Vulkan objects directly -- use the `Managed*` and `Vulkan*Builder` helpers
-- Don't write to or modify a descriptor set after pipeline creation; create a new `Material` instance instead
+- Don't attach textures to materials via `MaterialBuilder::AddTexture()` for sprites -- textures are decoupled from materials
 - Don't bypass `Renderer` for GPU submissions -- this breaks synchronisation
 - Don't use `unique_ptr<ManagedImage>` directly -- always use `ManagedImage::Ptr` (custom deleter required)
 - Don't use `StaticDescriptor` for data that varies per-frame -- that breaks double-buffering
 - Don't forget dynamic offsets when binding per-frame `DynamicDescriptor` sets
+- Don't omit `nonuniformEXT` when indexing the bindless sampler array in shaders

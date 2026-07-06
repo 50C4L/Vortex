@@ -19,7 +19,7 @@ Provides the Entity-Component-System architecture for the game layer. `ECSRegist
 | `ResourceManager<PtrType>` | Generic ref-counted resource pool; stores any smart-pointer type; returns opaque `ResourceId` |
 | `TransformComponent` | Position / rotation / scale with dirty-flag caching; world matrix updated by `SceneGraphSystem` |
 | `SceneGraphComponent` | Parent entity ID + children list; drives hierarchical transform propagation |
-| `RenderComponent` | Holds `ResourceId`s for mesh, material, descriptor, uniform buffer; UV rect for sprite control; visibility flag |
+| `RenderComponent` | Holds `ResourceId`s for mesh, material, descriptor, uniform buffer; `texture_index` for bindless sampling; `uv_rect` for animation sub-regions; visibility flag |
 | `PhysicsComponent` | Holds body `ResourceId`; event queue for forces/impulses/velocity/position/rotation/sleep |
 | `BoxColliderComponent` / `CircleColliderComponent` | Collision shape + `CollisionFilter` (category/mask/group bits) |
 | `AudioSourceComponent` | Named sound source map (`string` -> `ResourceId` for `SoundPool`) |
@@ -27,7 +27,7 @@ Provides the Entity-Component-System architecture for the game layer. `ECSRegist
 | `HudTransformComponent` | Normalized screen position (0-1) + pixel offset + anchor enum |
 | `HudTextComponent` | Text string + font size for ImGui HUD rendering |
 | `HudBarComponent` | Progress bar value/max for HUD rendering |
-| `RenderSystem` | Creates Vulkan mesh/material/image resources; attaches `RenderComponent`; syncs camera state |
+| `RenderSystem` | Creates Vulkan mesh/material resources; uploads textures to bindless array; attaches `RenderComponent`; syncs camera state |
 | `PhysicsSystem` | Wraps `PhysicsEngine`; creates Box2D bodies; processes physics event queue; dispatches collision events via `Observer` |
 | `AudioSystem` | Loads sound pools; processes `AudioEventComponent` queue each frame |
 | `SceneGraphSystem` | Traverses parent-child hierarchy; propagates world matrices top-down |
@@ -61,6 +61,28 @@ MyResource* ptr = manager.Get( id );  // nullptr if invalid
 manager.AddReference( id );
 manager.RemoveReference( id );        // frees if ref count hits zero
 bool live = manager.Exists( id );
+```
+
+## RenderSystem API (sprites)
+
+```cpp
+// Upload texture to bindless array; returns bindless index (deduplicated by path)
+uint32_t tex_index = render_system.CreateTexture( "./resources/textures/ship/Ship.png" );
+
+// Material = pipeline/state only (no texture)
+ResourceId mat_id = render_system.CreateMaterial( MaterialBuilder()
+    .SetShaders( "vert.spv", "frag.spv" )
+    .SetAlphaBlending()
+    .Build() );
+
+// Sprite mesh with full 0..1 UVs
+ResourceId mesh_id = render_system.CreateSpriteMesh( 32.f, 32.f );
+
+// Attach sprite (creates mesh + renderable in one call)
+render_system.AttachSprite( entity, mat_id, 32.f, 32.f, tex_index );
+
+// Attach existing mesh + material + texture index
+render_system.AttachRenderable( entity, mesh_id, mat_id, tex_index );
 ```
 
 ## Physics Event Queue Pattern
@@ -101,6 +123,7 @@ physics_system.RegisterObserver( &my_listener );
 - **PIMPL in RenderSystem:** Public header has no Vulkan includes. All Vulkan types live in the `.cpp` impl struct.
 - **Dirty-flag transforms:** Only recompute local matrix when `TransformComponent` is modified. `SceneGraphSystem` propagates world matrices.
 - **Unit conversion:** `PhysicsSystem` converts pixels <-> meters internally. Game code always works in pixel units.
+- **Texture decoupling:** `CreateTexture()` returns a bindless index; materials define shader/pipeline state only. Multiple entities can share one material with different `texture_index` values.
 
 ## DOs
 
@@ -108,6 +131,7 @@ physics_system.RegisterObserver( &my_listener );
 - Use `registry.GetComponentMap<T>()` to iterate all entities with a given component
 - Check `ResourceManager::Exists( id )` before calling `Get()` in non-critical paths
 - Register `PhysicsSystem::Observer` for collision responses; don't poll physics state per frame
+- Use `RenderSystem::CreateTexture()` for static sprite textures; pass the index to `AttachSprite()` or `AttachRenderable()`
 - Use `RenderSystem::AttachSprite()` / `AttachRenderable()` helpers for common setup
 
 ## DON'Ts
@@ -116,3 +140,4 @@ physics_system.RegisterObserver( &my_listener );
 - Don't call `PhysicsEngine` methods directly from game code -- go through `PhysicsSystem`
 - Don't add engine-specific (graphics/audio/physics) includes to component headers -- keep them POD-friendly
 - Don't manually manage `ResourceId` ref counts unless you explicitly call `AddReference()`
+- Don't bind textures through `MaterialBuilder::AddTexture()` for sprites -- use `CreateTexture()` instead
