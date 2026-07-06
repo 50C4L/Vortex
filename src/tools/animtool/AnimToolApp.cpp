@@ -12,6 +12,15 @@
 #include <imgui/imgui.h>
 #include <vulkan/vulkan.h>
 
+#include <glm/glm.hpp>
+
+#include <ecs/ECS.h>
+#include <ecs/components/Basics.h>
+#include <ecs/components/Render.h>
+#include <ecs/systems/RenderSystem.h>
+#include <graphics/Camera.h>
+#include <graphics/MaterialBuilder.h>
+
 #include <utility/Pointers.h>
 #include <utility/Logger.h>
 #include <utility/Filesystem.h>
@@ -39,6 +48,8 @@ namespace
 	constexpr float WORKSPACE_STRIP_VERTICAL_PADDING = 12.f;
 	constexpr ImVec2 FRAME_IMAGE_UV_MIN( 0.f, 1.f );
 	constexpr ImVec2 FRAME_IMAGE_UV_MAX( 1.f, 0.f );
+	constexpr ImVec2 SCENE_IMAGE_UV_MIN( 0.f, 0.f );
+	constexpr ImVec2 SCENE_IMAGE_UV_MAX( 1.f, 1.f );
 
 	void draw_export_modal(
 		ExportDialogState& export_state,
@@ -273,7 +284,7 @@ namespace
 		ImGui::End();
 	}
 
-	void draw_preview( const FrameSequence& frame_sequence )
+	void draw_preview( const FrameSequence& frame_sequence, void* scene_texture_id )
 	{
 		const ToolLayout layout = compute_tool_layout();
 		begin_fixed_panel( "Preview", layout.preview_pos, layout.preview_size );
@@ -312,7 +323,11 @@ namespace
 			cursor_pos.x + ( avail.x - display_size.x ) * 0.5f,
 			cursor_pos.y + ( avail.y - display_size.y ) * 0.5f ) );
 
-		ImGui::Image( frame.GetTextureId(), display_size, FRAME_IMAGE_UV_MIN, FRAME_IMAGE_UV_MAX );
+		ImGui::Image(
+			reinterpret_cast<ImTextureID>( scene_texture_id ),
+			display_size,
+			SCENE_IMAGE_UV_MIN,
+			SCENE_IMAGE_UV_MAX );
 
 		ImGui::End();
 	}
@@ -334,6 +349,7 @@ namespace
 		ImGui::Text( "Frame: %zu", selected_frame.value() + 1 );
 		ImGui::Text( "Size: %d x %d", frame.GetWidth(), frame.GetHeight() );
 		ImGui::Text( "Duration: %d ms", frame.GetDelayMs() );
+		ImGui::Text( "Bindless index: %u", frame.GetBindlessTextureIndex() );
 		ImGui::Text( "Source: %s", frame.GetSourcePath().filename().string().c_str() );
 
 		const std::string source_extension = frame.GetSourcePath().extension().string();
@@ -369,6 +385,9 @@ AnimToolApp::~AnimToolApp()
 	mScenePass.reset();
 	mRenderer.reset();
 	mFrameSequence.reset();
+	mRenderSystem.reset();
+	mECSRegistry.reset();
+	mPreviewCamera.reset();
 	mFileDialog.reset();
 	mWindow.reset();
 	SDL_Quit();
@@ -429,7 +448,7 @@ AnimToolApp::Init()
 	mImGuiPass->AddOverlayCallback( [this]()
 	{
 		draw_work_space( *mFrameSequence );
-		draw_preview( *mFrameSequence );
+		draw_preview( *mFrameSequence, mImGuiPass->GetSceneTextureId() );
 		draw_editor_panel( *mFrameSequence );
 		draw_export_modal( mExportState, *mFileDialog, *mFrameSequence );
 		draw_main_menu_bar( *mFileDialog, *mFrameSequence, *mRenderer, mExportState );
@@ -438,7 +457,80 @@ AnimToolApp::Init()
 	mRenderer->AddRenderPass( mScenePass.get() );
 	mRenderer->AddRenderPass( mImGuiPass.get() );
 
+	InitPreviewRendering();
+
 	return true;
+}
+
+void
+AnimToolApp::InitPreviewRendering()
+{
+	mECSRegistry = std::make_unique<eage::ecs::ECSRegistry>();
+	mRenderSystem = std::make_unique<eage::ecs::RenderSystem>( *mRenderer, *mScenePass, *mECSRegistry );
+
+	mPreviewCamera = std::make_unique<eage::graphics::OrthographicCamera>(
+		-0.5f, 0.5f, -0.5f, 0.5f, 0.1f, 100.0f );
+	mPreviewCamera->SetPosition( { 0.f, 0.f, 2.f } );
+	mPreviewVirtualResolution = { 1.f, 1.f };
+
+	auto material_property = eage::graphics::MaterialBuilder()
+		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",
+					 "./src/shaders/compiled/colored_triangle.frag.spv" )
+		.SetAlphaBlending( true )
+		.EnableDepthTest( true )
+		.Build();
+
+	mPreviewMaterialId = mRenderSystem->CreateMaterial( material_property );
+
+	mPreviewEntity = mECSRegistry->CreateEntity();
+	mECSRegistry->AddComponent( mPreviewEntity, eage::ecs::TransformComponent{} );
+	mPreviewMeshId = mRenderSystem->CreateSpriteMesh( 1.f, 1.f );
+	mRenderSystem->AttachRenderable( mPreviewEntity, mPreviewMeshId, mPreviewMaterialId, 0, false );
+}
+
+void
+AnimToolApp::UpdatePreviewSprite()
+{
+	if( mPreviewEntity == 0 || !mRenderSystem )
+	{
+		return;
+	}
+
+	auto& render_cmp = mECSRegistry->GetComponent<eage::ecs::RenderComponent>( mPreviewEntity );
+	const std::optional<size_t> selected_frame = mFrameSequence->GetSelectedFrame();
+
+	if( !selected_frame.has_value() )
+	{
+		render_cmp.visible = false;
+		return;
+	}
+
+	const FrameThumbnail& frame = mFrameSequence->GetFrame( selected_frame.value() );
+	render_cmp.texture_index = frame.GetBindlessTextureIndex();
+	render_cmp.visible = true;
+
+	const bool size_changed = frame.GetWidth() != mPreviewMeshWidth
+		|| frame.GetHeight() != mPreviewMeshHeight;
+
+	if( size_changed )
+	{
+		mPreviewMeshWidth = frame.GetWidth();
+		mPreviewMeshHeight = frame.GetHeight();
+		mPreviewMeshId = mRenderSystem->CreateSpriteMesh(
+			static_cast<float>( mPreviewMeshWidth ),
+			static_cast<float>( mPreviewMeshHeight ) );
+		render_cmp.mesh_buffer_id = mPreviewMeshId;
+
+		const float half_width = static_cast<float>( mPreviewMeshWidth ) * 0.5f;
+		const float half_height = static_cast<float>( mPreviewMeshHeight ) * 0.5f;
+		mPreviewCamera = std::make_unique<eage::graphics::OrthographicCamera>(
+			-half_width, half_width, -half_height, half_height, 0.1f, 100.0f );
+		mPreviewCamera->SetPosition( { 0.f, 0.f, 2.f } );
+		mPreviewVirtualResolution = glm::vec2(
+			static_cast<float>( mPreviewMeshWidth ),
+			static_cast<float>( mPreviewMeshHeight ) );
+	}
+
 }
 
 void
@@ -456,6 +548,14 @@ AnimToolApp::Run()
 			}
 
 			mImGuiPass->ProcessEvent( event );
+		}
+
+		UpdatePreviewSprite();
+
+		if( mRenderSystem && mPreviewCamera )
+		{
+			mRenderSystem->SetCamera( *mPreviewCamera, mPreviewVirtualResolution );
+			mRenderSystem->Update();
 		}
 
 		mRenderer->Render();

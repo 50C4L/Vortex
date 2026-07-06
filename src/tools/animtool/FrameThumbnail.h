@@ -33,6 +33,7 @@ public:
 	void ReleaseImGuiTexture();
 
 	ImTextureID GetTextureId() const;
+	uint32_t GetBindlessTextureIndex() const { return mBindlessTextureIndex; }
 
 	const std::filesystem::path& GetSourcePath() const { return mSourcePath; }
 	int GetFrameIndexInSource() const { return mFrameIndexInSource; }
@@ -48,7 +49,7 @@ private:
 	int mDelayMs = 100;
 
 	eage::graphics::ManagedImage::Ptr mGpuImage;
-	vk::UniqueSampler mSampler;
+	uint32_t mBindlessTextureIndex = 0;
 	VkDescriptorSet mImGuiDescriptor = VK_NULL_HANDLE;
 };
 

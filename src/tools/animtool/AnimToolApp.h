@@ -3,13 +3,22 @@
 
 #include <memory>
 
+#include <glm/glm.hpp>
+
 struct SDL_Window;
+
+namespace eage::ecs
+{
+	class ECSRegistry;
+	class RenderSystem;
+}
 
 namespace eage::graphics
 {
 	class Renderer;
 	class SceneRenderPass;
 	class ImGuiRenderPass;
+	class OrthographicCamera;
 }
 
 namespace animtool
@@ -34,13 +43,26 @@ public:
 	void Run();
 
 private:
+	void InitPreviewRendering();
+	void UpdatePreviewSprite();
+
 	std::shared_ptr<SDL_Window> mWindow;
 	std::unique_ptr<FileDialog> mFileDialog;
 	std::unique_ptr<eage::graphics::Renderer> mRenderer;
+	std::unique_ptr<eage::ecs::ECSRegistry> mECSRegistry;
+	std::unique_ptr<eage::ecs::RenderSystem> mRenderSystem;
 	std::unique_ptr<eage::graphics::SceneRenderPass> mScenePass;
 	std::unique_ptr<eage::graphics::ImGuiRenderPass> mImGuiPass;
+	std::unique_ptr<eage::graphics::OrthographicCamera> mPreviewCamera;
 	std::unique_ptr<FrameSequence> mFrameSequence;
 	ExportDialogState mExportState;
+
+	uint64_t mPreviewEntity = 0;
+	uint32_t mPreviewMaterialId = 0;
+	uint32_t mPreviewMeshId = 0;
+	int mPreviewMeshWidth = 0;
+	int mPreviewMeshHeight = 0;
+	glm::vec2 mPreviewVirtualResolution{ 1.f, 1.f };
 };
 
 }

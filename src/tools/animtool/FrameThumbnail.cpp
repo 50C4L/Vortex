@@ -17,13 +17,14 @@ FrameThumbnail::FrameThumbnail( FrameThumbnail&& other ) noexcept
 	, mHeight( other.mHeight )
 	, mDelayMs( other.mDelayMs )
 	, mGpuImage( std::move( other.mGpuImage ) )
-	, mSampler( std::move( other.mSampler ) )
+	, mBindlessTextureIndex( other.mBindlessTextureIndex )
 	, mImGuiDescriptor( other.mImGuiDescriptor )
 {
 	other.mFrameIndexInSource = 0;
 	other.mWidth = 0;
 	other.mHeight = 0;
 	other.mDelayMs = 100;
+	other.mBindlessTextureIndex = 0;
 	other.mImGuiDescriptor = VK_NULL_HANDLE;
 }
 
@@ -43,13 +44,14 @@ FrameThumbnail::operator=( FrameThumbnail&& other ) noexcept
 	mHeight = other.mHeight;
 	mDelayMs = other.mDelayMs;
 	mGpuImage = std::move( other.mGpuImage );
-	mSampler = std::move( other.mSampler );
+	mBindlessTextureIndex = other.mBindlessTextureIndex;
 	mImGuiDescriptor = other.mImGuiDescriptor;
 
 	other.mFrameIndexInSource = 0;
 	other.mWidth = 0;
 	other.mHeight = 0;
 	other.mDelayMs = 100;
+	other.mBindlessTextureIndex = 0;
 	other.mImGuiDescriptor = VK_NULL_HANDLE;
 
 	return *this;
@@ -81,11 +83,13 @@ FrameThumbnail::Upload(
 		vk::ImageAspectFlagBits::eColor,
 		1 );
 
-	mSampler = renderer.CreateSampler( vk::Filter::eNearest, vk::Filter::eNearest );
+	mBindlessTextureIndex = renderer.RegisterBindlessTexture(
+		mGpuImage->image_view.get(),
+		renderer.GetDefaultSampler() );
 
 	mImGuiDescriptor = ImGui_ImplVulkan_AddTexture(
-		*mSampler,
-		*mGpuImage->image_view,
+		renderer.GetDefaultSampler(),
+		mGpuImage->image_view.get(),
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
 }
 
