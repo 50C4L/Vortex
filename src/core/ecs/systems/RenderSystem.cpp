@@ -12,7 +12,6 @@
 #include <graphics/Renderer.h>
 #include <graphics/RenderInfo.h>
 #include <graphics/SceneRenderPass.h>
-#include <graphics/ShaderReflection.h>
 #include <graphics/VulkanDescriptor.h>
 #include <graphics/VulkanMesh.h>
 #include <graphics/VulkanShader.h>
@@ -64,7 +63,6 @@ struct RenderSystem::Impl
 
 	ResourceId CreateMaterial( const MaterialProperty& material_property )
 	{
-		// Load shaders and retain SPIR-V bytecode for reflection
 		auto vert_asset = load_shader_from_file( mRenderer.GetDevice(), material_property.vertex_shader_path );
 		auto frag_asset = load_shader_from_file( mRenderer.GetDevice(), material_property.fragment_shader_path );
 
@@ -74,198 +72,22 @@ struct RenderSystem::Impl
 			return INVALID_ID;
 		}
 
-		// Reflect descriptor bindings from SPIR-V
-		auto reflection = merge_reflection(
-			reflect_shader( vert_asset->spirv_code ),
-			reflect_shader( frag_asset->spirv_code ) );
-
-		// Build material-specific descriptor set layouts (skip built-in sets 0 and 1)
-		auto material_layouts = build_descriptor_set_layouts(
-			mRenderer.GetDevice(), reflection,
-			vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
-			{ 0, 1 } );
-
-		// Assemble all layouts for the pipeline (set 0, set 1, then reflected sets)
 		std::vector<vk::DescriptorSetLayout> all_layouts = {
 			mRenderer.GetBuiltInDescriptorSetLayouts().global.get(),
-			mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get()
+			mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get(),
+			mRenderer.GetBuiltInDescriptorSetLayouts().bindless.get()
 		};
-
-		// Track material-set layouts that we own (first reflected set is used for the material descriptor)
-		vk::DescriptorSetLayout material_set_layout = nullptr;
-		for( auto& [set_number, layout] : material_layouts )
-		{
-			if( !material_set_layout )
-			{
-				material_set_layout = layout.get();
-			}
-			all_layouts.push_back( layout.get() );
-		}
 
 		auto pipeline = CreateOrGetPipeline( material_property, all_layouts, *vert_asset, *frag_asset );
 
 		auto material = std::make_unique<Material>();
 		material->pipeline = pipeline;
-
-		if( material_set_layout )
-		{
-			material->descriptor = std::make_unique<StaticDescriptor>( mRenderer, material_set_layout );
-		}
-
-		// Build a name-to-binding lookup from the reflected bindings for the material set(s)
-		std::unordered_map<std::string, const DescriptorBindingInfo*> name_to_binding;
-		std::vector<const DescriptorBindingInfo*> sampler_bindings_ordered;
-		for( const auto& b : reflection.bindings )
-		{
-			if( b.set <= 1 )
-			{
-				continue;
-			}
-			if( !b.name.empty() )
-			{
-				name_to_binding[b.name] = &b;
-			}
-			if( b.descriptor_type == vk::DescriptorType::eCombinedImageSampler )
-			{
-				sampler_bindings_ordered.push_back( &b );
-			}
-		}
-
-		// Sort sampler bindings by (set, binding) for order-based fallback matching
-		std::sort( sampler_bindings_ordered.begin(), sampler_bindings_ordered.end(),
-			[]( const DescriptorBindingInfo* a, const DescriptorBindingInfo* b )
-			{
-				if( a->set != b->set ) return a->set < b->set;
-				return a->binding < b->binding;
-			} );
-
-		// Write textures: match by name first, then fall back to order-based matching
-		size_t order_index = 0;
-		for( const auto& texture_binding : material_property.textures )
-		{
-			const DescriptorBindingInfo* reflected = nullptr;
-
-			// Try name-based match
-			if( !texture_binding.name.empty() )
-			{
-				auto it = name_to_binding.find( texture_binding.name );
-				if( it != name_to_binding.end() )
-				{
-					reflected = it->second;
-				}
-			}
-
-			// Fall back to order-based match
-			if( !reflected && order_index < sampler_bindings_ordered.size() )
-			{
-				reflected = sampler_bindings_ordered[order_index];
-			}
-			++order_index;
-
-			if( !reflected )
-			{
-				LOG_ERROR() << "No matching shader binding for texture: " << texture_binding.texture_path;
-				continue;
-			}
-
-			auto img_it = mImagePathToIdMap.find( texture_binding.texture_path );
-			if( img_it == mImagePathToIdMap.end() )
-			{
-				LOG_ERROR() << "Failed to find image buffer for texture path: " << texture_binding.texture_path;
-				continue;
-			}
-
-			auto texture = mImages.Get( img_it->second );
-			if( !texture )
-			{
-				LOG_ERROR() << "Invalid image buffer for texture path: " << texture_binding.texture_path;
-				continue;
-			}
-
-			ResourceId sampler_id = CreateSampler(
-				texture_binding.min_filter,
-				texture_binding.mag_filter );
-
-			vk::Sampler sampler = GetSampler( sampler_id );
-
-			material->descriptor->WriteImage(
-				reflected->binding,
-				vk::DescriptorType::eCombinedImageSampler,
-				texture->image_view.get(),
-				vk::ImageLayout::eShaderReadOnlyOptimal,
-				sampler );
-		}
-
-		// Write uniforms: match by name first, then by order among reflected uniform bindings
-		std::vector<const DescriptorBindingInfo*> uniform_bindings_ordered;
-		for( const auto& b : reflection.bindings )
-		{
-			if( b.set <= 1 ) continue;
-			if( b.descriptor_type == vk::DescriptorType::eUniformBuffer ||
-				b.descriptor_type == vk::DescriptorType::eStorageBuffer )
-			{
-				uniform_bindings_ordered.push_back( &b );
-			}
-		}
-		std::sort( uniform_bindings_ordered.begin(), uniform_bindings_ordered.end(),
-			[]( const DescriptorBindingInfo* a, const DescriptorBindingInfo* b )
-			{
-				if( a->set != b->set ) return a->set < b->set;
-				return a->binding < b->binding;
-			} );
-
-		size_t uniform_order = 0;
-		for( const auto& uniform_binding : material_property.uniforms )
-		{
-			const DescriptorBindingInfo* reflected = nullptr;
-
-			if( !uniform_binding.name.empty() )
-			{
-				auto it = name_to_binding.find( uniform_binding.name );
-				if( it != name_to_binding.end() )
-				{
-					reflected = it->second;
-				}
-			}
-
-			if( !reflected && uniform_order < uniform_bindings_ordered.size() )
-			{
-				reflected = uniform_bindings_ordered[uniform_order];
-			}
-			++uniform_order;
-
-			if( !reflected || !uniform_binding.data )
-			{
-				continue;
-			}
-
-			auto uniform_buffer = ManagedBuffer::Create(
-				*mRenderer.GetMemoryAllocator().allocator.get(),
-				uniform_binding.size,
-				vk::BufferUsageFlagBits::eUniformBuffer,
-				VMA_MEMORY_USAGE_CPU_TO_GPU );
-
-			uniform_buffer->Update( uniform_binding.data, uniform_binding.size, 0 );
-
-			material->descriptor->WriteBuffer(
-				reflected->binding,
-				reflected->descriptor_type,
-				uniform_buffer->buffer,
-				uniform_binding.size );
-		}
-
-		// Keep material layouts alive alongside the material
-		for( auto& [set_number, layout] : material_layouts )
-		{
-			mOwnedDescriptorSetLayouts.push_back( std::move( layout ) );
-		}
-
 		return mMaterials.Store( std::move( material ) );
 	}
 
-	ResourceId CreateImageBuffer( const std::string& file_path )
+	uint32_t CreateTexture( const std::string& file_path )
 	{
-		if( auto it = mImagePathToIdMap.find( file_path ); it != mImagePathToIdMap.end() )
+		if( auto it = mTexturePathToBindlessIndex.find( file_path ); it != mTexturePathToBindlessIndex.end() )
 		{
 			return it->second;
 		}
@@ -283,21 +105,26 @@ struct RenderSystem::Impl
 			image.width, image.height, vk::Format::eR8G8B8A8Srgb,
 			vk::ImageUsageFlagBits::eSampled, vk::ImageAspectFlagBits::eColor, 1 );
 
-		mImagePathToIdMap[file_path] = mImages.Store( std::move( texture ) );
-		return mImagePathToIdMap[file_path];
+		const uint32_t bindless_index = mRenderer.RegisterBindlessTexture(
+			texture->image_view.get(),
+			mRenderer.GetDefaultSampler() );
+
+		mImages.Store( std::move( texture ) );
+		mTexturePathToBindlessIndex[file_path] = bindless_index;
+		return bindless_index;
 	}
 
-	ResourceId CreateSpriteMesh( float width, float height, glm::vec2 uv_min, glm::vec2 uv_max )
+	ResourceId CreateSpriteMesh( float width, float height )
 	{
 		auto rect = made_rect_vertices( { 0, 0, 0 }, width, height );
-		rect.vertices[0].uv_x = uv_max.x; rect.vertices[0].uv_y = uv_min.y;
-		rect.vertices[1].uv_x = uv_max.x; rect.vertices[1].uv_y = uv_max.y;
-		rect.vertices[2].uv_x = uv_min.x; rect.vertices[2].uv_y = uv_min.y;
-		rect.vertices[3].uv_x = uv_min.x; rect.vertices[3].uv_y = uv_max.y;
+		rect.vertices[0].uv_x = 1.f; rect.vertices[0].uv_y = 0.f;
+		rect.vertices[1].uv_x = 1.f; rect.vertices[1].uv_y = 1.f;
+		rect.vertices[2].uv_x = 0.f; rect.vertices[2].uv_y = 0.f;
+		rect.vertices[3].uv_x = 0.f; rect.vertices[3].uv_y = 1.f;
 		return CreateMeshBuffer( rect.indices, rect.vertices, 0, 6, 0 );
 	}
 
-	void AttachRenderable( Entity entity, ResourceId mesh_id, ResourceId material_id, bool visible )
+	void AttachRenderable( Entity entity, ResourceId mesh_id, ResourceId material_id, uint32_t texture_index, bool visible )
 	{
 		auto ubo_id = CreateDynamicUniformBuffer( sizeof( MeshUniformData ) );
 		auto descriptor_id = CreateDynamicDescriptorSet( mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() );
@@ -311,13 +138,14 @@ struct RenderSystem::Impl
 			.material_id = material_id,
 			.mesh_uniform_data_dynamic_id = ubo_id,
 			.mesh_descriptor_id = descriptor_id,
+			.texture_index = texture_index,
 			.visible = visible } );
 	}
 
-	void AttachSprite( Entity entity, ResourceId material_id, float width, float height, glm::vec2 uv_min, glm::vec2 uv_max, bool visible )
+	void AttachSprite( Entity entity, ResourceId material_id, float width, float height, uint32_t texture_index, bool visible )
 	{
-		auto mesh_id = CreateSpriteMesh( width, height, uv_min, uv_max );
-		AttachRenderable( entity, mesh_id, material_id, visible );
+		auto mesh_id = CreateSpriteMesh( width, height );
+		AttachRenderable( entity, mesh_id, material_id, texture_index, visible );
 	}
 
 	void SetCamera( const AbstractCamera& camera, glm::vec2 virtual_resolution )
@@ -392,6 +220,7 @@ struct RenderSystem::Impl
 			}
 
 			render_info.uv_rect = render_cmp.uv_rect;
+			render_info.texture_index = render_cmp.texture_index;
 
 			mScenePass.AddRenderInfo( std::move( render_info ) );
 		}
@@ -556,10 +385,9 @@ struct RenderSystem::Impl
 	ResourceManager<std::unique_ptr<vk::UniqueSampler>> mSamplers;
 
 	std::unordered_map<size_t, std::shared_ptr<RenderPipeline>> mPipelineCache;
-	std::unordered_map<std::string, ResourceId> mImagePathToIdMap;
+	std::unordered_map<std::string, uint32_t> mTexturePathToBindlessIndex;
 	std::unordered_map<size_t, ResourceId> mSamplerCache;
 
-	std::vector<vk::UniqueDescriptorSetLayout> mOwnedDescriptorSetLayouts;
 };
 
 // ---------------------------------------------------------------------------
@@ -586,28 +414,28 @@ RenderSystem::CreateMaterial( const MaterialProperty& material_property )
 	return mImpl->CreateMaterial( material_property );
 }
 
-ResourceId
-RenderSystem::CreateImageBuffer( const std::string& file_path )
+uint32_t
+RenderSystem::CreateTexture( const std::string& file_path )
 {
-	return mImpl->CreateImageBuffer( file_path );
+	return mImpl->CreateTexture( file_path );
 }
 
 ResourceId
-RenderSystem::CreateSpriteMesh( float width, float height, glm::vec2 uv_min, glm::vec2 uv_max )
+RenderSystem::CreateSpriteMesh( float width, float height )
 {
-	return mImpl->CreateSpriteMesh( width, height, uv_min, uv_max );
+	return mImpl->CreateSpriteMesh( width, height );
 }
 
 void
-RenderSystem::AttachRenderable( Entity entity, ResourceId mesh_id, ResourceId material_id, bool visible )
+RenderSystem::AttachRenderable( Entity entity, ResourceId mesh_id, ResourceId material_id, uint32_t texture_index, bool visible )
 {
-	mImpl->AttachRenderable( entity, mesh_id, material_id, visible );
+	mImpl->AttachRenderable( entity, mesh_id, material_id, texture_index, visible );
 }
 
 void
-RenderSystem::AttachSprite( Entity entity, ResourceId material_id, float width, float height, glm::vec2 uv_min, glm::vec2 uv_max, bool visible )
+RenderSystem::AttachSprite( Entity entity, ResourceId material_id, float width, float height, uint32_t texture_index, bool visible )
 {
-	mImpl->AttachSprite( entity, material_id, width, height, uv_min, uv_max, visible );
+	mImpl->AttachSprite( entity, material_id, width, height, texture_index, visible );
 }
 
 void

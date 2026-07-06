@@ -4,7 +4,6 @@
 #include <memory>
 
 #include <graphics/VulkanPipeline.h>
-#include <graphics/VulkanDescriptor.h>
 
 namespace eage::graphics
 {
@@ -12,7 +11,6 @@ namespace eage::graphics
 	struct Material
 	{
 		std::shared_ptr<RenderPipeline> pipeline;		// Pipeline can be shared between instances
-		std::unique_ptr<StaticDescriptor> descriptor;	// Static descriptor for textures and material properties
 	};
 }
 

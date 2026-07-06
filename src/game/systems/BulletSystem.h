@@ -30,8 +30,7 @@ namespace vortex
 		eage::ecs::ResourceId material_id = 0;
 		uint16_t category_bits = 0x0006;
 		uint16_t mask_bits = 0x0005;
-		glm::vec2 uv_min = glm::vec2( 0.f, 0.f );
-		glm::vec2 uv_max = glm::vec2( 1.f, 1.f );
+		uint32_t texture_index = 0;
 		float fire_interval = 0.f; // Minimum seconds between shots; 0 = unlimited
 	};
 

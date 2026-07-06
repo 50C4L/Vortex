@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.hpp>
 #include <deque>
 #include <unordered_map>
+#include <algorithm>
 
 namespace eage::graphics
 {
@@ -14,11 +15,13 @@ namespace eage::graphics
 		~DescriptorLayoutBuilder();
 
 		DescriptorLayoutBuilder& AddBinding( uint32_t binding, vk::DescriptorType type );
+		DescriptorLayoutBuilder& AddBinding( uint32_t binding, vk::DescriptorType type, uint32_t count, vk::DescriptorBindingFlags flags = {} );
 		vk::UniqueDescriptorSetLayout Build( vk::Device device, vk::ShaderStageFlags shader_stage );
 		void Clear();
 
 	private:
 		std::vector<vk::DescriptorSetLayoutBinding> mBindings;
+		std::vector<vk::DescriptorBindingFlags> mBindingFlags;
 	};
 
 	class DynamicDescriptorAllocator

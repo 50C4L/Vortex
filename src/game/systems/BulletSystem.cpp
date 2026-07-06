@@ -47,8 +47,7 @@ BulletSystem::PreparePool( eage::ecs::RenderSystem& render_system, const BulletP
 
 	// Create a shared mesh for this pool
 	eage::ecs::ResourceId mesh_id = render_system.CreateSpriteMesh(
-		config.mesh_width, config.mesh_height,
-		glm::vec2( 0.f, 0.f ), glm::vec2( 1.f, 1.f ) );
+		config.mesh_width, config.mesh_height );
 
 	for( int i = 0; i < count; ++i )
 	{
@@ -89,7 +88,7 @@ BulletSystem::PreparePool( eage::ecs::RenderSystem& render_system, const BulletP
 		mRegistry.AddComponent( entity, BulletComponent{ false, config.damage } );
 
 		// Render
-		render_system.AttachSprite( entity, config.material_id, config.mesh_width, config.mesh_height, config.uv_min, config.uv_max );
+		render_system.AttachRenderable( entity, mesh_id, config.material_id, config.texture_index );
 	}
 
 	return pool_id;

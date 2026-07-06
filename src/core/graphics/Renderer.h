@@ -100,8 +100,15 @@ namespace eage::graphics
 		{
 			vk::UniqueDescriptorSetLayout global;
 			vk::UniqueDescriptorSetLayout per_object;
+			vk::UniqueDescriptorSetLayout bindless;
 		};
 		BuiltInDescriptorSetLayouts& GetBuiltInDescriptorSetLayouts();
+
+		static constexpr uint32_t MAX_BINDLESS_TEXTURES = 4096;
+
+		uint32_t RegisterBindlessTexture( vk::ImageView image_view, vk::Sampler sampler );
+		vk::DescriptorSet GetBindlessDescriptorSet() const;
+		vk::Sampler GetDefaultSampler() const;
 
 		float GetGPUFrameTime() const override { return mGPUFrameTime; }
 
@@ -129,6 +136,7 @@ namespace eage::graphics
 
 		void InitFrameResources();
 		void InitDescriptors();
+		void InitBindless();
 
 		void InitGPUTiming();
 		void UpdateGPUTiming();
@@ -151,6 +159,11 @@ namespace eage::graphics
 		uint64_t							mFrameNumber;
 
 		BuiltInDescriptorSetLayouts mBuiltInDescriptorSetLayouts;
+
+		vk::UniqueDescriptorPool mBindlessPool;
+		vk::UniqueDescriptorSet mBindlessSet;
+		vk::UniqueSampler mDefaultSampler;
+		uint32_t mNextBindlessIndex = 0;
 
 		// GPU frame timing
 		vk::UniqueQueryPool mTimestampQueryPool;

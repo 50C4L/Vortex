@@ -7,7 +7,6 @@
 #include <ecs/ResourceManager.h>
 #include <ecs/systems/AudioSystem.h>
 #include <ecs/systems/RenderSystem.h>
-#include <assets/TextureAtlas.h>
 #include <graphics/MaterialBuilder.h>
 #include <utility/Logger.h>
 
@@ -35,37 +34,21 @@ void
 PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uint64_t root_entity )
 {
 	// ------------------------------------------------------------------
-	// Material
+	// Material and textures
 	// ------------------------------------------------------------------
-	render_system.CreateImageBuffer( "./resources/textures/ship/ship_texatlas.png" );
-	render_system.CreateImageBuffer( "./resources/textures/bullets/player_bullets.png" );
+	const uint32_t ship_texture = render_system.CreateTexture( "./resources/textures/ship/Ship.png" );
+	const uint32_t thrust_texture = render_system.CreateTexture( "./resources/textures/ship/ship_thrust_fx.png" );
+	const uint32_t bullet_texture = render_system.CreateTexture( "./resources/textures/bullets/p_default_bullet.png" );
 
-	auto ship_material_prop = eage::graphics::MaterialBuilder()
+	auto sprite_material_prop = eage::graphics::MaterialBuilder()
 		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",
 					 "./src/shaders/compiled/colored_triangle.frag.spv" )
-		.AddTexture( "./resources/textures/ship/ship_texatlas.png",
-					 eage::graphics::TextureFilter::NEAREST, eage::graphics::TextureFilter::NEAREST )
 		.SetAlphaBlending( true )
 		.EnableDepthTest( true )
 		.Build();
 
-	mPlayerMaterialId = render_system.CreateMaterial( ship_material_prop );
-
-	auto bullet_material_prop = eage::graphics::MaterialBuilder()
-		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",
-					 "./src/shaders/compiled/colored_triangle.frag.spv" )
-		.AddTexture( "./resources/textures/bullets/player_bullets.png",
-					 eage::graphics::TextureFilter::NEAREST, eage::graphics::TextureFilter::NEAREST )
-		.SetAlphaBlending( true )
-		.EnableDepthTest( true )
-		.Build();
-
-	mPlayerBulletMaterialId = render_system.CreateMaterial( bullet_material_prop );
-
-	assets::TextureAtlas texture_atlas( "./resources/textures/ship/ship_texatlas.json" );
-	texture_atlas.Flip();
-	assets::TextureAtlas bullet_texture_atlas( "./resources/textures/bullets/player_bullets.json" );
-	bullet_texture_atlas.Flip();
+	mPlayerMaterialId = render_system.CreateMaterial( sprite_material_prop );
+	mPlayerBulletMaterialId = mPlayerMaterialId;
 
 	// ------------------------------------------------------------------
 	// Player entity
@@ -97,8 +80,7 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 	player_collider.mask_bits = PHYSX_CAT_SCREEN_ZONE | PHYSX_CAT_ENEMY;
 	mRegistry.AddComponent( player_entity, std::move( player_collider ) );
 
-	const auto& ship_tex = texture_atlas.GetSubTexture( "Ship.png" );
-	render_system.AttachSprite( player_entity, mPlayerMaterialId, 32.f, 32.f, ship_tex.uv_min, ship_tex.uv_max );
+	render_system.AttachSprite( player_entity, mPlayerMaterialId, 32.f, 32.f, ship_texture );
 
 	eage::ecs::AudioSourceComponent thrust_audio;
 	thrust_audio.sources["thruster"] = { mAudioSystem.LoadSound( { "./resources/sounds/thruster.mp3", 1, true } ) };
@@ -123,8 +105,7 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 	thruster_transform.SetScale( glm::vec3( 1 / 5.f ) );
 	mRegistry.AddComponent( thruster_entity, std::move( thruster_transform ) );
 
-	const auto& thrust_tex = texture_atlas.GetSubTexture( "ship_thrust_fx.png" );
-	render_system.AttachSprite( thruster_entity, mPlayerMaterialId, 32.f, 32.f, thrust_tex.uv_min, thrust_tex.uv_max );
+	render_system.AttachSprite( thruster_entity, mPlayerMaterialId, 32.f, 32.f, thrust_texture );
 
 	// ------------------------------------------------------------------
 	// Bullet launcher child entity
@@ -149,8 +130,6 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 	// ------------------------------------------------------------------
 	// Bullet pool
 	// ------------------------------------------------------------------
-	const auto& default_bullet_tex = bullet_texture_atlas.GetSubTexture( "p_default_bullet.png" );
-
 	BulletPoolConfig bullet_config;
 	bullet_config.damage = 1.f;
 	bullet_config.collider_radius = 4.f;
@@ -159,8 +138,7 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 	bullet_config.material_id = mPlayerBulletMaterialId;
 	bullet_config.category_bits = PHYSX_CAT_BULLET;
 	bullet_config.mask_bits = PHYSX_CAT_ENEMY;
-	bullet_config.uv_min = default_bullet_tex.uv_min;
-	bullet_config.uv_max = default_bullet_tex.uv_max;
+	bullet_config.texture_index = bullet_texture;
 	bullet_config.fire_interval = 0.5f; // 2 bullets per second max
 	mDefaultBulletPoolId = mBulletSystem.PreparePool( render_system, bullet_config, 20, root_entity );
 }

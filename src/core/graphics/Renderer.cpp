@@ -116,6 +116,7 @@ Renderer::Init()
 
 	// Init descriptor set layout
 	InitDescriptors();
+	InitBindless();
 
 	// Initialize GPU timing
 	InitGPUTiming();
@@ -463,6 +464,87 @@ Renderer::InitDescriptors()
 		mBuiltInDescriptorSetLayouts.per_object = 
 			layout_builder.Build( *mContext->logical_device, vk::ShaderStageFlagBits::eVertex );
 	}
+}
+
+void
+Renderer::InitBindless()
+{
+	LOG( "Initializing bindless texture array ..." );
+
+	{
+		DescriptorLayoutBuilder layout_builder;
+		layout_builder.AddBinding(
+			0,
+			vk::DescriptorType::eCombinedImageSampler,
+			MAX_BINDLESS_TEXTURES,
+			vk::DescriptorBindingFlagBits::eUpdateAfterBind | vk::DescriptorBindingFlagBits::ePartiallyBound );
+		mBuiltInDescriptorSetLayouts.bindless =
+			layout_builder.Build( *mContext->logical_device, vk::ShaderStageFlagBits::eFragment );
+	}
+
+	vk::DescriptorPoolSize pool_size( vk::DescriptorType::eCombinedImageSampler, MAX_BINDLESS_TEXTURES );
+	vk::DescriptorPoolCreateInfo pool_info{};
+	pool_info.flags = vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind;
+	pool_info.maxSets = 1;
+	pool_info.poolSizeCount = 1;
+	pool_info.pPoolSizes = &pool_size;
+	mBindlessPool = ( *mContext->logical_device ).createDescriptorPoolUnique( pool_info );
+
+	vk::DescriptorSetAllocateInfo alloc_info{};
+	alloc_info.descriptorPool = mBindlessPool.get();
+	alloc_info.descriptorSetCount = 1;
+	alloc_info.pSetLayouts = &mBuiltInDescriptorSetLayouts.bindless.get();
+	mBindlessSet = std::move( ( *mContext->logical_device ).allocateDescriptorSetsUnique( alloc_info )[0] );
+
+	mDefaultSampler = CreateSampler( vk::Filter::eNearest, vk::Filter::eNearest );
+
+	// Reserve index 0 for a 1x1 fallback texture (bright magenta — obvious missing/wrong texture)
+	uint32_t fallback_pixels[1] = { 0xFFFF00FF };
+	auto fallback_image = UploadImage(
+		fallback_pixels,
+		sizeof( fallback_pixels ),
+		1, 1,
+		vk::Format::eR8G8B8A8Srgb,
+		vk::ImageUsageFlagBits::eSampled,
+		vk::ImageAspectFlagBits::eColor,
+		1 );
+	RegisterBindlessTexture( fallback_image->image_view.get(), mDefaultSampler.get() );
+}
+
+uint32_t
+Renderer::RegisterBindlessTexture( vk::ImageView image_view, vk::Sampler sampler )
+{
+	if( mNextBindlessIndex >= MAX_BINDLESS_TEXTURES )
+	{
+		LOG_ERROR( "Bindless texture array is full" );
+		return 0;
+	}
+
+	const uint32_t index = mNextBindlessIndex++;
+
+	vk::DescriptorImageInfo image_info( sampler, image_view, vk::ImageLayout::eShaderReadOnlyOptimal );
+	vk::WriteDescriptorSet write{};
+	write.dstSet = mBindlessSet.get();
+	write.dstBinding = 0;
+	write.dstArrayElement = index;
+	write.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	write.descriptorCount = 1;
+	write.pImageInfo = &image_info;
+	GetDevice().updateDescriptorSets( 1, &write, 0, nullptr );
+
+	return index;
+}
+
+vk::DescriptorSet
+Renderer::GetBindlessDescriptorSet() const
+{
+	return mBindlessSet.get();
+}
+
+vk::Sampler
+Renderer::GetDefaultSampler() const
+{
+	return mDefaultSampler.get();
 }
 
 void

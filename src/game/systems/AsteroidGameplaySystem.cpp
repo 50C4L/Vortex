@@ -6,7 +6,6 @@
 #include <ecs/components/Render.h>
 #include <ecs/systems/RenderSystem.h>
 #include <graphics/MaterialBuilder.h>
-#include <assets/TextureAtlas.h>
 #include <utility/Logger.h>
 
 #include "../GameConfig.h"
@@ -42,28 +41,21 @@ AsteroidGameplaySystem::~AsteroidGameplaySystem()
 void
 AsteroidGameplaySystem::PrepareAsteroids( eage::ecs::RenderSystem& render_system, int count, uint64_t root_entity )
 {
-	// Create asteroid material
-	render_system.CreateImageBuffer( "./resources/textures/asteroid/asteroid.png" );
+	// Create asteroid material and texture
+	const uint32_t asteroid_texture = render_system.CreateTexture( "./resources/textures/asteroid/Asteroid L.png" );
 
-	// Create sprite material using the new MaterialBuilder and RenderSystem
 	auto material_property = eage::graphics::MaterialBuilder()
 		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",
 					 "./src/shaders/compiled/colored_triangle.frag.spv" )
-		.AddTexture( "./resources/textures/asteroid/asteroid.png",
-					 eage::graphics::TextureFilter::NEAREST, eage::graphics::TextureFilter::NEAREST )
 		.SetAlphaBlending( true )
 		.EnableDepthTest( true )
 		.Build();
 
 	mAsteroidMaterialId = render_system.CreateMaterial( material_property );
-
-	// Load texture
-	assets::TextureAtlas texture_atlas( "./resources/textures/asteroid/asteroid.json" );
-	texture_atlas.Flip();
-	const auto& asteroid_tex = texture_atlas.GetSubTexture( "Asteroid L.png" );
+	mAsteroidTextureIndex = asteroid_texture;
 
 	// Create shared mesh - ALL ASTEROIDS CAN USE THIS
-	mAsteroidMeshId = render_system.CreateSpriteMesh( 32.f, 32.f, asteroid_tex.uv_min, asteroid_tex.uv_max );
+	mAsteroidMeshId = render_system.CreateSpriteMesh( 32.f, 32.f );
 
 	// Create given number of asteroids
 	for( int i = 0; i < count; ++i )
@@ -107,7 +99,7 @@ AsteroidGameplaySystem::PrepareAsteroids( eage::ecs::RenderSystem& render_system
 		mAllAsteroids.insert( asteroid );
 
 		// Render component
-		render_system.AttachRenderable( asteroid, mAsteroidMeshId, mAsteroidMaterialId, false );
+		render_system.AttachRenderable( asteroid, mAsteroidMeshId, mAsteroidMaterialId, mAsteroidTextureIndex, false );
 	}
 }
 

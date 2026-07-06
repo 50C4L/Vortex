@@ -1,6 +1,7 @@
 #ifndef _EAGE_BUILT_IN_UNIFORMS_H_
 #define _EAGE_BUILT_IN_UNIFORMS_H_
 
+#include <cstdint>
 #include <glm/glm.hpp>
 
 namespace eage::graphics
@@ -10,8 +11,9 @@ namespace eage::graphics
 		alignas(64) glm::mat4 model;
 		alignas(8) uint64_t vertex_buffer_address;
 		alignas(16) glm::vec4 uv_rect; // xy = uv offset, zw = uv scale
+		alignas(4) uint32_t texture_index;
 		// padding
-		float extra[38];
+		float extra[37];
 	};
 
 	struct SceneGlobalData

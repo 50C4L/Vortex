@@ -38,12 +38,12 @@ namespace eage::ecs
 		ResourceId CreateMeshBuffer( const std::vector<uint32_t>& indices, const std::vector<eage::graphics::Vertex>& vertices,
 									 uint32_t first_index, uint32_t index_count, uint32_t vertex_offset );
 		ResourceId CreateMaterial( const eage::graphics::MaterialProperty& property );
-		ResourceId CreateImageBuffer( const std::string& file_path );
-		ResourceId CreateSpriteMesh( float width, float height, glm::vec2 uv_min, glm::vec2 uv_max );
+		uint32_t CreateTexture( const std::string& file_path );
+		ResourceId CreateSpriteMesh( float width, float height );
 
 		// Entity helpers
-		void AttachRenderable( eage::ecs::Entity entity, ResourceId mesh_id, ResourceId material_id, bool visible = true );
-		void AttachSprite( eage::ecs::Entity entity, ResourceId material_id, float width, float height, glm::vec2 uv_min, glm::vec2 uv_max, bool visible = true );
+		void AttachRenderable( eage::ecs::Entity entity, ResourceId mesh_id, ResourceId material_id, uint32_t texture_index = 0, bool visible = true );
+		void AttachSprite( eage::ecs::Entity entity, ResourceId material_id, float width, float height, uint32_t texture_index, bool visible = true );
 
 		// Camera
 		void SetCamera( const eage::graphics::AbstractCamera& camera, glm::vec2 virtual_resolution );

@@ -276,6 +276,8 @@ namespace
 
 		if( features_12.bufferDeviceAddress == VK_FALSE ||
 			features_12.descriptorIndexing == VK_FALSE ||
+			features_12.runtimeDescriptorArray == VK_FALSE ||
+			features_12.descriptorBindingPartiallyBound == VK_FALSE ||
 			features_12.shaderSampledImageArrayNonUniformIndexing == VK_FALSE || 
 			features_12.descriptorBindingSampledImageUpdateAfterBind == VK_FALSE ||
 			features_12.shaderUniformBufferArrayNonUniformIndexing == VK_FALSE ||

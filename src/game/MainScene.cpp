@@ -126,25 +126,18 @@ MainScene::CreateSceneRoot()
 void
 MainScene::CreateBackgroundEntity()
 {
-	// Upload texture directly -- no TextureAtlas
-	mRenderSystem.CreateImageBuffer( "./resources/textures/background/dark.png" );
+	const uint32_t background_texture = mRenderSystem.CreateTexture( "./resources/textures/background/dark.png" );
 
-	// Build material
 	auto material_property = eage::graphics::MaterialBuilder()
 		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",
 					 "./src/shaders/compiled/colored_triangle.frag.spv" )
-		.AddTexture( "./resources/textures/background/dark.png",
-					 eage::graphics::TextureFilter::NEAREST,
-					 eage::graphics::TextureFilter::NEAREST )
 		.SetAlphaBlending( true )
 		.EnableDepthTest( true )
 		.Build();
 
 	auto material_id = mRenderSystem.CreateMaterial( material_property );
 
-	// Create sprite mesh
-	auto mesh_id = mRenderSystem.CreateSpriteMesh( 1280.f, 720.f,
-		glm::vec2( 0.f, 0.f ), glm::vec2( 1.f, 1.f ) );
+	auto mesh_id = mRenderSystem.CreateSpriteMesh( 1280.f, 720.f );
 
 	// Create entity
 	mBackgroundEntity = mECSRegistry.CreateEntity();
@@ -165,7 +158,7 @@ MainScene::CreateBackgroundEntity()
 	mECSRegistry.AddComponent( mBackgroundEntity, std::move( transform ) );
 
 	// Attach renderable
-	mRenderSystem.AttachRenderable( mBackgroundEntity, mesh_id, material_id );
+	mRenderSystem.AttachRenderable( mBackgroundEntity, mesh_id, material_id, background_texture );
 }
 
 void

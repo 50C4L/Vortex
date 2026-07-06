@@ -47,6 +47,7 @@ namespace vortex
 
 		eage::ecs::ResourceId mAsteroidMaterialId = 0;
 		eage::ecs::ResourceId mAsteroidMeshId = 0;
+		uint32_t mAsteroidTextureIndex = 0;
 
 		std::deque<uint64_t> mAvailableAsteroids;
 		std::unordered_set<uint64_t> mAllAsteroids;

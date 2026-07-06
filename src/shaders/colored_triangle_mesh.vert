@@ -29,7 +29,10 @@ layout(set = 1, binding = 0) uniform RenderableFixedData {
 	VertexBuffer vertexBuffer; // 8 bytes
 	// 8 bytes implicit padding to align vec4 to offset 80
 	vec4 uv_rect; // xy = uv offset, zw = uv scale
+	uint texture_index;
 } renderableData;
+
+layout(location = 2) flat out uint outTexIndex;
 
 void main() 
 {	
@@ -47,4 +50,5 @@ void main()
 
 	outColor = v.color;
 	outUV = vec2( v.uv_x, v.uv_y ) * renderableData.uv_rect.zw + renderableData.uv_rect.xy;
+	outTexIndex = renderableData.texture_index;
 }

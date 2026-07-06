@@ -23,7 +23,14 @@ DescriptorLayoutBuilder::~DescriptorLayoutBuilder()
 DescriptorLayoutBuilder&
 DescriptorLayoutBuilder::AddBinding( uint32_t binding, vk::DescriptorType type )
 {
-	mBindings.push_back( vk::DescriptorSetLayoutBinding( binding, type, 1 ) );
+	return AddBinding( binding, type, 1, {} );
+}
+
+DescriptorLayoutBuilder&
+DescriptorLayoutBuilder::AddBinding( uint32_t binding, vk::DescriptorType type, uint32_t count, vk::DescriptorBindingFlags flags )
+{
+	mBindings.push_back( vk::DescriptorSetLayoutBinding( binding, type, count ) );
+	mBindingFlags.push_back( flags );
 	return *this;
 }
 
@@ -39,6 +46,21 @@ DescriptorLayoutBuilder::Build( vk::Device device, vk::ShaderStageFlags shader_s
 	layout_info.bindingCount = static_cast<uint32_t>( mBindings.size() );
 	layout_info.pBindings    = mBindings.data();
 
+	const bool has_binding_flags = std::any_of( mBindingFlags.begin(), mBindingFlags.end(),
+		[]( vk::DescriptorBindingFlags flags )
+		{
+			return flags != vk::DescriptorBindingFlags{};
+		} );
+
+	vk::DescriptorSetLayoutBindingFlagsCreateInfo binding_flags_info{};
+	if( has_binding_flags )
+	{
+		binding_flags_info.bindingCount = static_cast<uint32_t>( mBindingFlags.size() );
+		binding_flags_info.pBindingFlags = mBindingFlags.data();
+		layout_info.pNext = &binding_flags_info;
+		layout_info.flags = vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool;
+	}
+
 	return device.createDescriptorSetLayoutUnique( layout_info );
 }
 
@@ -46,6 +68,7 @@ void
 DescriptorLayoutBuilder::Clear()
 {
 	mBindings.clear();
+	mBindingFlags.clear();
 }
 
 DynamicDescriptorAllocator::DynamicDescriptorAllocator( vk::Device device, uint32_t sets_per_pool, const std::vector<PoolSizeRatio>& pool_sizes )

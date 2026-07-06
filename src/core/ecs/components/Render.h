@@ -15,6 +15,7 @@ namespace eage::ecs
 		ResourceId mesh_descriptor_id = INVALID_ID;
 
 		glm::vec4 uv_rect = { 0.f, 0.f, 1.f, 1.f }; // xy = uv offset, zw = uv scale
+		uint32_t texture_index = 0;
 		bool visible = true;
 	};
 }

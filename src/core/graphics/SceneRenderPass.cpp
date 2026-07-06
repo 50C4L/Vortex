@@ -120,6 +120,7 @@ SceneRenderPass::Execute( CommandBuffer& buffer, const FrameContext& ctx )
 		data.model = render_info.model_matrix;
 		data.vertex_buffer_address = render_info.mesh_buffer->vertex_buffer_address;
 		data.uv_rect = render_info.uv_rect;
+		data.texture_index = render_info.texture_index;
 		render_info.mesh_uniform_data_dynamic->Update( &data, sizeof( MeshUniformData ), sizeof( MeshUniformData ) * current_frame );
 
 		// Pipeline global uniform
@@ -145,13 +146,14 @@ SceneRenderPass::Execute( CommandBuffer& buffer, const FrameContext& ctx )
 				static_cast<uint32_t>( dynamic_offsets->size() ), dynamic_offsets->data() );
 		}
 
-		// Material static uniform
+		// Global bindless texture array
 		{
+			vk::DescriptorSet bindless_set = mRenderer.GetBindlessDescriptorSet();
 			cmd.bindDescriptorSets(
 				vk::PipelineBindPoint::eGraphics,
 				render_info.material->pipeline->layout.get(),
 				descriptor_index++, 1,
-				render_info.material->descriptor->GetDescriptorSet(),
+				&bindless_set,
 				0, nullptr );
 		}
 
