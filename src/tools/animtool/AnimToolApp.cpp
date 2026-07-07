@@ -57,13 +57,11 @@ namespace
 		FileDialog& file_dialog,
 		const FrameSequence& frame_sequence )
 	{
-		if( !export_state.show_modal )
+		if( export_state.show_modal )
 		{
-			return;
+			ImGui::OpenPopup( "Export Animation" );
+			export_state.show_modal = false;
 		}
-
-		ImGui::OpenPopup( "Export Animation" );
-		export_state.show_modal = false;
 
 		const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
 		ImGui::SetNextWindowPos( center, ImGuiCond_Appearing, ImVec2( 0.5f, 0.5f ) );
@@ -567,8 +565,8 @@ AnimToolApp::DrawToolUI()
 	draw_work_space( *mFrameSequence );
 	draw_editor_panel( *mFrameSequence );
 	draw_preview( *mFrameSequence, mImGuiPass->GetSceneTextureId(), mPreviewPlayback, mPlayRequested );
-	draw_export_modal( mExportState, *mFileDialog, *mFrameSequence );
 	draw_main_menu_bar( *mFileDialog, *mFrameSequence, *mRenderer, mExportState );
+	draw_export_modal( mExportState, *mFileDialog, *mFrameSequence );
 
 	if( mPlayRequested )
 	{
