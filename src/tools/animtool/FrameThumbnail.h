@@ -40,6 +40,8 @@ public:
 	int GetWidth() const { return mWidth; }
 	int GetHeight() const { return mHeight; }
 	int GetDelayMs() const { return mDelayMs; }
+	int& GetDelayMsMutable() { return mDelayMs; }
+	void SetDelayMs( int delay_ms ) { mDelayMs = delay_ms; }
 
 private:
 	std::filesystem::path mSourcePath;

@@ -2,6 +2,7 @@
 #define _ANIMTOOL_APP_H_
 
 #include <memory>
+#include <optional>
 
 #include <glm/glm.hpp>
 
@@ -33,6 +34,17 @@ struct ExportDialogState
 	char animation_name[128] = "animation";
 };
 
+struct PreviewPlaybackState
+{
+	bool playing = false;
+	size_t current_frame = 0;
+	float elapsed_sec = 0.f;
+
+	void Start();
+	void Stop();
+	void Update( float delta_time_sec, const FrameSequence& frame_sequence );
+};
+
 class AnimToolApp
 {
 public:
@@ -44,7 +56,9 @@ public:
 
 private:
 	void InitPreviewRendering();
+	void UpdatePreviewPlayback( float delta_time_sec );
 	void UpdatePreviewSprite();
+	void DrawToolUI();
 
 	std::shared_ptr<SDL_Window> mWindow;
 	std::unique_ptr<FileDialog> mFileDialog;
@@ -56,6 +70,8 @@ private:
 	std::unique_ptr<eage::graphics::OrthographicCamera> mPreviewCamera;
 	std::unique_ptr<FrameSequence> mFrameSequence;
 	ExportDialogState mExportState;
+	PreviewPlaybackState mPreviewPlayback;
+	bool mPlayRequested = false;
 
 	uint64_t mPreviewEntity = 0;
 	uint32_t mPreviewMaterialId = 0;

@@ -12,7 +12,7 @@ using namespace animtool;
 
 namespace
 {
-	constexpr int DEFAULT_FRAME_DELAY_MS = 100;
+	constexpr int DEFAULT_ANIMATION_DURATION_MS = 100;
 
 	bool is_png_file( const std::filesystem::path& path )
 	{
@@ -84,6 +84,52 @@ FrameSequence::GetFrame( size_t index ) const
 	return mFrames.at( index );
 }
 
+int
+FrameSequence::GetAnimationDurationMs() const
+{
+	return mAnimationDurationMs;
+}
+
+int&
+FrameSequence::GetAnimationDurationMs()
+{
+	return mAnimationDurationMs;
+}
+
+void
+FrameSequence::SetAnimationDurationMs( int duration_ms )
+{
+	mAnimationDurationMs = std::max( duration_ms, 1 );
+}
+
+float
+FrameSequence::GetFrameDurationSec() const
+{
+	if( mFrames.empty() )
+	{
+		return 0.f;
+	}
+
+	return static_cast<float>( mAnimationDurationMs )
+		/ static_cast<float>( mFrames.size() )
+		/ 1000.f;
+}
+
+int
+FrameSequence::GetFrameDurationMs( size_t frame_index ) const
+{
+	const size_t frame_count = mFrames.size();
+	if( frame_count == 0 )
+	{
+		return 1;
+	}
+
+	const int base_duration_ms = mAnimationDurationMs / static_cast<int>( frame_count );
+	const int remainder_ms = mAnimationDurationMs % static_cast<int>( frame_count );
+	const int extra_ms = frame_index < static_cast<size_t>( remainder_ms ) ? 1 : 0;
+	return std::max( base_duration_ms + extra_ms, 1 );
+}
+
 std::optional<size_t>
 FrameSequence::GetSelectedFrame() const
 {
@@ -108,7 +154,7 @@ FrameSequence::AppendFrame(
 	const std::filesystem::path& source_path,
 	const assets::ImageLoader::Image& image,
 	int frame_index_in_source,
-	int delay_ms )
+	int source_delay_ms )
 {
 	if( ContainsFrame( source_path, frame_index_in_source ) )
 	{
@@ -121,7 +167,7 @@ FrameSequence::AppendFrame(
 	}
 
 	FrameThumbnail frame;
-	frame.Upload( renderer, source_path, image, frame_index_in_source, delay_ms );
+	frame.Upload( renderer, source_path, image, frame_index_in_source, source_delay_ms );
 	mFrames.push_back( std::move( frame ) );
 
 	if( !mSelectedFrame.has_value() )
@@ -142,6 +188,8 @@ FrameSequence::AppendPngFolder( const std::filesystem::path& folder, eage::graph
 		return 0;
 	}
 
+	const bool was_empty = mFrames.empty();
+
 	assets::ImageLoader image_loader;
 	size_t added_count = 0;
 
@@ -155,7 +203,12 @@ FrameSequence::AppendPngFolder( const std::filesystem::path& folder, eage::graph
 			continue;
 		}
 
-		added_count += AppendFrame( renderer, absolute_path, image, 0, DEFAULT_FRAME_DELAY_MS );
+		added_count += AppendFrame( renderer, absolute_path, image, 0, DEFAULT_ANIMATION_DURATION_MS );
+	}
+
+	if( was_empty && added_count > 0 )
+	{
+		mAnimationDurationMs = DEFAULT_ANIMATION_DURATION_MS;
 	}
 
 	return added_count;
@@ -174,16 +227,25 @@ FrameSequence::AppendGif( const std::filesystem::path& gif_path, eage::graphics:
 		return 0;
 	}
 
+	const bool was_empty = mFrames.empty();
+	int gif_total_duration_ms = 0;
+
 	size_t added_count = 0;
 	for( size_t frame_index = 0; frame_index < gif_frames.size(); ++frame_index )
 	{
 		const assets::ImageLoader::GifFrame& gif_frame = gif_frames[frame_index];
+		gif_total_duration_ms += std::max( gif_frame.delay_ms, 1 );
 		added_count += AppendFrame(
 			renderer,
 			absolute_path,
 			gif_frame.image,
 			static_cast<int>( frame_index ),
 			gif_frame.delay_ms );
+	}
+
+	if( was_empty && added_count > 0 )
+	{
+		mAnimationDurationMs = std::max( gif_total_duration_ms, 1 );
 	}
 
 	return added_count;
@@ -199,6 +261,7 @@ FrameSequence::Clear()
 
 	mFrames.clear();
 	mSelectedFrame = std::nullopt;
+	mAnimationDurationMs = DEFAULT_ANIMATION_DURATION_MS;
 }
 
 bool

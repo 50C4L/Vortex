@@ -24,6 +24,13 @@ public:
 	size_t GetFrameCount() const;
 	const FrameThumbnail& GetFrame( size_t index ) const;
 
+	int GetAnimationDurationMs() const;
+	int& GetAnimationDurationMs();
+	void SetAnimationDurationMs( int duration_ms );
+
+	float GetFrameDurationSec() const;
+	int GetFrameDurationMs( size_t frame_index ) const;
+
 	std::optional<size_t> GetSelectedFrame() const;
 	void SetSelectedFrame( std::optional<size_t> index );
 
@@ -38,12 +45,13 @@ private:
 		const std::filesystem::path& source_path,
 		const assets::ImageLoader::Image& image,
 		int frame_index_in_source,
-		int delay_ms );
+		int source_delay_ms );
 
 	bool ContainsFrame( const std::filesystem::path& path, int frame_index_in_source ) const;
 
 	std::vector<FrameThumbnail> mFrames;
 	std::optional<size_t> mSelectedFrame;
+	int mAnimationDurationMs = 100;
 };
 
 }

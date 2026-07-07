@@ -1,6 +1,7 @@
 #include "AnimToolApp.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstring>
 #include <filesystem>
 #include <functional>
@@ -284,10 +285,22 @@ namespace
 		ImGui::End();
 	}
 
-	void draw_preview( const FrameSequence& frame_sequence, void* scene_texture_id )
+	void draw_preview(
+		const FrameSequence& frame_sequence,
+		void* scene_texture_id,
+		PreviewPlaybackState& playback,
+		bool& play_requested )
 	{
 		const ToolLayout layout = compute_tool_layout();
 		begin_fixed_panel( "Preview", layout.preview_pos, layout.preview_size );
+
+		const bool can_play = frame_sequence.GetFrameCount() > 0;
+		ImGui::BeginDisabled( !can_play );
+		if( ImGui::Button( "Play" ) )
+		{
+			play_requested = true;
+		}
+		ImGui::EndDisabled();
 
 		const ImVec2 avail = ImGui::GetContentRegionAvail();
 		if( avail.x <= 0.f || avail.y <= 0.f )
@@ -296,15 +309,18 @@ namespace
 			return;
 		}
 
-		const std::optional<size_t> selected_frame = frame_sequence.GetSelectedFrame();
-		if( !selected_frame.has_value() )
+		if( !can_play )
 		{
-			ImGui::TextUnformatted( "No frame selected" );
+			ImGui::TextUnformatted( "No frames loaded" );
 			ImGui::End();
 			return;
 		}
 
-		const FrameThumbnail& frame = frame_sequence.GetFrame( selected_frame.value() );
+		const size_t display_frame = playback.playing
+			? playback.current_frame
+			: frame_sequence.GetSelectedFrame().value_or( 0 );
+
+		const FrameThumbnail& frame = frame_sequence.GetFrame( display_frame );
 		const float aspect = static_cast<float>( frame.GetWidth() ) / static_cast<float>( frame.GetHeight() );
 		const float avail_aspect = avail.x / avail.y;
 
@@ -332,10 +348,27 @@ namespace
 		ImGui::End();
 	}
 
-	void draw_editor_panel( const FrameSequence& frame_sequence )
+	void draw_editor_panel( FrameSequence& frame_sequence )
 	{
 		const ToolLayout layout = compute_tool_layout();
 		begin_fixed_panel( "Editor Panel", layout.editor_pos, layout.editor_size );
+
+		if( frame_sequence.GetFrameCount() == 0 )
+		{
+			ImGui::TextUnformatted( "No frames loaded" );
+			ImGui::End();
+			return;
+		}
+
+		int& animation_duration_ms = frame_sequence.GetAnimationDurationMs();
+		ImGui::InputInt( "Duration (ms)", &animation_duration_ms, 0, 0 );
+		if( ImGui::IsItemEdited() || ImGui::IsItemDeactivatedAfterEdit() )
+		{
+			frame_sequence.SetAnimationDurationMs( animation_duration_ms );
+		}
+
+		const float per_frame_ms = frame_sequence.GetFrameDurationSec() * 1000.f;
+		ImGui::Text( "Per frame: %.1f ms", per_frame_ms );
 
 		const std::optional<size_t> selected_frame = frame_sequence.GetSelectedFrame();
 		if( !selected_frame.has_value() )
@@ -348,7 +381,6 @@ namespace
 		const FrameThumbnail& frame = frame_sequence.GetFrame( selected_frame.value() );
 		ImGui::Text( "Frame: %zu", selected_frame.value() + 1 );
 		ImGui::Text( "Size: %d x %d", frame.GetWidth(), frame.GetHeight() );
-		ImGui::Text( "Duration: %d ms", frame.GetDelayMs() );
 		ImGui::Text( "Bindless index: %u", frame.GetBindlessTextureIndex() );
 		ImGui::Text( "Source: %s", frame.GetSourcePath().filename().string().c_str() );
 
@@ -362,6 +394,51 @@ namespace
 		}
 
 		ImGui::End();
+	}
+}
+
+void
+PreviewPlaybackState::Start()
+{
+	playing = true;
+	current_frame = 0;
+	elapsed_sec = 0.f;
+}
+
+void
+PreviewPlaybackState::Stop()
+{
+	playing = false;
+	elapsed_sec = 0.f;
+}
+
+void
+PreviewPlaybackState::Update( float delta_time_sec, const FrameSequence& frame_sequence )
+{
+	if( !playing || frame_sequence.GetFrameCount() == 0 )
+	{
+		return;
+	}
+
+	elapsed_sec += delta_time_sec;
+
+	while( playing )
+	{
+		const float frame_duration_sec = frame_sequence.GetFrameDurationSec();
+
+		if( elapsed_sec < frame_duration_sec )
+		{
+			break;
+		}
+
+		elapsed_sec -= frame_duration_sec;
+		++current_frame;
+
+		if( current_frame >= frame_sequence.GetFrameCount() )
+		{
+			Stop();
+			break;
+		}
 	}
 }
 
@@ -447,11 +524,7 @@ AnimToolApp::Init()
 
 	mImGuiPass->AddOverlayCallback( [this]()
 	{
-		draw_work_space( *mFrameSequence );
-		draw_preview( *mFrameSequence, mImGuiPass->GetSceneTextureId() );
-		draw_editor_panel( *mFrameSequence );
-		draw_export_modal( mExportState, *mFileDialog, *mFrameSequence );
-		draw_main_menu_bar( *mFileDialog, *mFrameSequence, *mRenderer, mExportState );
+		DrawToolUI();
 	} );
 
 	mRenderer->AddRenderPass( mScenePass.get() );
@@ -489,6 +562,27 @@ AnimToolApp::InitPreviewRendering()
 }
 
 void
+AnimToolApp::DrawToolUI()
+{
+	draw_work_space( *mFrameSequence );
+	draw_editor_panel( *mFrameSequence );
+	draw_preview( *mFrameSequence, mImGuiPass->GetSceneTextureId(), mPreviewPlayback, mPlayRequested );
+	draw_export_modal( mExportState, *mFileDialog, *mFrameSequence );
+	draw_main_menu_bar( *mFileDialog, *mFrameSequence, *mRenderer, mExportState );
+
+	if( mPlayRequested )
+	{
+		mFrameSequence->SetAnimationDurationMs( mFrameSequence->GetAnimationDurationMs() );
+	}
+}
+
+void
+AnimToolApp::UpdatePreviewPlayback( float delta_time_sec )
+{
+	mPreviewPlayback.Update( delta_time_sec, *mFrameSequence );
+}
+
+void
 AnimToolApp::UpdatePreviewSprite()
 {
 	if( mPreviewEntity == 0 || !mRenderSystem )
@@ -497,15 +591,24 @@ AnimToolApp::UpdatePreviewSprite()
 	}
 
 	auto& render_cmp = mECSRegistry->GetComponent<eage::ecs::RenderComponent>( mPreviewEntity );
-	const std::optional<size_t> selected_frame = mFrameSequence->GetSelectedFrame();
 
-	if( !selected_frame.has_value() )
+	size_t display_frame_index = 0;
+	if( mPreviewPlayback.playing )
+	{
+		display_frame_index = mPreviewPlayback.current_frame;
+	}
+	else if( const std::optional<size_t> selected_frame = mFrameSequence->GetSelectedFrame();
+		selected_frame.has_value() )
+	{
+		display_frame_index = selected_frame.value();
+	}
+	else if( mFrameSequence->GetFrameCount() == 0 )
 	{
 		render_cmp.visible = false;
 		return;
 	}
 
-	const FrameThumbnail& frame = mFrameSequence->GetFrame( selected_frame.value() );
+	const FrameThumbnail& frame = mFrameSequence->GetFrame( display_frame_index );
 	render_cmp.texture_index = frame.GetBindlessTextureIndex();
 	render_cmp.visible = true;
 
@@ -537,8 +640,14 @@ void
 AnimToolApp::Run()
 {
 	bool quit = false;
+	auto last_frame_time = std::chrono::steady_clock::now();
+
 	while( !quit )
 	{
+		const auto frame_time = std::chrono::steady_clock::now();
+		const float delta_time_sec = std::chrono::duration<float>( frame_time - last_frame_time ).count();
+		last_frame_time = frame_time;
+
 		SDL_Event event;
 		while( SDL_PollEvent( &event ) )
 		{
@@ -550,6 +659,7 @@ AnimToolApp::Run()
 			mImGuiPass->ProcessEvent( event );
 		}
 
+		UpdatePreviewPlayback( delta_time_sec );
 		UpdatePreviewSprite();
 
 		if( mRenderSystem && mPreviewCamera )
@@ -559,6 +669,12 @@ AnimToolApp::Run()
 		}
 
 		mRenderer->Render();
+
+		if( mPlayRequested )
+		{
+			mPreviewPlayback.Start();
+			mPlayRequested = false;
+		}
 	}
 
 	mRenderer->WaitForIdle();

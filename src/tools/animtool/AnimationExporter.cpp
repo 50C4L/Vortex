@@ -174,7 +174,7 @@ AnimationExporter::Export( const FrameSequence& sequence, const std::filesystem:
 			return false;
 		}
 
-		exported_frames.emplace_back( texture_name, frame.GetDelayMs() );
+		exported_frames.emplace_back( texture_name, sequence.GetFrameDurationMs( frame_index ) );
 	}
 
 	if( !write_animation_json( output_directory, exported_frames ) )
