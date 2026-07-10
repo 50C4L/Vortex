@@ -22,7 +22,7 @@ Frame-based sprite animation. `AnimatedSprite` is a per-entity playback controll
 auto clip = assets::AnimationClip::Load( render_system, "path/to/animation.json" );
 
 // Construction -- binds to an entity (must already have RenderComponent)
-AnimatedSprite sprite( clip, entity, registry );
+AnimatedSprite sprite( *clip, entity, registry );
 
 // Playback control
 sprite.ShowFrame( 0 );
@@ -47,7 +47,7 @@ if( sprite.IsFinished() ) { /* one-shot done */ }
 ## Key Patterns
 
 - **Requires `RenderComponent`:** The entity must have a `RenderComponent` before constructing `AnimatedSprite`. Missing component -> undefined behaviour.
-- **Shared clip, per-entity sprite:** Load one `AnimationClip` (shared_ptr), construct one `AnimatedSprite` per entity.
+- **Shared clip, per-entity sprite:** Load one `AnimationClip` (owned by scene/system), pass `const AnimationClip&` to each `AnimatedSprite`.
 - **One `AnimatedSprite` per entity:** Each instance tracks its own timer state.
 
 ## DOs

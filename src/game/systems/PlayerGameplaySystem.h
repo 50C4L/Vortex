@@ -32,7 +32,7 @@ namespace vortex
 		~PlayerGameplaySystem();
 
 		void PreparePlayer( eage::ecs::RenderSystem& render_system, uint64_t root_entity,
-							std::shared_ptr<const assets::AnimationClip> bullet_clip );
+							const assets::AnimationClip& bullet_clip );
 		
 		void Update( float delta_time );
 		

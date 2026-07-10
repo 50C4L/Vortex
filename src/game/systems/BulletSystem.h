@@ -35,7 +35,7 @@ namespace vortex
 		uint16_t mask_bits = 0x0005;
 		uint32_t texture_index = 0;
 		float fire_interval = 0.f; // Minimum seconds between shots; 0 = unlimited
-		std::shared_ptr<const assets::AnimationClip> animation;
+		const assets::AnimationClip* animation = nullptr;
 	};
 
 	///

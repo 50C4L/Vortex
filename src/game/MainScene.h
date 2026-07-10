@@ -56,10 +56,11 @@ namespace vortex
 		std::unique_ptr<PlayerGameplaySystem> mPlayerGameplaySystem;
 		std::unique_ptr<WarpSystem> mWarpSystem;
 		std::unique_ptr<AsteroidGameplaySystem> mAsteroidGameplaySystem;
+
+		std::shared_ptr<const assets::AnimationClip> mDefaultBulletClip;
 		std::unique_ptr<BulletSystem> mBulletSystem;
 
 		std::shared_ptr<eage::graphics::OrthographicCamera> mCamera;
-		std::shared_ptr<const assets::AnimationClip> mDefaultBulletClip;
 
 		uint64_t mSceneRootEntity = 0;
 		uint64_t mOnScreenZoneEntity = 0;

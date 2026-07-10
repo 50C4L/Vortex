@@ -3,16 +3,17 @@
 
 #include <assets/AnimationClip.h>
 #include <ecs/ECS.h>
-#include <memory>
 
 namespace eage::animation
 {
 	///
 	/// AnimatedSprite: per-entity playback controller for an AnimationClip.
 	///
+	/// The AnimationClip must outlive this AnimatedSprite.
+	///
 	/// Usage:
 	///   auto clip = assets::AnimationClip::Load( render_system, "path/to/animation.json" );
-	///   eage::animation::AnimatedSprite anim( clip, entity, registry );
+	///   eage::animation::AnimatedSprite anim( *clip, entity, registry );
 	///   anim.ShowFrame( 0 );
 	///   anim.Pause();
 	///   anim.PlayOnce( 0 );
@@ -21,7 +22,7 @@ namespace eage::animation
 	class AnimatedSprite
 	{
 	public:
-		AnimatedSprite( std::shared_ptr<const assets::AnimationClip> clip, eage::ecs::Entity entity, eage::ecs::ECSRegistry& registry );
+		AnimatedSprite( const assets::AnimationClip& clip, eage::ecs::Entity entity, eage::ecs::ECSRegistry& registry );
 		~AnimatedSprite();
 
 		void Play( int start_frame = 0 );
@@ -36,7 +37,7 @@ namespace eage::animation
 		void Update( float delta_time_sec );
 
 	private:
-		std::shared_ptr<const assets::AnimationClip> mClip;
+		const assets::AnimationClip& mClip;
 		eage::ecs::Entity mEntity;
 		eage::ecs::ECSRegistry& mRegistry;
 

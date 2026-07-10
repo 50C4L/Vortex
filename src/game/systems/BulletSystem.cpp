@@ -51,7 +51,7 @@ BulletSystem::PreparePool( eage::ecs::RenderSystem& render_system, const BulletP
 	float mesh_height = config.mesh_height;
 	uint32_t texture_index = config.texture_index;
 
-	if( config.animation && config.animation->GetFrameCount() > 0 )
+	if( config.animation != nullptr && config.animation->GetFrameCount() > 0 )
 	{
 		const glm::ivec2 frame_size = config.animation->GetFrameSize();
 		if( frame_size.x > 0 && frame_size.y > 0 )
@@ -99,11 +99,11 @@ BulletSystem::PreparePool( eage::ecs::RenderSystem& render_system, const BulletP
 
 		render_system.AttachRenderable( entity, mesh_id, config.material_id, texture_index );
 
-		if( config.animation && config.animation->GetFrameCount() > 0 )
+		if( config.animation != nullptr && config.animation->GetFrameCount() > 0 )
 		{
 			auto [sprite_it, _] = mBulletSprites.try_emplace(
 				entity,
-				config.animation,
+				*config.animation,
 				entity,
 				mRegistry );
 			sprite_it->second.ShowFrame( 0 );

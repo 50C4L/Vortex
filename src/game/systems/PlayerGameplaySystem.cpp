@@ -32,7 +32,7 @@ PlayerGameplaySystem::PlayerGameplaySystem( eage::ecs::ECSRegistry& registry, Bu
 
 void
 PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uint64_t root_entity,
-									 std::shared_ptr<const assets::AnimationClip> bullet_clip )
+									 const assets::AnimationClip& bullet_clip )
 {
 	// ------------------------------------------------------------------
 	// Material and textures
@@ -138,7 +138,7 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 	bullet_config.material_id = mPlayerBulletMaterialId;
 	bullet_config.category_bits = PHYSX_CAT_BULLET;
 	bullet_config.mask_bits = PHYSX_CAT_ENEMY;
-	bullet_config.animation = std::move( bullet_clip );
+	bullet_config.animation = &bullet_clip;
 	bullet_config.fire_interval = 0.5f; // 2 bullets per second max
 	mDefaultBulletPoolId = mBulletSystem.PreparePool( render_system, bullet_config, 25, root_entity );
 }

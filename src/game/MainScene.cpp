@@ -181,7 +181,7 @@ MainScene::CreatePlayerEntity()
 {
 	mPlayerInputSystem = std::make_unique<PlayerInputSystem>( mECSRegistry, mInputController );
 	mPlayerGameplaySystem = std::make_unique<PlayerGameplaySystem>( mECSRegistry, *mBulletSystem, mAudioSystem );
-	mPlayerGameplaySystem->PreparePlayer( mRenderSystem, mSceneRootEntity, mDefaultBulletClip );
+	mPlayerGameplaySystem->PreparePlayer( mRenderSystem, mSceneRootEntity, *mDefaultBulletClip );
 }
 
 void 
