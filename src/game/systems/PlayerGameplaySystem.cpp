@@ -31,14 +31,14 @@ PlayerGameplaySystem::PlayerGameplaySystem( eage::ecs::ECSRegistry& registry, Bu
 }
 
 void
-PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uint64_t root_entity )
+PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uint64_t root_entity,
+									 std::shared_ptr<const assets::AnimationClip> bullet_clip )
 {
 	// ------------------------------------------------------------------
 	// Material and textures
 	// ------------------------------------------------------------------
 	const uint32_t ship_texture = render_system.CreateTexture( "./resources/textures/ship/Ship.png" );
 	const uint32_t thrust_texture = render_system.CreateTexture( "./resources/textures/ship/ship_thrust_fx.png" );
-	const uint32_t bullet_texture = render_system.CreateTexture( "./resources/textures/bullets/p_default_bullet.png" );
 
 	auto sprite_material_prop = eage::graphics::MaterialBuilder()
 		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",
@@ -138,9 +138,9 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 	bullet_config.material_id = mPlayerBulletMaterialId;
 	bullet_config.category_bits = PHYSX_CAT_BULLET;
 	bullet_config.mask_bits = PHYSX_CAT_ENEMY;
-	bullet_config.texture_index = bullet_texture;
+	bullet_config.animation = std::move( bullet_clip );
 	bullet_config.fire_interval = 0.5f; // 2 bullets per second max
-	mDefaultBulletPoolId = mBulletSystem.PreparePool( render_system, bullet_config, 20, root_entity );
+	mDefaultBulletPoolId = mBulletSystem.PreparePool( render_system, bullet_config, 25, root_entity );
 }
 
 PlayerGameplaySystem::~PlayerGameplaySystem() 

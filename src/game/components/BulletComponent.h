@@ -3,9 +3,16 @@
 
 namespace vortex
 {
+	enum class BulletState
+	{
+		Inactive,
+		Alive,
+		Dying
+	};
+
 	struct BulletComponent
 	{
-		bool is_alive = false;
+		BulletState state = BulletState::Inactive;
 		float damage = 10.f;
 	};
 }

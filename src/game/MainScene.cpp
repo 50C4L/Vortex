@@ -46,6 +46,8 @@ MainScene::OnEnter()
 
 	InitializeGenericSystems();
 
+	PrepareAnimations();
+
 	PrepareMeshes();
 
 	PrepareMaterials();
@@ -85,7 +87,7 @@ MainScene::Update( float dt )
 {
 	// System update
 	mPlayerGameplaySystem->Update( dt );
-	mBulletSystem->Update();
+	mBulletSystem->Update( dt );
 	mAsteroidGameplaySystem->Update();
 
 	// Update HUD kill counter
@@ -99,6 +101,19 @@ MainScene::Update( float dt )
 	mRenderSystem.SetCamera( *mCamera, glm::vec2(
 		static_cast<float>( config::VirtualResolution::WIDTH ),
 		static_cast<float>( config::VirtualResolution::HEIGHT ) ) );
+}
+
+void
+MainScene::PrepareAnimations()
+{
+	mDefaultBulletClip = assets::AnimationClip::Load(
+		mRenderSystem,
+		"./resources/textures/bullets/anim_defaultBullet/animation.json" );
+
+	if( mDefaultBulletClip->GetFrameCount() == 0 )
+	{
+		LOG_ERROR( "MainScene: failed to load default bullet animation" );
+	}
 }
 
 void 
@@ -166,7 +181,7 @@ MainScene::CreatePlayerEntity()
 {
 	mPlayerInputSystem = std::make_unique<PlayerInputSystem>( mECSRegistry, mInputController );
 	mPlayerGameplaySystem = std::make_unique<PlayerGameplaySystem>( mECSRegistry, *mBulletSystem, mAudioSystem );
-	mPlayerGameplaySystem->PreparePlayer( mRenderSystem, mSceneRootEntity );
+	mPlayerGameplaySystem->PreparePlayer( mRenderSystem, mSceneRootEntity, mDefaultBulletClip );
 }
 
 void 

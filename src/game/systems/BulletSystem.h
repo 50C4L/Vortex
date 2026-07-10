@@ -4,10 +4,13 @@
 #include <chrono>
 #include <cstdint>
 #include <deque>
+#include <memory>
 #include <unordered_map>
 
 #include <glm/glm.hpp>
 
+#include <animation/AnimatedSprite.h>
+#include <assets/AnimationClip.h>
 #include <ecs/ResourceManager.h>
 #include <ecs/systems/PhysicsSystem.h>
 
@@ -32,6 +35,7 @@ namespace vortex
 		uint16_t mask_bits = 0x0005;
 		uint32_t texture_index = 0;
 		float fire_interval = 0.f; // Minimum seconds between shots; 0 = unlimited
+		std::shared_ptr<const assets::AnimationClip> animation;
 	};
 
 	///
@@ -59,9 +63,9 @@ namespace vortex
 		bool Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 direction, float speed );
 
 		///
-		/// Per-frame update: checks alive bullets for out-of-bounds and despawns them.
+		/// Per-frame update: advances dying bullet animations and despawns finished bullets.
 		///
-		void Update();
+		void Update( float dt );
 
 		// PhysicsSystem::Observer interface
 		void OnSensorEnter( uint64_t sensor, uint64_t visitor ) override;
@@ -70,6 +74,7 @@ namespace vortex
 		void OnCollideEnd( uint64_t entityA, uint64_t entityB ) override;
 
 	private:
+		void BeginHitReaction( uint64_t bullet_entity );
 		void DespawnBullet( uint64_t bullet_entity );
 
 		eage::ecs::ECSRegistry& mRegistry;
@@ -80,6 +85,7 @@ namespace vortex
 		std::unordered_map<uint64_t, BulletPoolId> mEntityToPool;
 		std::unordered_map<BulletPoolId, float> mPoolFireInterval;
 		std::unordered_map<BulletPoolId, std::chrono::steady_clock::time_point> mPoolLastFireTime;
+		std::unordered_map<uint64_t, eage::animation::AnimatedSprite> mBulletSprites;
 
 		glm::vec2 mScreenTopLeft;
 		glm::vec2 mScreenBottomRight;

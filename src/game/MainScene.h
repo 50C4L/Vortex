@@ -3,6 +3,7 @@
 
 #include "../AbstractScene.h"
 #include "../EngineContext.h"
+#include <assets/AnimationClip.h>
 #include <ecs/ResourceManager.h>
 #include <ecs/ECS.h>
 
@@ -35,6 +36,7 @@ namespace vortex
 
 	private:
 		void InitializeGenericSystems();
+		void PrepareAnimations();
 		void PrepareMeshes();
 		void PrepareMaterials();
 		void CreateSceneRoot();
@@ -57,6 +59,7 @@ namespace vortex
 		std::unique_ptr<BulletSystem> mBulletSystem;
 
 		std::shared_ptr<eage::graphics::OrthographicCamera> mCamera;
+		std::shared_ptr<const assets::AnimationClip> mDefaultBulletClip;
 
 		uint64_t mSceneRootEntity = 0;
 		uint64_t mOnScreenZoneEntity = 0;
