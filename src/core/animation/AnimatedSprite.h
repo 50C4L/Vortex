@@ -3,38 +3,40 @@
 
 #include <assets/AnimationClip.h>
 #include <ecs/ECS.h>
+#include <memory>
 
 namespace eage::animation
 {
 	///
-	/// AnimatedSprite: drives frame-based sprite animation for a single entity.
-	///
-	/// Updates uv_rect on the entity RenderComponent each frame from an AnimationClip.
-	/// The sprite mesh must use unit UVs (uv_min={0,0}, uv_max={1,1}) so uv_rect
-	/// controls the visible region.
+	/// AnimatedSprite: per-entity playback controller for an AnimationClip.
 	///
 	/// Usage:
-	///   assets::AnimationClip clip( "path/to/clip.json" );
+	///   auto clip = assets::AnimationClip::Load( render_system, "path/to/animation.json" );
 	///   eage::animation::AnimatedSprite anim( clip, entity, registry );
-	///   anim.SetLoop( true );
-	///   anim.Play();
+	///   anim.ShowFrame( 0 );
+	///   anim.Pause();
+	///   anim.PlayOnce( 0 );
 	///   anim.Update( delta_time_sec );
 	///
 	class AnimatedSprite
 	{
 	public:
-		AnimatedSprite( const assets::AnimationClip& clip, eage::ecs::Entity entity, eage::ecs::ECSRegistry& registry );
+		AnimatedSprite( std::shared_ptr<const assets::AnimationClip> clip, eage::ecs::Entity entity, eage::ecs::ECSRegistry& registry );
 		~AnimatedSprite();
 
-		void Play();
+		void Play( int start_frame = 0 );
+		void PlayOnce( int start_frame = 0 );
 		void Pause();
 		void ShowFrame( int index );
 		void SetLoop( bool loop );
 
+		bool IsPlaying() const;
+		bool IsFinished() const;
+
 		void Update( float delta_time_sec );
 
 	private:
-		const assets::AnimationClip& mClip;
+		std::shared_ptr<const assets::AnimationClip> mClip;
 		eage::ecs::Entity mEntity;
 		eage::ecs::ECSRegistry& mRegistry;
 
@@ -42,6 +44,7 @@ namespace eage::animation
 		float mElapsed = 0.f;
 		bool mPlaying = false;
 		bool mLoop = true;
+		bool mFinished = false;
 	};
 }
 
