@@ -1,5 +1,7 @@
 #include "BulletSystem.h"
 
+#include <vector>
+
 #include <ecs/ECS.h>
 #include <ecs/components/Basics.h>
 #include <ecs/components/Physics.h>
@@ -45,9 +47,22 @@ BulletSystem::PreparePool( eage::ecs::RenderSystem& render_system, const BulletP
 
 	glm::vec2 inactive_pos = mScreenBottomRight + glm::vec2( INACTIVE_OFFSET, -INACTIVE_OFFSET );
 
-	// Create a shared mesh for this pool
-	eage::ecs::ResourceId mesh_id = render_system.CreateSpriteMesh(
-		config.mesh_width, config.mesh_height );
+	float mesh_width = config.mesh_width;
+	float mesh_height = config.mesh_height;
+	uint32_t texture_index = config.texture_index;
+
+	if( config.animation != nullptr && config.animation->GetFrameCount() > 0 )
+	{
+		const glm::ivec2 frame_size = config.animation->GetFrameSize();
+		if( frame_size.x > 0 && frame_size.y > 0 )
+		{
+			mesh_width = static_cast<float>( frame_size.x );
+			mesh_height = static_cast<float>( frame_size.y );
+		}
+		texture_index = config.animation->GetFrameTexture( 0 );
+	}
+
+	eage::ecs::ResourceId mesh_id = render_system.CreateSpriteMesh( mesh_width, mesh_height );
 
 	for( int i = 0; i < count; ++i )
 	{
@@ -55,19 +70,16 @@ BulletSystem::PreparePool( eage::ecs::RenderSystem& render_system, const BulletP
 		pool.push_back( entity );
 		mEntityToPool[entity] = pool_id;
 
-		// Scene graph: child of world root
 		auto& root = mRegistry.GetComponent<eage::ecs::SceneGraphComponent>( root_entity );
 		root.children_entities.push_back( entity );
 		eage::ecs::SceneGraphComponent relationship;
 		relationship.parent_entity = root_entity;
 		mRegistry.AddComponent( entity, std::move( relationship ) );
 
-		// Transform: start off-screen
 		eage::ecs::TransformComponent transform;
 		transform.SetPosition( glm::vec3( inactive_pos, 0.f ) );
 		mRegistry.AddComponent( entity, std::move( transform ) );
 
-		// Physics: dynamic, CCD enabled, starts asleep
 		eage::ecs::PhysicsComponent physics;
 		physics.body_type = eage::ecs::PhysicsComponent::BodyType::DYNAMIC;
 		physics.sync_transform_from_body = true;
@@ -75,7 +87,6 @@ BulletSystem::PreparePool( eage::ecs::RenderSystem& render_system, const BulletP
 		physics.QueueSleep( true );
 		mRegistry.AddComponent( entity, std::move( physics ) );
 
-		// Collider: sensor so it generates hit events without physics response
 		eage::ecs::CircleColliderComponent collider;
 		collider.radius = config.collider_radius;
 		collider.is_sensor = true;
@@ -84,11 +95,20 @@ BulletSystem::PreparePool( eage::ecs::RenderSystem& render_system, const BulletP
 		collider.group_index = -2;
 		mRegistry.AddComponent( entity, std::move( collider ) );
 
-		// Gameplay tag
-		mRegistry.AddComponent( entity, BulletComponent{ false, config.damage } );
+		mRegistry.AddComponent( entity, BulletComponent{ BulletState::Inactive, config.damage } );
 
-		// Render
-		render_system.AttachRenderable( entity, mesh_id, config.material_id, config.texture_index );
+		render_system.AttachRenderable( entity, mesh_id, config.material_id, texture_index );
+
+		if( config.animation != nullptr && config.animation->GetFrameCount() > 0 )
+		{
+			auto [sprite_it, _] = mBulletSprites.try_emplace(
+				entity,
+				*config.animation,
+				entity,
+				mRegistry );
+			sprite_it->second.ShowFrame( 0 );
+			sprite_it->second.Pause();
+		}
 	}
 
 	return pool_id;
@@ -100,10 +120,9 @@ BulletSystem::Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 directio
 	auto pool_it = mPools.find( pool_id );
 	if( pool_it == mPools.end() || pool_it->second.empty() )
 	{
-		return false; // Pool exhausted or invalid
+		return false;
 	}
 
-	// Rate limit check
 	float interval = mPoolFireInterval[pool_id];
 	if( interval > 0.f )
 	{
@@ -114,7 +133,7 @@ BulletSystem::Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 directio
 			float elapsed = std::chrono::duration<float>( now - last_it->second ).count();
 			if( elapsed < interval )
 			{
-				return false; // Rate-limited
+				return false;
 			}
 		}
 		mPoolLastFireTime[pool_id] = now;
@@ -125,13 +144,17 @@ BulletSystem::Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 directio
 	pool.pop_front();
 
 	auto& bullet = mRegistry.GetComponent<BulletComponent>( entity );
-	bullet.is_alive = true;
+	bullet.state = BulletState::Alive;
 
 	auto& render = mRegistry.GetComponent<eage::ecs::RenderComponent>( entity );
 	render.visible = true;
 
-	// Update TransformComponent immediately so BulletSystem::Update()'s OOB check
-	// sees the spawn position in the same frame (QueueSetPosition only applies next physics tick).
+	if( auto sprite_it = mBulletSprites.find( entity ); sprite_it != mBulletSprites.end() )
+	{
+		sprite_it->second.ShowFrame( 0 );
+		sprite_it->second.Pause();
+	}
+
 	auto& transform = mRegistry.GetComponent<eage::ecs::TransformComponent>( entity );
 	transform.SetPosition( glm::vec3( position, 0.f ) );
 
@@ -143,11 +166,31 @@ BulletSystem::Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 directio
 }
 
 void
-BulletSystem::Update()
+BulletSystem::Update( float dt )
 {
+	std::vector<uint64_t> bullets_to_despawn;
+
 	for( auto [entity, bullet] : mRegistry.GetComponentMap<BulletComponent>() )
 	{
-		if( !bullet.is_alive )
+		if( bullet.state == BulletState::Dying )
+		{
+			auto sprite_it = mBulletSprites.find( entity );
+			if( sprite_it != mBulletSprites.end() )
+			{
+				sprite_it->second.Update( dt );
+				if( sprite_it->second.IsFinished() )
+				{
+					bullets_to_despawn.push_back( entity );
+				}
+			}
+			else
+			{
+				bullets_to_despawn.push_back( entity );
+			}
+			continue;
+		}
+
+		if( bullet.state != BulletState::Alive )
 		{
 			continue;
 		}
@@ -162,11 +205,16 @@ BulletSystem::Update()
 		float y = transform.position.y;
 
 		bool out_of_bounds = x < mScreenTopLeft.x || x > mScreenBottomRight.x ||
-							 y > mScreenTopLeft.y || y < mScreenBottomRight.y;
+							 y < mScreenTopLeft.y || y < mScreenBottomRight.y;
 		if( out_of_bounds )
 		{
 			DespawnBullet( entity );
 		}
+	}
+
+	for( uint64_t entity : bullets_to_despawn )
+	{
+		DespawnBullet( entity );
 	}
 }
 
@@ -179,18 +227,17 @@ BulletSystem::OnSensorEnter( uint64_t sensor, uint64_t visitor )
 	}
 
 	auto& bullet = mRegistry.GetComponent<BulletComponent>( sensor );
-	if( !bullet.is_alive )
+	if( bullet.state != BulletState::Alive )
 	{
 		return;
 	}
 
-	// Apply damage to whatever was hit
 	if( mRegistry.HasComponent<HealthComponent>( visitor ) )
 	{
 		mRegistry.GetComponent<HealthComponent>( visitor ).pending_damage += bullet.damage;
 	}
 
-	DespawnBullet( sensor );
+	BeginHitReaction( sensor );
 }
 
 void
@@ -209,11 +256,31 @@ BulletSystem::OnCollideEnd( uint64_t entityA, uint64_t entityB )
 }
 
 void
+BulletSystem::BeginHitReaction( uint64_t entity )
+{
+	auto& bullet = mRegistry.GetComponent<BulletComponent>( entity );
+	bullet.state = BulletState::Dying;
+
+	auto& physics = mRegistry.GetComponent<eage::ecs::PhysicsComponent>( entity );
+	physics.QueueSetVelocity( glm::vec2( 0.f, 0.f ) );
+	physics.QueueSleep( true );
+
+	if( auto sprite_it = mBulletSprites.find( entity ); sprite_it != mBulletSprites.end() )
+	{
+		sprite_it->second.PlayOnce( 0 );
+	}
+	else
+	{
+		DespawnBullet( entity );
+	}
+}
+
+void
 BulletSystem::DespawnBullet( uint64_t entity )
 {
 	LOG() << "Despawning bullet entity " << entity;
 	auto& bullet = mRegistry.GetComponent<BulletComponent>( entity );
-	bullet.is_alive = false;
+	bullet.state = BulletState::Inactive;
 
 	auto& render = mRegistry.GetComponent<eage::ecs::RenderComponent>( entity );
 	render.visible = false;
@@ -222,6 +289,12 @@ BulletSystem::DespawnBullet( uint64_t entity )
 	glm::vec2 inactive_pos = mScreenBottomRight + glm::vec2( INACTIVE_OFFSET, -INACTIVE_OFFSET );
 	physics.QueueSetPosition( inactive_pos );
 	physics.QueueSleep( true );
+
+	if( auto sprite_it = mBulletSprites.find( entity ); sprite_it != mBulletSprites.end() )
+	{
+		sprite_it->second.ShowFrame( 0 );
+		sprite_it->second.Pause();
+	}
 
 	auto pool_it = mEntityToPool.find( entity );
 	if( pool_it != mEntityToPool.end() )

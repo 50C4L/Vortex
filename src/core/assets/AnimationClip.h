@@ -1,49 +1,58 @@
 #ifndef _EAGE_ANIMATION_CLIP_H_
 #define _EAGE_ANIMATION_CLIP_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
 #include <glm/glm.hpp>
 
+namespace eage::ecs
+{
+	class RenderSystem;
+}
+
 namespace assets
 {
 	///
-	/// AnimationClip: loads a frame-sequence animation from a JSON file.
-	///
-	/// The JSON references a TextureAtlas and lists frames by name with per-frame durations:
+	/// AnimationClip: bindless frame-sequence animation loaded from an animtool export.
 	///
 	///   {
-	///     "atlas": "./resources/textures/ship/ship_texatlas.json",
-	///     "flip": true,
+	///     "flip": false,
 	///     "frames": [
-	///       { "name": "walk_0.png", "duration_ms": 100 },
-	///       { "name": "walk_1.png", "duration_ms": 100 }
+	///       { "texture": "frame_000.png", "duration_ms": 50 },
+	///       { "texture": "frame_001.png", "duration_ms": 50 }
 	///     ]
 	///   }
 	///
-	/// The entity's sprite mesh must have been attached with unit UVs (uv_min={0,0}, uv_max={1,1})
-	/// so that AnimatedSprite can drive the visible region entirely through uv_rect.
+	/// Each frame PNG is registered via RenderSystem::CreateTexture(). AnimatedSprite
+	/// drives RenderComponent::texture_index per frame at playback time.
 	///
 	class AnimationClip
 	{
 	public:
 		struct Frame
 		{
-			glm::vec2 uv_min;
-			glm::vec2 uv_max;
-			float duration_sec;
+			uint32_t texture_index = 0;
+			float duration_sec = 0.1f;
 		};
 
-		AnimationClip( const std::string& clip_json_path );
-		~AnimationClip();
+		static std::shared_ptr<AnimationClip> Load(
+			eage::ecs::RenderSystem& render_system,
+			const std::string& clip_json_path );
 
 		const Frame& GetFrame( int index ) const;
 		int GetFrameCount() const;
+		uint32_t GetFrameTexture( int index ) const;
+		glm::ivec2 GetFrameSize() const;
 
 	private:
+		AnimationClip() = default;
+
 		Frame mDefaultFrame;
 		std::vector<Frame> mFrames;
+		int mFrameWidth = 0;
+		int mFrameHeight = 0;
 	};
 }
 

@@ -23,9 +23,24 @@ AnimatedSprite::AnimatedSprite( const AnimationClip& clip, Entity entity, ECSReg
 AnimatedSprite::~AnimatedSprite() = default;
 
 void
-AnimatedSprite::Play()
+AnimatedSprite::Play( int start_frame )
 {
+	if( mClip.GetFrameCount() == 0 )
+	{
+		return;
+	}
+
+	mFinished = false;
+	mElapsed = 0.f;
 	mPlaying = true;
+	ShowFrame( start_frame );
+}
+
+void
+AnimatedSprite::PlayOnce( int start_frame )
+{
+	SetLoop( false );
+	Play( start_frame );
 }
 
 void
@@ -51,19 +66,26 @@ AnimatedSprite::ShowFrame( int index )
 
 	const auto& frame = mClip.GetFrame( mCurrentFrame );
 	auto& render_cmp = mRegistry.GetComponent<RenderComponent>( mEntity );
-	render_cmp.uv_rect =
-	{
-		frame.uv_min.x,
-		frame.uv_min.y,
-		frame.uv_max.x - frame.uv_min.x,
-		frame.uv_max.y - frame.uv_min.y
-	};
+	render_cmp.texture_index = frame.texture_index;
+	render_cmp.uv_rect = { 0.f, 0.f, 1.f, 1.f };
 }
 
 void
 AnimatedSprite::SetLoop( bool loop )
 {
 	mLoop = loop;
+}
+
+bool
+AnimatedSprite::IsPlaying() const
+{
+	return mPlaying;
+}
+
+bool
+AnimatedSprite::IsFinished() const
+{
+	return mFinished;
 }
 
 void
@@ -93,7 +115,9 @@ AnimatedSprite::Update( float delta_time_sec )
 		}
 		else
 		{
+			ShowFrame( mClip.GetFrameCount() - 1 );
 			mPlaying = false;
+			mFinished = true;
 			return;
 		}
 	}
