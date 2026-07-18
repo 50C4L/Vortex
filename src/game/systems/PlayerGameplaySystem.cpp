@@ -140,6 +140,7 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 	bullet_config.mask_bits = PHYSX_CAT_ENEMY;
 	bullet_config.animation = &bullet_clip;
 	bullet_config.fire_interval = 0.5f; // 2 bullets per second max
+	bullet_config.lifetime_sec = 2.f;
 	mDefaultBulletPoolId = mBulletSystem.PreparePool( render_system, bullet_config, 25, root_entity );
 }
 

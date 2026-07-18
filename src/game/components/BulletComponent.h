@@ -14,6 +14,8 @@ namespace vortex
 	{
 		BulletState state = BulletState::Inactive;
 		float damage = 10.f;
+		float lifetime_sec = 0.f;
+		float age_sec = 0.f;
 	};
 }
 

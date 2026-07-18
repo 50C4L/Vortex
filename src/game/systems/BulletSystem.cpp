@@ -1,5 +1,6 @@
 #include "BulletSystem.h"
 
+#include <cmath>
 #include <vector>
 
 #include <ecs/ECS.h>
@@ -8,6 +9,8 @@
 #include <ecs/components/Render.h>
 #include <ecs/systems/RenderSystem.h>
 #include <utility/Logger.h>
+
+#include <glm/gtx/quaternion.hpp>
 
 #include "../GameConfig.h"
 #include "../components/BulletComponent.h"
@@ -19,6 +22,11 @@ using namespace utility;
 namespace
 {
 	constexpr float INACTIVE_OFFSET = 2000.0f;
+
+	float rotation_angle_from_up( glm::vec2 direction )
+	{
+		return std::atan2( direction.x, direction.y );
+	}
 }
 
 BulletSystem::BulletSystem( eage::ecs::ECSRegistry& registry, eage::ecs::PhysicsSystem& physics_system )
@@ -29,7 +37,6 @@ BulletSystem::BulletSystem( eage::ecs::ECSRegistry& registry, eage::ecs::Physics
 
 	float half_width = static_cast<float>( config::DesignResolution::WIDTH ) * 0.5f;
 	float half_height = static_cast<float>( config::DesignResolution::HEIGHT ) * 0.5f;
-	mScreenTopLeft = glm::vec2( -half_width, half_height );
 	mScreenBottomRight = glm::vec2( half_width, -half_height );
 }
 
@@ -95,7 +102,7 @@ BulletSystem::PreparePool( eage::ecs::RenderSystem& render_system, const BulletP
 		collider.group_index = -2;
 		mRegistry.AddComponent( entity, std::move( collider ) );
 
-		mRegistry.AddComponent( entity, BulletComponent{ BulletState::Inactive, config.damage } );
+		mRegistry.AddComponent( entity, BulletComponent{ BulletState::Inactive, config.damage, config.lifetime_sec } );
 
 		render_system.AttachRenderable( entity, mesh_id, config.material_id, texture_index );
 
@@ -145,6 +152,7 @@ BulletSystem::Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 directio
 
 	auto& bullet = mRegistry.GetComponent<BulletComponent>( entity );
 	bullet.state = BulletState::Alive;
+	bullet.age_sec = 0.f;
 
 	auto& render = mRegistry.GetComponent<eage::ecs::RenderComponent>( entity );
 	render.visible = true;
@@ -158,8 +166,12 @@ BulletSystem::Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 directio
 	auto& transform = mRegistry.GetComponent<eage::ecs::TransformComponent>( entity );
 	transform.SetPosition( glm::vec3( position, 0.f ) );
 
+	const float rotation_angle = rotation_angle_from_up( direction );
+	transform.SetRotation( glm::angleAxis( rotation_angle, glm::vec3( 0.f, 0.f, 1.f ) ) );
+
 	auto& physics = mRegistry.GetComponent<eage::ecs::PhysicsComponent>( entity );
 	physics.QueueSetPosition( position );
+	physics.QueueSetRotation( rotation_angle );
 	physics.QueueSetVelocity( direction * speed );
 	physics.QueueSleep( false );
 	return true;
@@ -195,18 +207,10 @@ BulletSystem::Update( float dt )
 			continue;
 		}
 
-		if( !mRegistry.HasComponent<eage::ecs::TransformComponent>( entity ) )
-		{
-			continue;
-		}
+		auto& bullet_cmp = mRegistry.GetComponent<BulletComponent>( entity );
+		bullet_cmp.age_sec += dt;
 
-		auto& transform = mRegistry.GetComponent<eage::ecs::TransformComponent>( entity );
-		float x = transform.position.x;
-		float y = transform.position.y;
-
-		bool out_of_bounds = x < mScreenTopLeft.x || x > mScreenBottomRight.x ||
-							 y < mScreenTopLeft.y || y < mScreenBottomRight.y;
-		if( out_of_bounds )
+		if( bullet_cmp.lifetime_sec > 0.f && bullet_cmp.age_sec >= bullet_cmp.lifetime_sec )
 		{
 			DespawnBullet( entity );
 		}
@@ -281,6 +285,7 @@ BulletSystem::DespawnBullet( uint64_t entity )
 	LOG() << "Despawning bullet entity " << entity;
 	auto& bullet = mRegistry.GetComponent<BulletComponent>( entity );
 	bullet.state = BulletState::Inactive;
+	bullet.age_sec = 0.f;
 
 	auto& render = mRegistry.GetComponent<eage::ecs::RenderComponent>( entity );
 	render.visible = false;

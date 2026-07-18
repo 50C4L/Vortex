@@ -35,6 +35,7 @@ namespace vortex
 		uint16_t mask_bits = 0x0005;
 		uint32_t texture_index = 0;
 		float fire_interval = 0.f; // Minimum seconds between shots; 0 = unlimited
+		float lifetime_sec = 0.f;
 		const assets::AnimationClip* animation = nullptr;
 	};
 
@@ -63,7 +64,7 @@ namespace vortex
 		bool Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 direction, float speed );
 
 		///
-		/// Per-frame update: advances dying bullet animations and despawns finished bullets.
+		/// Per-frame update: advances dying bullet animations, expires bullets by lifetime, and despawns finished bullets.
 		///
 		void Update( float dt );
 
@@ -87,7 +88,6 @@ namespace vortex
 		std::unordered_map<BulletPoolId, std::chrono::steady_clock::time_point> mPoolLastFireTime;
 		std::unordered_map<uint64_t, eage::animation::AnimatedSprite> mBulletSprites;
 
-		glm::vec2 mScreenTopLeft;
 		glm::vec2 mScreenBottomRight;
 	};
 }
