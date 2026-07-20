@@ -1,5 +1,6 @@
 #include "PlayerGameplaySystem.h"
 
+#include <assets/SceneResourceLoader.h>
 #include <ecs/components/Audio.h>
 #include <ecs/components/Basics.h>
 #include <ecs/components/Physics.h>
@@ -32,13 +33,13 @@ PlayerGameplaySystem::PlayerGameplaySystem( eage::ecs::ECSRegistry& registry, Bu
 
 void
 PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uint64_t root_entity,
-									 eage::ecs::ResourceId bullet_clip_id )
+									 assets::SceneResourceLoader& resources )
 {
 	// ------------------------------------------------------------------
 	// Material and textures
 	// ------------------------------------------------------------------
-	const uint32_t ship_texture = render_system.CreateTexture( "./resources/textures/ship/Ship.png" );
-	const uint32_t thrust_texture = render_system.CreateTexture( "./resources/textures/ship/ship_thrust_fx.png" );
+	const uint32_t ship_texture = resources.GetTexture( "./resources/textures/ship/Ship.png" );
+	const uint32_t thrust_texture = resources.GetTexture( "./resources/textures/ship/ship_thrust_fx.png" );
 
 	auto sprite_material_prop = eage::graphics::MaterialBuilder()
 		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",
@@ -83,7 +84,7 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 	render_system.AttachSprite( player_entity, mPlayerMaterialId, 32.f, 32.f, ship_texture );
 
 	eage::ecs::AudioSourceComponent thrust_audio;
-	thrust_audio.sources["thruster"] = { mAudioSystem.LoadSound( { "./resources/sounds/thruster.mp3", 1, true } ) };
+	thrust_audio.sources["thruster"] = { resources.GetSound( "./resources/sounds/thruster.mp3" ) };
 	mRegistry.AddComponent( player_entity, std::move( thrust_audio ) );
 	mRegistry.AddComponent( player_entity, eage::ecs::AudioEventComponent{} );
 
@@ -123,7 +124,7 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 	mRegistry.AddComponent( launcher_entity, std::move( launcher_transform ) );
 
 	eage::ecs::AudioSourceComponent launcher_audio;
-	launcher_audio.sources["fire"] = { mAudioSystem.LoadSound( { "./resources/sounds/laser.wav", 4, false } ) };
+	launcher_audio.sources["fire"] = { resources.GetSound( "./resources/sounds/laser.wav" ) };
 	mRegistry.AddComponent( launcher_entity, std::move( launcher_audio ) );
 	mRegistry.AddComponent( launcher_entity, eage::ecs::AudioEventComponent{} );
 
@@ -138,7 +139,7 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 	bullet_config.material_id = mPlayerBulletMaterialId;
 	bullet_config.category_bits = PHYSX_CAT_BULLET;
 	bullet_config.mask_bits = PHYSX_CAT_ENEMY;
-	bullet_config.clip_id = bullet_clip_id;
+	bullet_config.clip_id = resources.GetClip( "./resources/textures/bullets/anim_defaultBullet/animation.json" );
 	bullet_config.fire_interval = 0.5f; // 2 bullets per second max
 	bullet_config.lifetime_sec = 2.f;
 	mDefaultBulletPoolId = mBulletSystem.PreparePool( render_system, bullet_config, 25, root_entity );

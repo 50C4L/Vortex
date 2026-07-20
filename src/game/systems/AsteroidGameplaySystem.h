@@ -8,6 +8,11 @@
 #include <ecs/ResourceManager.h>
 #include <ecs/systems/PhysicsSystem.h>
 
+namespace assets
+{
+	class SceneResourceLoader;
+}
+
 namespace eage::ecs
 {
 	class ECSRegistry;
@@ -26,7 +31,7 @@ namespace vortex
 		/// Precreate and setup a number of asteroids
 		/// Note that this function will perform immediate GPU operations
 		///
-		void PrepareAsteroids( eage::ecs::RenderSystem& render_system, int count, uint64_t root_entity );
+		void PrepareAsteroids( eage::ecs::RenderSystem& render_system, assets::SceneResourceLoader& resources, int count, uint64_t root_entity );
 
 		void SpawnAsteroid( int count );
 		void DespawnAsteroid( uint64_t asteroid_entity );

@@ -9,6 +9,7 @@
 #include <ecs/systems/AnimationSystem.h>
 #include <ecs/systems/AudioSystem.h>
 #include <ecs/systems/RenderSystem.h>
+#include <assets/SceneResourceLoader.h>
 #include <ecs/components/Basics.h>
 #include <ecs/components/Physics.h>
 #include <ecs/components/Render.h>
@@ -46,16 +47,14 @@ MainScene::OnEnter()
 {
 	LOG( "MainScene::OnEnter" );
 
-	InitializeGenericSystems();
-
-	mDefaultBulletClipId = mAnimationSystem.LoadClip(
-		mRenderSystem,
-		"./resources/textures/bullets/anim_defaultBullet/animation.json" );
-
-	if( mDefaultBulletClipId == eage::ecs::INVALID_ID )
+	mResourceLoader = std::make_unique<assets::SceneResourceLoader>(
+		mRenderSystem, mAnimationSystem, mAudioSystem );
+	if( !mResourceLoader->LoadManifest( "./resources/scenes/main_scene.json" ) )
 	{
-		LOG_ERROR( "MainScene: failed to load default bullet animation" );
+		LOG_ERROR( "MainScene: failed to load resource manifest" );
 	}
+
+	InitializeGenericSystems();
 
 	PrepareMeshes();
 
@@ -137,7 +136,7 @@ MainScene::CreateSceneRoot()
 void
 MainScene::CreateBackgroundEntity()
 {
-	const uint32_t background_texture = mRenderSystem.CreateTexture( "./resources/textures/background/dark.png" );
+	const uint32_t background_texture = mResourceLoader->GetTexture( "./resources/textures/background/dark.png" );
 
 	auto material_property = eage::graphics::MaterialBuilder()
 		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",
@@ -177,7 +176,7 @@ MainScene::CreatePlayerEntity()
 {
 	mPlayerInputSystem = std::make_unique<PlayerInputSystem>( mECSRegistry, mInputController );
 	mPlayerGameplaySystem = std::make_unique<PlayerGameplaySystem>( mECSRegistry, *mBulletSystem, mAudioSystem );
-	mPlayerGameplaySystem->PreparePlayer( mRenderSystem, mSceneRootEntity, mDefaultBulletClipId );
+	mPlayerGameplaySystem->PreparePlayer( mRenderSystem, mSceneRootEntity, *mResourceLoader );
 }
 
 void 
@@ -230,7 +229,7 @@ MainScene::InitializeGenericSystems()
 void
 MainScene::CreateEnemyEntities()
 {
-	mAsteroidGameplaySystem->PrepareAsteroids( mRenderSystem, 100, mSceneRootEntity );
+	mAsteroidGameplaySystem->PrepareAsteroids( mRenderSystem, *mResourceLoader, 100, mSceneRootEntity );
 
 	mAsteroidGameplaySystem->SpawnAsteroid( 10 );
 }

@@ -1,5 +1,6 @@
 #include "AsteroidGameplaySystem.h"
 
+#include <assets/SceneResourceLoader.h>
 #include <ecs/ECS.h>
 #include <ecs/components/Basics.h>
 #include <ecs/components/Physics.h>
@@ -39,10 +40,10 @@ AsteroidGameplaySystem::~AsteroidGameplaySystem()
 }
 
 void
-AsteroidGameplaySystem::PrepareAsteroids( eage::ecs::RenderSystem& render_system, int count, uint64_t root_entity )
+AsteroidGameplaySystem::PrepareAsteroids( eage::ecs::RenderSystem& render_system, assets::SceneResourceLoader& resources, int count, uint64_t root_entity )
 {
 	// Create asteroid material and texture
-	const uint32_t asteroid_texture = render_system.CreateTexture( "./resources/textures/asteroid/Asteroid L.png" );
+	const uint32_t asteroid_texture = resources.GetTexture( "./resources/textures/asteroid/Asteroid L.png" );
 
 	auto material_property = eage::graphics::MaterialBuilder()
 		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",

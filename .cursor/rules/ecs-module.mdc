@@ -34,6 +34,7 @@ Provides the Entity-Component-System architecture for the game layer. `ECSRegist
 | `AnimationSystem` | Loads/caches `AnimationClip` assets; drives `AnimatedSpriteComponent` playback each frame |
 | `SceneGraphSystem` | Traverses parent-child hierarchy; propagates world matrices top-down |
 | `HudRenderSystem` | Renders HUD components via ImGui; applies DPI scale factor |
+| `SceneResourceLoader` | (assets module) Preloads scene manifest; not an ECS tick system -- used at scene enter |
 
 ## ECSRegistry API
 

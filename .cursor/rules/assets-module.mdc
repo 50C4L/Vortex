@@ -1,5 +1,5 @@
 ---
-description: "Asset loading pipeline for Vortex. Covers ImageLoader (STB), TextureAtlas (deprecated), and AnimationClip (bindless frame sequences). Auto-applied when editing src/core/assets/."
+description: "Asset loading pipeline for Vortex. Covers ImageLoader (STB), TextureAtlas (deprecated), AnimationClip (bindless frame sequences), and SceneResourceLoader (scene manifest preload). Auto-applied when editing src/core/assets/."
 globs: ["src/core/assets/**/*.cpp", "src/core/assets/**/*.h"]
 alwaysApply: false
 ---
@@ -8,14 +8,15 @@ alwaysApply: false
 
 ## Purpose
 
-Data-driven asset loading pipeline. `ImageLoader` reads image files from disk. `AnimationClip` loads animtool frame-sequence exports as bindless textures. `TextureAtlas` is deprecated and not used by the animation pipeline.
+Data-driven asset loading pipeline. `ImageLoader` reads image files from disk. `AnimationClip` loads animtool frame-sequence exports as bindless textures. `SceneResourceLoader` preloads scene file-backed assets from a JSON manifest. `TextureAtlas` is deprecated and not used by the animation pipeline.
 
 ## Static Sprites vs Animation
 
 | Use case | Asset format | Loading path |
 |---|---|---|
-| **Static sprites** (ship, asteroid, background) | Standalone PNG per sprite | `RenderSystem::CreateTexture( path )` -> bindless index on `RenderComponent` |
-| **Animated sprites** (bullets, FX) | animtool `animation.json` + per-frame PNGs | `AnimationSystem::LoadClip()` -> `AnimatedSpriteComponent` driven by `AnimationSystem::Update()` |
+| **Static sprites** (ship, asteroid, background) | Standalone PNG per sprite | Declared in scene manifest -> `SceneResourceLoader::GetTexture( path )` |
+| **Animated sprites** (bullets, FX) | animtool `animation.json` + per-frame PNGs | Declared in scene manifest -> `SceneResourceLoader::GetClip( path )` |
+| **Sounds** | WAV/MP3 | Declared in scene manifest -> `SceneResourceLoader::GetSound( path )` |
 
 ## Key Classes
 
@@ -26,23 +27,44 @@ Data-driven asset loading pipeline. `ImageLoader` reads image files from disk. `
 | `TextureAtlas` | **Deprecated.** Legacy JSON atlas UV lookup -- do not use for new work |
 | `AnimationClip` | Loads animtool JSON; registers frame PNGs bindless; stores ordered `Frame` array |
 | `AnimationClip::Frame` | `texture_index`, `duration_sec` |
+| `SceneResourceLoader` | Parses scene manifest; eagerly loads textures/clips/sounds; path-keyed lookup |
+
+## Scene Manifest
+
+**File:** `resources/scenes/<scene_name>.json`
+
+```json
+{
+  "textures": [
+    "./resources/textures/ship/Ship.png"
+  ],
+  "animations": [
+    "./resources/textures/bullets/anim_defaultBullet/animation.json"
+  ],
+  "sounds": [
+    { "path": "./resources/sounds/laser.wav", "pool_size": 4, "looping": false }
+  ]
+}
+```
+
+- **Path is the ID:** lookup strings must match manifest entries exactly (including `./resources/...` prefix).
+- **Frame PNGs** for animation clips are loaded inside `AnimationClip::Load` -- do not list them in `textures`.
+- **Materials/meshes** are not in the manifest; create them in code via `RenderSystem`.
 
 ## API
 
 ```cpp
-// Load a raw image (used internally by RenderSystem::CreateTexture)
-auto img = ImageLoader::LoadImage( "textures/ship.png" );
+// Scene enter (MainScene::OnEnter)
+auto loader = std::make_unique<assets::SceneResourceLoader>( render_system, animation_system, audio_system );
+loader->LoadManifest( "./resources/scenes/main_scene.json" );
 
-// Static sprite (from game/ECS layer):
-uint32_t tex_index = render_system.CreateTexture( "resources/textures/ship/Ship.png" );
-
-// Animated sprite clip (loaded once via AnimationSystem, shared across instances)
-ResourceId clip_id = animation_system.LoadClip( render_system, "resources/textures/bullets/anim_defaultBullet/animation.json" );
-const assets::AnimationClip* clip = animation_system.GetClip( clip_id );
-int frame_count = clip->GetFrameCount();
-uint32_t tex = clip->GetFrameTexture( 0 );
-glm::ivec2 size = clip->GetFrameSize();
+// Gameplay lookup by path
+uint32_t tex = loader->GetTexture( "./resources/textures/ship/Ship.png" );
+ResourceId clip_id = loader->GetClip( "./resources/textures/bullets/anim_defaultBullet/animation.json" );
+ResourceId sound_id = loader->GetSound( "./resources/sounds/laser.wav" );
 ```
+
+Low-level loaders (`RenderSystem::CreateTexture`, `AnimationSystem::LoadClip`, `AudioSystem::LoadSound`) are called internally by `SceneResourceLoader`; game code should prefer manifest + lookup.
 
 ## JSON Format (animtool export)
 
@@ -61,19 +83,20 @@ Frame PNG paths are resolved relative to the JSON file directory.
 
 ## Key Patterns
 
-- **Load once, share:** `AnimationSystem::LoadClip()` caches clips by path; many entities reference the same `ResourceId`.
+- **Load once, share:** manifest preload + per-system caches; many entities reference the same handles.
 - **Bindless frames:** Each frame is a separate PNG in the bindless texture array -- no atlas UV math.
 - **Default fallback:** `GetFrame()` returns a default frame if index is out of range.
 - **STB ownership:** `Image::data` is heap-allocated by STB. Lifetime matches the `Image` struct.
 
 ## DOs
 
-- Use `RenderSystem::CreateTexture()` for static sprite textures from standalone PNGs
-- Use `AnimationSystem::LoadClip()` from game/scene code for animated sprites
-- Check `GetFrameCount() > 0` after load (parse failures produce empty clips)
+- Declare all scene file-backed assets in the scene manifest JSON
+- Use `SceneResourceLoader::Get*` with the exact path from the manifest
+- Add new assets to the manifest before referencing them in gameplay code
 
 ## DON'Ts
 
+- Don't scatter `CreateTexture` / `LoadClip` / `LoadSound` calls with hardcoded paths in gameplay systems
 - Don't use `TextureAtlas` for new sprites or animations
 - Don't store `Image::data` pointer beyond the `Image` struct lifetime
-- Don't bypass `AnimationClip` and manually manage per-frame texture lists in game code
+- Don't list animation frame PNGs separately in the manifest `textures` array

@@ -4,7 +4,6 @@
 #include "../AbstractScene.h"
 #include "../EngineContext.h"
 #include <ecs/ECS.h>
-#include <ecs/ResourceManager.h>
 
 #include <memory>
 
@@ -17,6 +16,11 @@ namespace eage::ecs
 {
 	class AnimationSystem;
 	class AudioSystem;
+}
+
+namespace assets
+{
+	class SceneResourceLoader;
 }
 
 namespace vortex
@@ -56,6 +60,7 @@ namespace vortex
 		eage::ecs::RenderSystem& mRenderSystem;
 		eage::ecs::PhysicsSystem& mPhysicsSystem;
 
+		std::unique_ptr<assets::SceneResourceLoader> mResourceLoader;
 		std::unique_ptr<PlayerInputSystem> mPlayerInputSystem;
 		std::unique_ptr<PlayerGameplaySystem> mPlayerGameplaySystem;
 		std::unique_ptr<WarpSystem> mWarpSystem;
@@ -64,7 +69,6 @@ namespace vortex
 
 		std::shared_ptr<eage::graphics::OrthographicCamera> mCamera;
 
-		eage::ecs::ResourceId mDefaultBulletClipId = eage::ecs::INVALID_ID;
 		uint64_t mSceneRootEntity = 0;
 		uint64_t mOnScreenZoneEntity = 0;
 		uint64_t mBackgroundEntity = 0;
