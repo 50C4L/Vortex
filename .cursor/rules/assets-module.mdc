@@ -15,7 +15,7 @@ Data-driven asset loading pipeline. `ImageLoader` reads image files from disk. `
 | Use case | Asset format | Loading path |
 |---|---|---|
 | **Static sprites** (ship, asteroid, background) | Standalone PNG per sprite | `RenderSystem::CreateTexture( path )` -> bindless index on `RenderComponent` |
-| **Animated sprites** (bullets, FX) | animtool `animation.json` + per-frame PNGs | `AnimationClip::Load()` -> `AnimatedSprite` drives `RenderComponent::texture_index` |
+| **Animated sprites** (bullets, FX) | animtool `animation.json` + per-frame PNGs | `AnimationSystem::LoadClip()` -> `AnimatedSpriteComponent` driven by `AnimationSystem::Update()` |
 
 ## Key Classes
 
@@ -36,8 +36,9 @@ auto img = ImageLoader::LoadImage( "textures/ship.png" );
 // Static sprite (from game/ECS layer):
 uint32_t tex_index = render_system.CreateTexture( "resources/textures/ship/Ship.png" );
 
-// Animated sprite clip (loaded once, shared across instances)
-auto clip = AnimationClip::Load( render_system, "resources/textures/bullets/anim_defaultBullet/animation.json" );
+// Animated sprite clip (loaded once via AnimationSystem, shared across instances)
+ResourceId clip_id = animation_system.LoadClip( render_system, "resources/textures/bullets/anim_defaultBullet/animation.json" );
+const assets::AnimationClip* clip = animation_system.GetClip( clip_id );
 int frame_count = clip->GetFrameCount();
 uint32_t tex = clip->GetFrameTexture( 0 );
 glm::ivec2 size = clip->GetFrameSize();
@@ -60,7 +61,7 @@ Frame PNG paths are resolved relative to the JSON file directory.
 
 ## Key Patterns
 
-- **Load once, share:** `AnimationClip::Load()` returns `shared_ptr`; pass to many `AnimatedSprite` instances.
+- **Load once, share:** `AnimationSystem::LoadClip()` caches clips by path; many entities reference the same `ResourceId`.
 - **Bindless frames:** Each frame is a separate PNG in the bindless texture array -- no atlas UV math.
 - **Default fallback:** `GetFrame()` returns a default frame if index is out of range.
 - **STB ownership:** `Image::data` is heap-allocated by STB. Lifetime matches the `Image` struct.
@@ -68,7 +69,7 @@ Frame PNG paths are resolved relative to the JSON file directory.
 ## DOs
 
 - Use `RenderSystem::CreateTexture()` for static sprite textures from standalone PNGs
-- Use `AnimationClip::Load()` as the source of truth for animated sprites
+- Use `AnimationSystem::LoadClip()` from game/scene code for animated sprites
 - Check `GetFrameCount() > 0` after load (parse failures produce empty clips)
 
 ## DON'Ts

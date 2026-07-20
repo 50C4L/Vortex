@@ -6,6 +6,7 @@
 #include <audio/AudioMixer.h>
 #include <imgui/imgui.h>
 
+#include <ecs/systems/AnimationSystem.h>
 #include <ecs/systems/AudioSystem.h>
 #include <ecs/systems/RenderSystem.h>
 #include <ecs/components/Basics.h>
@@ -30,6 +31,7 @@ MainScene::MainScene( const EngineContext& ctx )
 	: mInputController( ctx.input )
 	, mECSRegistry( ctx.registry )
 	, mAudioSystem( ctx.audio_system )
+	, mAnimationSystem( ctx.animation_system )
 	, mRenderSystem( ctx.render_system )
 	, mPhysicsSystem( ctx.physics_system )
 {
@@ -46,7 +48,14 @@ MainScene::OnEnter()
 
 	InitializeGenericSystems();
 
-	PrepareAnimations();
+	mDefaultBulletClipId = mAnimationSystem.LoadClip(
+		mRenderSystem,
+		"./resources/textures/bullets/anim_defaultBullet/animation.json" );
+
+	if( mDefaultBulletClipId == eage::ecs::INVALID_ID )
+	{
+		LOG_ERROR( "MainScene: failed to load default bullet animation" );
+	}
 
 	PrepareMeshes();
 
@@ -104,19 +113,6 @@ MainScene::Update( float dt )
 }
 
 void
-MainScene::PrepareAnimations()
-{
-	mDefaultBulletClip = assets::AnimationClip::Load(
-		mRenderSystem,
-		"./resources/textures/bullets/anim_defaultBullet/animation.json" );
-
-	if( mDefaultBulletClip->GetFrameCount() == 0 )
-	{
-		LOG_ERROR( "MainScene: failed to load default bullet animation" );
-	}
-}
-
-void 
 MainScene::PrepareMeshes()
 {
 }
@@ -181,7 +177,7 @@ MainScene::CreatePlayerEntity()
 {
 	mPlayerInputSystem = std::make_unique<PlayerInputSystem>( mECSRegistry, mInputController );
 	mPlayerGameplaySystem = std::make_unique<PlayerGameplaySystem>( mECSRegistry, *mBulletSystem, mAudioSystem );
-	mPlayerGameplaySystem->PreparePlayer( mRenderSystem, mSceneRootEntity, *mDefaultBulletClip );
+	mPlayerGameplaySystem->PreparePlayer( mRenderSystem, mSceneRootEntity, mDefaultBulletClipId );
 }
 
 void 
@@ -227,7 +223,7 @@ void
 MainScene::InitializeGenericSystems()
 {
 	mWarpSystem = std::make_unique<WarpSystem>( mECSRegistry, mPhysicsSystem );
-	mBulletSystem = std::make_unique<BulletSystem>( mECSRegistry, mPhysicsSystem );
+	mBulletSystem = std::make_unique<BulletSystem>( mECSRegistry, mPhysicsSystem, mAnimationSystem );
 	mAsteroidGameplaySystem = std::make_unique<AsteroidGameplaySystem>( mECSRegistry, mPhysicsSystem );
 }
 

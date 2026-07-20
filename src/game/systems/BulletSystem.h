@@ -9,13 +9,12 @@
 
 #include <glm/glm.hpp>
 
-#include <animation/AnimatedSprite.h>
-#include <assets/AnimationClip.h>
 #include <ecs/ResourceManager.h>
 #include <ecs/systems/PhysicsSystem.h>
 
 namespace eage::ecs
 {
+	class AnimationSystem;
 	class ECSRegistry;
 	class RenderSystem;
 }
@@ -36,7 +35,7 @@ namespace vortex
 		uint32_t texture_index = 0;
 		float fire_interval = 0.f; // Minimum seconds between shots; 0 = unlimited
 		float lifetime_sec = 0.f;
-		const assets::AnimationClip* animation = nullptr;
+		eage::ecs::ResourceId clip_id = eage::ecs::INVALID_ID;
 	};
 
 	///
@@ -47,7 +46,8 @@ namespace vortex
 	class BulletSystem final : public eage::ecs::PhysicsSystem::Observer
 	{
 	public:
-		BulletSystem( eage::ecs::ECSRegistry& registry, eage::ecs::PhysicsSystem& physics_system );
+		BulletSystem( eage::ecs::ECSRegistry& registry, eage::ecs::PhysicsSystem& physics_system,
+					  eage::ecs::AnimationSystem& animation_system );
 		~BulletSystem();
 
 		///
@@ -64,7 +64,7 @@ namespace vortex
 		bool Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 direction, float speed );
 
 		///
-		/// Per-frame update: advances dying bullet animations, expires bullets by lifetime, and despawns finished bullets.
+		/// Per-frame update: expires bullets by lifetime and despawns finished dying bullets.
 		///
 		void Update( float dt );
 
@@ -80,13 +80,13 @@ namespace vortex
 
 		eage::ecs::ECSRegistry& mRegistry;
 		eage::ecs::PhysicsSystem& mPhysicsSystem;
+		eage::ecs::AnimationSystem& mAnimationSystem;
 
 		BulletPoolId mNextPoolId = 1;
 		std::unordered_map<BulletPoolId, std::deque<uint64_t>> mPools;
 		std::unordered_map<uint64_t, BulletPoolId> mEntityToPool;
 		std::unordered_map<BulletPoolId, float> mPoolFireInterval;
 		std::unordered_map<BulletPoolId, std::chrono::steady_clock::time_point> mPoolLastFireTime;
-		std::unordered_map<uint64_t, eage::animation::AnimatedSprite> mBulletSprites;
 
 		glm::vec2 mScreenBottomRight;
 	};

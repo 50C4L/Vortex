@@ -3,9 +3,8 @@
 
 #include "../AbstractScene.h"
 #include "../EngineContext.h"
-#include <assets/AnimationClip.h>
-#include <ecs/ResourceManager.h>
 #include <ecs/ECS.h>
+#include <ecs/ResourceManager.h>
 
 #include <memory>
 
@@ -14,9 +13,14 @@ namespace eage::graphics
 	class OrthographicCamera;
 }
 
+namespace eage::ecs
+{
+	class AnimationSystem;
+	class AudioSystem;
+}
+
 namespace vortex
 {
-	class AsteroidGameplaySystem;
 	class AsteroidGameplaySystem;
 	class BulletSystem;
 	class PlayerInputSystem;
@@ -36,7 +40,6 @@ namespace vortex
 
 	private:
 		void InitializeGenericSystems();
-		void PrepareAnimations();
 		void PrepareMeshes();
 		void PrepareMaterials();
 		void CreateSceneRoot();
@@ -49,6 +52,7 @@ namespace vortex
 		events::InputController& mInputController;
 		eage::ecs::ECSRegistry& mECSRegistry;
 		eage::ecs::AudioSystem& mAudioSystem;
+		eage::ecs::AnimationSystem& mAnimationSystem;
 		eage::ecs::RenderSystem& mRenderSystem;
 		eage::ecs::PhysicsSystem& mPhysicsSystem;
 
@@ -56,12 +60,11 @@ namespace vortex
 		std::unique_ptr<PlayerGameplaySystem> mPlayerGameplaySystem;
 		std::unique_ptr<WarpSystem> mWarpSystem;
 		std::unique_ptr<AsteroidGameplaySystem> mAsteroidGameplaySystem;
-
-		std::shared_ptr<const assets::AnimationClip> mDefaultBulletClip;
 		std::unique_ptr<BulletSystem> mBulletSystem;
 
 		std::shared_ptr<eage::graphics::OrthographicCamera> mCamera;
 
+		eage::ecs::ResourceId mDefaultBulletClipId = eage::ecs::INVALID_ID;
 		uint64_t mSceneRootEntity = 0;
 		uint64_t mOnScreenZoneEntity = 0;
 		uint64_t mBackgroundEntity = 0;

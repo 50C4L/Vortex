@@ -109,9 +109,6 @@ add_library(eage_core STATIC
 	./assets/AnimationClip.h
 	./assets/AnimationClip.cpp
 
-	./animation/AnimatedSprite.h
-	./animation/AnimatedSprite.cpp
-
 	./events/KeyCode.h
 	./events/InputController.h
 	./events/InputController.cpp
@@ -123,12 +120,15 @@ add_library(eage_core STATIC
 	./ecs/ECS.h
 	./ecs/ResourceManager.h
 	./ecs/components/Audio.h
+	./ecs/components/Animation.h
 	./ecs/components/Basics.h
 	./ecs/components/Hud.h
 	./ecs/components/Physics.h
 	./ecs/components/Render.h
 	./ecs/systems/AudioSystem.h
 	./ecs/systems/AudioSystem.cpp
+	./ecs/systems/AnimationSystem.h
+	./ecs/systems/AnimationSystem.cpp
 	./ecs/systems/AbstractHudRenderer.h
 	./ecs/systems/HudRenderSystem.h
 	./ecs/systems/HudRenderSystem.cpp

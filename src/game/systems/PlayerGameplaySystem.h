@@ -1,8 +1,8 @@
 #ifndef _VORTEX_PLAYER_GAMEPLAY_SYSTEM_H
 #define _VORTEX_PLAYER_GAMEPLAY_SYSTEM_H
 
-#include <assets/AnimationClip.h>
 #include <ecs/ECS.h>
+#include <ecs/ResourceManager.h>
 
 #include <glm/glm.hpp>
 #include <memory>
@@ -32,7 +32,7 @@ namespace vortex
 		~PlayerGameplaySystem();
 
 		void PreparePlayer( eage::ecs::RenderSystem& render_system, uint64_t root_entity,
-							const assets::AnimationClip& bullet_clip );
+							eage::ecs::ResourceId bullet_clip_id );
 		
 		void Update( float delta_time );
 		

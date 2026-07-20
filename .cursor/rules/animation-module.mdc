@@ -1,6 +1,6 @@
 ---
-description: "Sprite animation system for Vortex. Covers AnimatedSprite (frame-based controller that drives RenderComponent texture_index). Auto-applied when editing src/core/animation/."
-globs: ["src/core/animation/**/*.cpp", "src/core/animation/**/*.h"]
+description: "Sprite animation system for Vortex. Covers AnimatedSpriteComponent and AnimationSystem (frame-based playback that drives RenderComponent texture_index). Auto-applied when editing animation ECS files."
+globs: ["src/core/ecs/components/Animation.h", "src/core/ecs/systems/AnimationSystem.*"]
 alwaysApply: false
 ---
 
@@ -8,56 +8,61 @@ alwaysApply: false
 
 ## Purpose
 
-Frame-based sprite animation. `AnimatedSprite` is a per-entity playback controller that reads a shared `AnimationClip` and writes `texture_index` into the entity's `RenderComponent` each frame. All frame textures are bindless PNGs registered at clip load time.
+Frame-based sprite animation. `AnimationSystem` loads and caches shared `AnimationClip` assets; per-entity playback state lives in `AnimatedSpriteComponent`. Each frame, `AnimationSystem::Update()` advances playing components and writes `texture_index` into `RenderComponent`. All frame textures are bindless PNGs registered at clip load time.
 
-## Key Class
+## Key Types
 
-| Class | Responsibility |
+| Type | Responsibility |
 |---|---|
-| `AnimatedSprite` | Drives animation for one entity; accumulates delta time; advances frame index; writes `RenderComponent::texture_index` |
+| `AnimatedSpriteComponent` | Per-entity playback state: `clip_id`, frame index, elapsed time, playing/loop/finished flags |
+| `AnimationSystem` | Clip cache (`LoadClip`), playback API, per-frame `Update()` tick |
 
 ## API
 
 ```cpp
-auto clip = assets::AnimationClip::Load( render_system, "path/to/animation.json" );
+// Load once, share across entities (deduped by path)
+ResourceId clip_id = animation_system.LoadClip( render_system, "path/to/animation.json" );
 
-// Construction -- binds to an entity (must already have RenderComponent)
-AnimatedSprite sprite( *clip, entity, registry );
+// Attach to entity (must already have RenderComponent)
+animation_system.Attach( entity, clip_id );
 
 // Playback control
-sprite.ShowFrame( 0 );
-sprite.Pause();
-sprite.Play( 0 );            // play from frame 0
-sprite.PlayOnce( 0 );        // one-shot from frame 0
-sprite.SetLoop( true );      // default: loops
+animation_system.ShowFrame( entity, 0 );
+animation_system.Pause( entity );
+animation_system.Play( entity, 0 );       // play from frame 0
+animation_system.PlayOnce( entity, 0 );   // one-shot from frame 0
+animation_system.SetLoop( entity, true );
 
-// Per-frame update (call from game system Update)
-sprite.Update( delta_time_sec );
-if( sprite.IsFinished() ) { /* one-shot done */ }
+// Poll state
+if( animation_system.IsFinished( entity ) ) { /* one-shot done */ }
+
+// Called once per frame from VortexGame (after PhysicsSystem::Update)
+animation_system.Update( delta_time_sec );
 ```
 
 ## How It Works
 
-1. `AnimationClip::Load()` parses animtool `animation.json` and registers each frame PNG via `CreateTexture()`.
-2. `Update()` accumulates `delta_time_sec` into `mElapsed`.
-3. When `mElapsed >= frame.duration_sec`, advance to the next frame (reset elapsed).
-4. Write the new frame's `texture_index` into `registry.GetComponent<RenderComponent>( entity )`.
-5. At end-of-clip: loop back to frame 0 if `mLoop == true`, else hold last frame, set `mPlaying = false`, `mFinished = true`.
+1. `AnimationSystem::LoadClip()` calls `AnimationClip::Load()` and caches the result by JSON path.
+2. `Attach()` adds `AnimatedSpriteComponent` with the clip `ResourceId`, shows frame 0, and pauses.
+3. `Update()` accumulates `delta_time_sec` into `elapsed` for each playing component.
+4. When `elapsed >= frame.duration_sec`, advance to the next frame (reset elapsed).
+5. Write the new frame's `texture_index` into `registry.GetComponent<RenderComponent>( entity )`.
+6. At end-of-clip: loop back to frame 0 if `loop == true`, else hold last frame, set `playing = false`, `finished = true`.
 
 ## Key Patterns
 
-- **Requires `RenderComponent`:** The entity must have a `RenderComponent` before constructing `AnimatedSprite`. Missing component -> undefined behaviour.
-- **Shared clip, per-entity sprite:** Load one `AnimationClip` (owned by scene/system), pass `const AnimationClip&` to each `AnimatedSprite`.
-- **One `AnimatedSprite` per entity:** Each instance tracks its own timer state.
+- **Requires `RenderComponent`:** The entity must have a `RenderComponent` before `Attach()`. Missing component -> no texture write.
+- **Shared clip, per-entity component:** Load one clip via `LoadClip()`, attach to many entities with the same `ResourceId`.
+- **One component per entity:** Each `AnimatedSpriteComponent` tracks its own timer state.
 
 ## DOs
 
-- Call `Update( delta_time )` every frame for playing sprites -- missing frames causes visible hitches
-- Pair `AnimatedSprite` with `RenderSystem::AttachSprite()` using frame 0's texture index and clip frame size
-- Use `ShowFrame( 0 )` + `Pause()` to display a static frame while the entity is alive
+- Call `AnimationSystem::Update()` every frame from the main loop -- missing frames causes visible hitches
+- Pair animated entities with `RenderSystem::AttachSprite()` / `AttachRenderable()` using frame 0's texture index and clip frame size
+- Use `ShowFrame( 0 )` + `Pause()` to display a static frame while the entity is alive (e.g. pooled bullets)
 
 ## DON'Ts
 
-- Don't manually write `RenderComponent::texture_index` while an `AnimatedSprite` is active -- it will be overwritten next `Update()`
-- Don't construct `AnimatedSprite` before the entity has a `RenderComponent`
-- Don't share one `AnimatedSprite` instance across multiple entities -- timer state is per-instance
+- Don't manually write `RenderComponent::texture_index` while an `AnimatedSpriteComponent` is playing -- it will be overwritten on the next `Update()`
+- Don't attach animation before the entity has a `RenderComponent`
+- Don't store `AnimationClip` on scene classes -- use `AnimationSystem::LoadClip()` instead

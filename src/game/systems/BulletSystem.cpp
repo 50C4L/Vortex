@@ -3,10 +3,12 @@
 #include <cmath>
 #include <vector>
 
+#include <assets/AnimationClip.h>
 #include <ecs/ECS.h>
 #include <ecs/components/Basics.h>
 #include <ecs/components/Physics.h>
 #include <ecs/components/Render.h>
+#include <ecs/systems/AnimationSystem.h>
 #include <ecs/systems/RenderSystem.h>
 #include <utility/Logger.h>
 
@@ -29,9 +31,11 @@ namespace
 	}
 }
 
-BulletSystem::BulletSystem( eage::ecs::ECSRegistry& registry, eage::ecs::PhysicsSystem& physics_system )
+BulletSystem::BulletSystem( eage::ecs::ECSRegistry& registry, eage::ecs::PhysicsSystem& physics_system,
+							eage::ecs::AnimationSystem& animation_system )
 	: mRegistry( registry )
 	, mPhysicsSystem( physics_system )
+	, mAnimationSystem( animation_system )
 {
 	mPhysicsSystem.Subscribe( this );
 
@@ -58,15 +62,19 @@ BulletSystem::PreparePool( eage::ecs::RenderSystem& render_system, const BulletP
 	float mesh_height = config.mesh_height;
 	uint32_t texture_index = config.texture_index;
 
-	if( config.animation != nullptr && config.animation->GetFrameCount() > 0 )
+	if( config.clip_id != eage::ecs::INVALID_ID )
 	{
-		const glm::ivec2 frame_size = config.animation->GetFrameSize();
-		if( frame_size.x > 0 && frame_size.y > 0 )
+		const assets::AnimationClip* clip = mAnimationSystem.GetClip( config.clip_id );
+		if( clip != nullptr && clip->GetFrameCount() > 0 )
 		{
-			mesh_width = static_cast<float>( frame_size.x );
-			mesh_height = static_cast<float>( frame_size.y );
+			const glm::ivec2 frame_size = clip->GetFrameSize();
+			if( frame_size.x > 0 && frame_size.y > 0 )
+			{
+				mesh_width = static_cast<float>( frame_size.x );
+				mesh_height = static_cast<float>( frame_size.y );
+			}
+			texture_index = clip->GetFrameTexture( 0 );
 		}
-		texture_index = config.animation->GetFrameTexture( 0 );
 	}
 
 	eage::ecs::ResourceId mesh_id = render_system.CreateSpriteMesh( mesh_width, mesh_height );
@@ -106,15 +114,9 @@ BulletSystem::PreparePool( eage::ecs::RenderSystem& render_system, const BulletP
 
 		render_system.AttachRenderable( entity, mesh_id, config.material_id, texture_index );
 
-		if( config.animation != nullptr && config.animation->GetFrameCount() > 0 )
+		if( config.clip_id != eage::ecs::INVALID_ID )
 		{
-			auto [sprite_it, _] = mBulletSprites.try_emplace(
-				entity,
-				*config.animation,
-				entity,
-				mRegistry );
-			sprite_it->second.ShowFrame( 0 );
-			sprite_it->second.Pause();
+			mAnimationSystem.Attach( entity, config.clip_id );
 		}
 	}
 
@@ -157,10 +159,10 @@ BulletSystem::Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 directio
 	auto& render = mRegistry.GetComponent<eage::ecs::RenderComponent>( entity );
 	render.visible = true;
 
-	if( auto sprite_it = mBulletSprites.find( entity ); sprite_it != mBulletSprites.end() )
+	if( mAnimationSystem.HasAnimation( entity ) )
 	{
-		sprite_it->second.ShowFrame( 0 );
-		sprite_it->second.Pause();
+		mAnimationSystem.ShowFrame( entity, 0 );
+		mAnimationSystem.Pause( entity );
 	}
 
 	auto& transform = mRegistry.GetComponent<eage::ecs::TransformComponent>( entity );
@@ -186,16 +188,7 @@ BulletSystem::Update( float dt )
 	{
 		if( bullet.state == BulletState::Dying )
 		{
-			auto sprite_it = mBulletSprites.find( entity );
-			if( sprite_it != mBulletSprites.end() )
-			{
-				sprite_it->second.Update( dt );
-				if( sprite_it->second.IsFinished() )
-				{
-					bullets_to_despawn.push_back( entity );
-				}
-			}
-			else
+			if( !mAnimationSystem.HasAnimation( entity ) || mAnimationSystem.IsFinished( entity ) )
 			{
 				bullets_to_despawn.push_back( entity );
 			}
@@ -269,9 +262,9 @@ BulletSystem::BeginHitReaction( uint64_t entity )
 	physics.QueueSetVelocity( glm::vec2( 0.f, 0.f ) );
 	physics.QueueSleep( true );
 
-	if( auto sprite_it = mBulletSprites.find( entity ); sprite_it != mBulletSprites.end() )
+	if( mAnimationSystem.HasAnimation( entity ) )
 	{
-		sprite_it->second.PlayOnce( 0 );
+		mAnimationSystem.PlayOnce( entity, 0 );
 	}
 	else
 	{
@@ -295,10 +288,10 @@ BulletSystem::DespawnBullet( uint64_t entity )
 	physics.QueueSetPosition( inactive_pos );
 	physics.QueueSleep( true );
 
-	if( auto sprite_it = mBulletSprites.find( entity ); sprite_it != mBulletSprites.end() )
+	if( mAnimationSystem.HasAnimation( entity ) )
 	{
-		sprite_it->second.ShowFrame( 0 );
-		sprite_it->second.Pause();
+		mAnimationSystem.ShowFrame( entity, 0 );
+		mAnimationSystem.Pause( entity );
 	}
 
 	auto pool_it = mEntityToPool.find( entity );

@@ -25,7 +25,7 @@ namespace assets
 	///     ]
 	///   }
 	///
-	/// Each frame PNG is registered via RenderSystem::CreateTexture(). AnimatedSprite
+	/// Each frame PNG is registered via RenderSystem::CreateTexture(). AnimationSystem
 	/// drives RenderComponent::texture_index per frame at playback time.
 	///
 	class AnimationClip

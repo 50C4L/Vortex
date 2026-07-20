@@ -3,6 +3,7 @@
 
 namespace eage::ecs
 {
+	class AnimationSystem;
 	class AudioSystem;
 	class ECSRegistry;
 	class PhysicsSystem;
@@ -22,6 +23,7 @@ namespace vortex
 		eage::ecs::RenderSystem&  render_system;
 		eage::ecs::PhysicsSystem& physics_system;
 		eage::ecs::AudioSystem&   audio_system;
+		eage::ecs::AnimationSystem& animation_system;
 		events::InputController&  input;
 	};
 }

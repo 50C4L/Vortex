@@ -19,6 +19,7 @@
 #include <events/KeyCode.h>
 #include <audio/AudioMixer.h>
 #include <ecs/ECS.h>
+#include <ecs/systems/AnimationSystem.h>
 #include <ecs/systems/AudioSystem.h>
 #include <ecs/systems/PhysicsSystem.h>
 #include <ecs/systems/RenderSystem.h>
@@ -60,6 +61,7 @@ VortexGame::~VortexGame()
 	mRenderSystem.reset();
 	mSceneGraphSystem.reset();
 	mPhysicsSystem.reset();
+	mAnimationSystem.reset();
 	mAudioSystem.reset();
 	mSceneController.reset();
 
@@ -102,6 +104,7 @@ VortexGame::Run()
 		mSceneController->Update( dt );
 
 		mPhysicsSystem->Update( dt );
+		mAnimationSystem->Update( dt );
 		mAudioSystem->Update( dt );
 		mSceneGraphSystem->Update();
 		mRenderSystem->Update();
@@ -188,6 +191,9 @@ VortexGame::Init()
 	// Initialize AudioSystem
 	mAudioSystem = std::make_unique<eage::ecs::AudioSystem>( *mECSRegistry, *mAudioMixer );
 
+	// Initialize AnimationSystem
+	mAnimationSystem = std::make_unique<eage::ecs::AnimationSystem>( *mECSRegistry );
+
 	// Initialize SceneGraphSystem
 	mSceneGraphSystem = std::make_unique<eage::ecs::SceneGraphSystem>( *mECSRegistry );
 
@@ -202,7 +208,13 @@ VortexGame::Init()
 	mSceneController = std::make_unique<SceneController>();
 	mSceneController->Subscribe( this );
 	mSceneController->AddScene( static_cast<int>( config::SceneID::MAIN_SCENE ),
-		std::make_unique<MainScene>( EngineContext{ *mECSRegistry, *mRenderSystem, *mPhysicsSystem, *mAudioSystem, *mInputController } ) );
+		std::make_unique<MainScene>( EngineContext{
+			*mECSRegistry,
+			*mRenderSystem,
+			*mPhysicsSystem,
+			*mAudioSystem,
+			*mAnimationSystem,
+			*mInputController } ) );
 	mSceneController->ChangeScene( static_cast<int>( config::SceneID::MAIN_SCENE ) );
 
 	// Initialize PerformanceTracker
