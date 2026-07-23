@@ -10,6 +10,11 @@
 #include <graphics/MaterialBuilder.h>
 #include <utility/Logger.h>
 
+#include <cstdlib>
+
+#include <glm/gtc/constants.hpp>
+#include <glm/gtx/quaternion.hpp>
+
 #include "../GameConfig.h"
 #include "../components/GameGenericComponents.h"
 #include "../components/HealthComponent.h"
@@ -237,7 +242,9 @@ AsteroidGameplaySystem::Update()
 				mECSRegistry.HasComponent<eage::ecs::TransformComponent>( entity ) )
 			{
 				const auto& transform = mECSRegistry.GetComponent<eage::ecs::TransformComponent>( entity );
-				mEffectSystem.Apply( mDeathEffectId, glm::vec2( transform.position.x, transform.position.y ) );
+				const float angle = ( static_cast<float>( rand() ) / static_cast<float>( RAND_MAX ) ) * glm::two_pi<float>();
+				const glm::quat rotation = glm::angleAxis( angle, glm::vec3( 0.f, 0.f, 1.f ) );
+				mEffectSystem.Apply( mDeathEffectId, glm::vec2( transform.position.x, transform.position.y ), rotation );
 			}
 
 			DespawnAsteroid( entity );

@@ -102,7 +102,7 @@ EffectSystem::Create( RenderSystem& render_system, const EffectConfig& config, E
 }
 
 bool
-EffectSystem::Apply( ResourceId effect_id, glm::vec2 pos )
+EffectSystem::Apply( ResourceId effect_id, glm::vec2 pos, const glm::quat& rotation )
 {
 	auto it = mEffects.find( effect_id );
 	if( it == mEffects.end() )
@@ -132,6 +132,7 @@ EffectSystem::Apply( ResourceId effect_id, glm::vec2 pos )
 
 	auto& transform = mRegistry.GetComponent<TransformComponent>( entity );
 	transform.SetPosition( glm::vec3( pos, 0.f ) );
+	transform.SetRotation( rotation );
 
 	auto& render = mRegistry.GetComponent<RenderComponent>( entity );
 	render.visible = true;

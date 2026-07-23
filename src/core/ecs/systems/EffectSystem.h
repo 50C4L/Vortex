@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 #include <ecs/ECS.h>
 #include <ecs/ResourceManager.h>
@@ -40,7 +41,8 @@ namespace eage::ecs
 		ResourceId Create( RenderSystem& render_system, const EffectConfig& config, Entity root_entity );
 
 		/// Play the effect at world position (primary clip). Returns false if pool empty or invalid.
-		bool Apply( ResourceId effect_id, glm::vec2 pos );
+		/// rotation defaults to identity; pass glm::angleAxis( ... ) for a custom orientation.
+		bool Apply( ResourceId effect_id, glm::vec2 pos, const glm::quat& rotation = glm::quat() );
 
 		/// Recycle finished active instances. Call after AnimationSystem::Update.
 		void Update();
