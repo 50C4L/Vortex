@@ -2,6 +2,7 @@
 
 #include <assets/AnimationClip.h>
 #include <ecs/ECS.h>
+#include <ecs/components/Audio.h>
 #include <ecs/components/Basics.h>
 #include <ecs/components/Effect.h>
 #include <ecs/components/Render.h>
@@ -15,6 +16,7 @@ using namespace utility;
 namespace
 {
 	constexpr float INACTIVE_OFFSET = 2000.0f;
+	constexpr const char* EFFECT_SFX_SOURCE = "sfx";
 }
 
 EffectSystem::EffectSystem( ECSRegistry& registry, AnimationSystem& animation_system )
@@ -70,6 +72,7 @@ EffectSystem::Create( RenderSystem& render_system, const EffectConfig& config, E
 	definition.clip_ids = config.clip_ids;
 	definition.material_id = config.material_id;
 	definition.mesh_id = mesh_id;
+	definition.sound_id = config.sound_id;
 
 	const glm::vec2 inactive_pos( INACTIVE_OFFSET, -INACTIVE_OFFSET );
 
@@ -96,6 +99,14 @@ EffectSystem::Create( RenderSystem& render_system, const EffectConfig& config, E
 
 		mAnimationSystem.Attach( entity, config.clip_ids[0] );
 		mAnimationSystem.Pause( entity );
+
+		if( config.sound_id != INVALID_ID )
+		{
+			AudioSourceComponent audio_source;
+			audio_source.sources[EFFECT_SFX_SOURCE] = { config.sound_id };
+			mRegistry.AddComponent( entity, std::move( audio_source ) );
+			mRegistry.AddComponent( entity, AudioEventComponent{} );
+		}
 	}
 
 	return effect_id;
@@ -139,6 +150,13 @@ EffectSystem::Apply( ResourceId effect_id, glm::vec2 pos, const glm::quat& rotat
 
 	mAnimationSystem.Attach( entity, definition.clip_ids[0] );
 	mAnimationSystem.PlayOnce( entity, 0 );
+
+	if( mRegistry.HasComponent<AudioEventComponent>( entity ) )
+	{
+		mRegistry.GetComponent<AudioEventComponent>( entity )
+			.QueueEvent( EFFECT_SFX_SOURCE, AudioEventComponent::EventType::Play );
+	}
+
 	return true;
 }
 

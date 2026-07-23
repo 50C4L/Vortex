@@ -245,6 +245,7 @@ MainScene::CreateExplosionEffect()
 	eage::ecs::EffectSystem::EffectConfig config;
 	config.clip_ids = { mResourceLoader->GetClip( "./resources/textures/effects/anim_explosion1/animation.json" ) };
 	config.material_id = mEffectMaterialId;
+	config.sound_id = mResourceLoader->GetSound( "./resources/sounds/explosion1.wav" );
 	config.pool_size = 32;
 	mExplosionEffectId = mEffectSystem.Create( mRenderSystem, config, mSceneRootEntity );
 }

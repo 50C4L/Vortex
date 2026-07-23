@@ -31,6 +31,7 @@ namespace eage::ecs
 		{
 			std::vector<ResourceId> clip_ids; // non-empty; [0] = primary
 			ResourceId material_id = INVALID_ID;
+			ResourceId sound_id = INVALID_ID; // optional; INVALID_ID = silent effect
 			int pool_size = 16;
 		};
 
@@ -53,6 +54,7 @@ namespace eage::ecs
 			std::vector<ResourceId> clip_ids;
 			ResourceId material_id = INVALID_ID;
 			ResourceId mesh_id = INVALID_ID;
+			ResourceId sound_id = INVALID_ID;
 			std::deque<Entity> available;
 			std::unordered_set<Entity> all;
 		};
