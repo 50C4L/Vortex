@@ -25,6 +25,7 @@ Provides the Entity-Component-System architecture for the game layer. `ECSRegist
 | `AudioSourceComponent` | Named sound source map (`string` -> `ResourceId` for `SoundPool`) |
 | `AudioEventComponent` | Queue of Play/Stop/Pause/Resume events keyed by source name |
 | `AnimatedSpriteComponent` | Per-entity sprite animation state: `clip_id`, frame index, elapsed time, playing/loop/finished |
+| `EffectInstanceComponent` | Marks a pooled FX entity; `effect_id` is an EffectSystem definition (not a clip), `active` for recycle |
 | `HudTransformComponent` | Normalized screen position (0-1) + pixel offset + anchor enum |
 | `HudTextComponent` | Text string + font size for ImGui HUD rendering |
 | `HudBarComponent` | Progress bar value/max for HUD rendering |
@@ -32,6 +33,7 @@ Provides the Entity-Component-System architecture for the game layer. `ECSRegist
 | `PhysicsSystem` | Wraps `PhysicsEngine`; creates Box2D bodies; processes physics event queue; dispatches collision events via `Observer` |
 | `AudioSystem` | Loads sound pools; processes `AudioEventComponent` queue each frame |
 | `AnimationSystem` | Loads/caches `AnimationClip` assets; drives `AnimatedSpriteComponent` playback each frame |
+| `EffectSystem` | Pools fire-and-forget FX entities; `Create` returns effect `ResourceId` (clip list + pool); `Apply(id, pos)` plays primary clip |
 | `SceneGraphSystem` | Traverses parent-child hierarchy; propagates world matrices top-down |
 | `HudRenderSystem` | Renders HUD components via ImGui; applies DPI scale factor |
 | `SceneResourceLoader` | (assets module) Preloads scene manifest; not an ECS tick system -- used at scene enter |

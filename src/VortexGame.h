@@ -30,6 +30,7 @@ namespace eage::ecs
 	class AnimationSystem;
 	class AudioSystem;
 	class ECSRegistry;
+	class EffectSystem;
 	class HudRenderSystem;
 	class PhysicsSystem;
 	class RenderSystem;
@@ -67,6 +68,7 @@ namespace vortex
 		std::unique_ptr<eage::audio::AudioMixer> mAudioMixer;
 		std::unique_ptr<eage::ecs::ECSRegistry> mECSRegistry;
 		std::unique_ptr<eage::ecs::AnimationSystem> mAnimationSystem;
+		std::unique_ptr<eage::ecs::EffectSystem> mEffectSystem;
 		std::unique_ptr<eage::ecs::AudioSystem> mAudioSystem;
 		std::unique_ptr<eage::ecs::SceneGraphSystem> mSceneGraphSystem;
 		std::unique_ptr<eage::ecs::RenderSystem> mRenderSystem;

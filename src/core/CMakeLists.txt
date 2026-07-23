@@ -124,6 +124,7 @@ add_library(eage_core STATIC
 	./ecs/components/Audio.h
 	./ecs/components/Animation.h
 	./ecs/components/Basics.h
+	./ecs/components/Effect.h
 	./ecs/components/Hud.h
 	./ecs/components/Physics.h
 	./ecs/components/Render.h
@@ -131,6 +132,8 @@ add_library(eage_core STATIC
 	./ecs/systems/AudioSystem.cpp
 	./ecs/systems/AnimationSystem.h
 	./ecs/systems/AnimationSystem.cpp
+	./ecs/systems/EffectSystem.h
+	./ecs/systems/EffectSystem.cpp
 	./ecs/systems/AbstractHudRenderer.h
 	./ecs/systems/HudRenderSystem.h
 	./ecs/systems/HudRenderSystem.cpp

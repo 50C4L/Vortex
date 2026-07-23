@@ -21,6 +21,7 @@
 #include <ecs/ECS.h>
 #include <ecs/systems/AnimationSystem.h>
 #include <ecs/systems/AudioSystem.h>
+#include <ecs/systems/EffectSystem.h>
 #include <ecs/systems/PhysicsSystem.h>
 #include <ecs/systems/RenderSystem.h>
 #include <ecs/systems/SceneGraphSystem.h>
@@ -61,6 +62,7 @@ VortexGame::~VortexGame()
 	mRenderSystem.reset();
 	mSceneGraphSystem.reset();
 	mPhysicsSystem.reset();
+	mEffectSystem.reset();
 	mAnimationSystem.reset();
 	mAudioSystem.reset();
 	mSceneController.reset();
@@ -105,6 +107,7 @@ VortexGame::Run()
 
 		mPhysicsSystem->Update( dt );
 		mAnimationSystem->Update( dt );
+		mEffectSystem->Update();
 		mAudioSystem->Update( dt );
 		mSceneGraphSystem->Update();
 		mRenderSystem->Update();
@@ -194,6 +197,9 @@ VortexGame::Init()
 	// Initialize AnimationSystem
 	mAnimationSystem = std::make_unique<eage::ecs::AnimationSystem>( *mECSRegistry );
 
+	// Initialize EffectSystem
+	mEffectSystem = std::make_unique<eage::ecs::EffectSystem>( *mECSRegistry, *mAnimationSystem );
+
 	// Initialize SceneGraphSystem
 	mSceneGraphSystem = std::make_unique<eage::ecs::SceneGraphSystem>( *mECSRegistry );
 
@@ -214,6 +220,7 @@ VortexGame::Init()
 			*mPhysicsSystem,
 			*mAudioSystem,
 			*mAnimationSystem,
+			*mEffectSystem,
 			*mInputController } ) );
 	mSceneController->ChangeScene( static_cast<int>( config::SceneID::MAIN_SCENE ) );
 

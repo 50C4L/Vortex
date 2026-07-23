@@ -16,6 +16,7 @@ namespace assets
 namespace eage::ecs
 {
 	class ECSRegistry;
+	class EffectSystem;
 	class RenderSystem;
 }
 
@@ -24,7 +25,9 @@ namespace vortex
 	class AsteroidGameplaySystem : public eage::ecs::PhysicsSystem::Observer
 	{
 	public:
-		AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry, eage::ecs::PhysicsSystem& physics_system );
+		AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry,
+								eage::ecs::PhysicsSystem& physics_system,
+								eage::ecs::EffectSystem& effect_system );
 		~AsteroidGameplaySystem();
 
 		///
@@ -32,6 +35,8 @@ namespace vortex
 		/// Note that this function will perform immediate GPU operations
 		///
 		void PrepareAsteroids( eage::ecs::RenderSystem& render_system, assets::SceneResourceLoader& resources, int count, uint64_t root_entity );
+
+		void SetDeathEffect( eage::ecs::ResourceId effect_id );
 
 		void SpawnAsteroid( int count );
 		void DespawnAsteroid( uint64_t asteroid_entity );
@@ -49,10 +54,12 @@ namespace vortex
 	private:
 		eage::ecs::ECSRegistry& mECSRegistry;
 		eage::ecs::PhysicsSystem& mPhysicsSystem;
+		eage::ecs::EffectSystem& mEffectSystem;
 
 		eage::ecs::ResourceId mAsteroidMaterialId = 0;
 		eage::ecs::ResourceId mAsteroidMeshId = 0;
 		uint32_t mAsteroidTextureIndex = 0;
+		eage::ecs::ResourceId mDeathEffectId = eage::ecs::INVALID_ID;
 
 		std::deque<uint64_t> mAvailableAsteroids;
 		std::unordered_set<uint64_t> mAllAsteroids;

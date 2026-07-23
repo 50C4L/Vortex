@@ -4,6 +4,7 @@
 #include "../AbstractScene.h"
 #include "../EngineContext.h"
 #include <ecs/ECS.h>
+#include <ecs/ResourceManager.h>
 
 #include <memory>
 
@@ -16,6 +17,7 @@ namespace eage::ecs
 {
 	class AnimationSystem;
 	class AudioSystem;
+	class EffectSystem;
 }
 
 namespace assets
@@ -52,11 +54,13 @@ namespace vortex
 		void CreateScreenZoneEntities();
 		void CreateEnemyEntities();
 		void CreateHudEntities();
+		void CreateExplosionEffect();
 
 		events::InputController& mInputController;
 		eage::ecs::ECSRegistry& mECSRegistry;
 		eage::ecs::AudioSystem& mAudioSystem;
 		eage::ecs::AnimationSystem& mAnimationSystem;
+		eage::ecs::EffectSystem& mEffectSystem;
 		eage::ecs::RenderSystem& mRenderSystem;
 		eage::ecs::PhysicsSystem& mPhysicsSystem;
 
@@ -73,6 +77,8 @@ namespace vortex
 		uint64_t mOnScreenZoneEntity = 0;
 		uint64_t mBackgroundEntity = 0;
 		eage::ecs::Entity mKillCountHudEntity = 0;
+		eage::ecs::ResourceId mExplosionEffectId = 0;
+		eage::ecs::ResourceId mEffectMaterialId = 0;
 	};
 }
 

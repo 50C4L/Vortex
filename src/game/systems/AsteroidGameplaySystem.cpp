@@ -5,6 +5,7 @@
 #include <ecs/components/Basics.h>
 #include <ecs/components/Physics.h>
 #include <ecs/components/Render.h>
+#include <ecs/systems/EffectSystem.h>
 #include <ecs/systems/RenderSystem.h>
 #include <graphics/MaterialBuilder.h>
 #include <utility/Logger.h>
@@ -23,9 +24,12 @@ namespace
 	constexpr float SPAWN_AREA_PADDING = 33.0f; // Padding from screen edges for spawning asteroids
 }
 
-AsteroidGameplaySystem::AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry, eage::ecs::PhysicsSystem& physics_system )
+AsteroidGameplaySystem::AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry,
+												eage::ecs::PhysicsSystem& physics_system,
+												eage::ecs::EffectSystem& effect_system )
 	: mECSRegistry( registry )
 	, mPhysicsSystem( physics_system )
+	, mEffectSystem( effect_system )
 {
 	mPhysicsSystem.Subscribe( this );
 	float half_width = static_cast<float>( config::DesignResolution::WIDTH) * 0.5f;
@@ -37,6 +41,12 @@ AsteroidGameplaySystem::AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry
 AsteroidGameplaySystem::~AsteroidGameplaySystem()
 {
 	mPhysicsSystem.Unsubscribe( this );
+}
+
+void
+AsteroidGameplaySystem::SetDeathEffect( eage::ecs::ResourceId effect_id )
+{
+	mDeathEffectId = effect_id;
 }
 
 void
@@ -222,6 +232,14 @@ AsteroidGameplaySystem::Update()
 		if( health.IsDead() )
 		{
 			++mKillCount;
+
+			if( mDeathEffectId != eage::ecs::INVALID_ID &&
+				mECSRegistry.HasComponent<eage::ecs::TransformComponent>( entity ) )
+			{
+				const auto& transform = mECSRegistry.GetComponent<eage::ecs::TransformComponent>( entity );
+				mEffectSystem.Apply( mDeathEffectId, glm::vec2( transform.position.x, transform.position.y ) );
+			}
+
 			DespawnAsteroid( entity );
 		}
 	}

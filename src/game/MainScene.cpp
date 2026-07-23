@@ -8,6 +8,7 @@
 
 #include <ecs/systems/AnimationSystem.h>
 #include <ecs/systems/AudioSystem.h>
+#include <ecs/systems/EffectSystem.h>
 #include <ecs/systems/RenderSystem.h>
 #include <assets/SceneResourceLoader.h>
 #include <ecs/components/Basics.h>
@@ -33,6 +34,7 @@ MainScene::MainScene( const EngineContext& ctx )
 	, mECSRegistry( ctx.registry )
 	, mAudioSystem( ctx.audio_system )
 	, mAnimationSystem( ctx.animation_system )
+	, mEffectSystem( ctx.effect_system )
 	, mRenderSystem( ctx.render_system )
 	, mPhysicsSystem( ctx.physics_system )
 {
@@ -63,6 +65,8 @@ MainScene::OnEnter()
 	CreateSceneRoot();
 
 	CreateBackgroundEntity();
+
+	CreateExplosionEffect();
 
 	CreatePlayerEntity();
 
@@ -223,14 +227,33 @@ MainScene::InitializeGenericSystems()
 {
 	mWarpSystem = std::make_unique<WarpSystem>( mECSRegistry, mPhysicsSystem );
 	mBulletSystem = std::make_unique<BulletSystem>( mECSRegistry, mPhysicsSystem, mAnimationSystem );
-	mAsteroidGameplaySystem = std::make_unique<AsteroidGameplaySystem>( mECSRegistry, mPhysicsSystem );
+	mAsteroidGameplaySystem = std::make_unique<AsteroidGameplaySystem>( mECSRegistry, mPhysicsSystem, mEffectSystem );
+}
+
+void
+MainScene::CreateExplosionEffect()
+{
+	auto material_property = eage::graphics::MaterialBuilder()
+		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",
+					 "./src/shaders/compiled/colored_triangle.frag.spv" )
+		.SetAlphaBlending( true )
+		.EnableDepthTest( true )
+		.Build();
+
+	mEffectMaterialId = mRenderSystem.CreateMaterial( material_property );
+
+	eage::ecs::EffectSystem::EffectConfig config;
+	config.clip_ids = { mResourceLoader->GetClip( "./resources/textures/effects/anim_explosion1/animation.json" ) };
+	config.material_id = mEffectMaterialId;
+	config.pool_size = 32;
+	mExplosionEffectId = mEffectSystem.Create( mRenderSystem, config, mSceneRootEntity );
 }
 
 void
 MainScene::CreateEnemyEntities()
 {
 	mAsteroidGameplaySystem->PrepareAsteroids( mRenderSystem, *mResourceLoader, 100, mSceneRootEntity );
-
+	mAsteroidGameplaySystem->SetDeathEffect( mExplosionEffectId );
 	mAsteroidGameplaySystem->SpawnAsteroid( 10 );
 }
 
