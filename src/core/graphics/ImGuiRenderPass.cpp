@@ -35,9 +35,7 @@ ImGuiRenderPass::ImGuiRenderPass(
 	SDL_Window& window,
 	vk::Format swapchain_format,
 	uint32_t min_image_count,
-	uint32_t max_image_count,
-	ManagedImage& scene_color_target )
-	: mSceneColorTarget( scene_color_target )
+	uint32_t max_image_count )
 {
 	// Initialize ImGui lifetime (context, backends, descriptor pool)
 	mLifetime = std::make_unique<ImGUILifetime>( context );
@@ -51,16 +49,9 @@ ImGuiRenderPass::ImGuiRenderPass(
 	vk::Device device = *context.logical_device;
 	mSceneSampler = device.createSamplerUnique( sampler_info );
 
-	// Register the scene color target with ImGui as a texture
-	mSceneDescriptorSet = ImGui_ImplVulkan_AddTexture(
-		*mSceneSampler,
-		*mSceneColorTarget.image_view,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
-
-	// Build the pass descriptor -- writes to swapchain (nullptr), reads scene image
+	// Writes to swapchain; scene input is bound later via SetSceneInput
 	mDesc.color_target = nullptr;
 	mDesc.depth_target = nullptr;
-	mDesc.input_images.push_back( &mSceneColorTarget );
 }
 
 ImGuiRenderPass::~ImGuiRenderPass()
@@ -124,7 +115,7 @@ ImGuiRenderPass::Prepare( size_t frame_index )
 	ImGui_ImplSDL2_NewFrame();
 	ImGui::NewFrame();
 
-	if( mSceneViewportTopRatio <= 0.f )
+	if( mSceneViewportTopRatio <= 0.f && mSceneColorTarget != nullptr && mSceneDescriptorSet != VK_NULL_HANDLE )
 	{
 		// Fullscreen borderless window displaying the scene texture (game mode)
 		const ImGuiViewport* vp = ImGui::GetMainViewport();
@@ -189,6 +180,28 @@ void
 ImGuiRenderPass::SetSceneViewportTopRatio( float ratio )
 {
 	mSceneViewportTopRatio = ratio;
+}
+
+void
+ImGuiRenderPass::SetSceneInput( ManagedImage* image )
+{
+	if( mSceneDescriptorSet != VK_NULL_HANDLE )
+	{
+		ImGui_ImplVulkan_RemoveTexture( mSceneDescriptorSet );
+		mSceneDescriptorSet = VK_NULL_HANDLE;
+	}
+
+	mSceneColorTarget = image;
+	mDesc.input_images.clear();
+
+	if( mSceneColorTarget != nullptr )
+	{
+		mSceneDescriptorSet = ImGui_ImplVulkan_AddTexture(
+			*mSceneSampler,
+			*mSceneColorTarget->image_view,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
+		mDesc.input_images.push_back( mSceneColorTarget );
+	}
 }
 
 void*

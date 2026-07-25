@@ -11,6 +11,8 @@
 namespace eage::graphics
 {
 	class OrthographicCamera;
+	class Renderer;
+	class SceneRenderPass;
 }
 
 namespace eage::ecs
@@ -44,6 +46,8 @@ namespace vortex
 		virtual void OnExit() override;
 		virtual void Update( float dt ) override;
 
+		virtual eage::graphics::ManagedImage* GetOutput() override;
+
 	private:
 		void InitializeGenericSystems();
 		void PrepareMeshes();
@@ -53,9 +57,9 @@ namespace vortex
 		void CreatePlayerEntity();
 		void CreateScreenZoneEntities();
 		void CreateEnemyEntities();
-		void CreateHudEntities();
 		void CreateExplosionEffect();
 
+		eage::graphics::Renderer& mRenderer;
 		events::InputController& mInputController;
 		eage::ecs::ECSRegistry& mECSRegistry;
 		eage::ecs::AudioSystem& mAudioSystem;
@@ -64,6 +68,7 @@ namespace vortex
 		eage::ecs::RenderSystem& mRenderSystem;
 		eage::ecs::PhysicsSystem& mPhysicsSystem;
 
+		std::unique_ptr<eage::graphics::SceneRenderPass> mScenePass;
 		std::unique_ptr<assets::SceneResourceLoader> mResourceLoader;
 		std::unique_ptr<PlayerInputSystem> mPlayerInputSystem;
 		std::unique_ptr<PlayerGameplaySystem> mPlayerGameplaySystem;
@@ -76,7 +81,6 @@ namespace vortex
 		uint64_t mSceneRootEntity = 0;
 		uint64_t mOnScreenZoneEntity = 0;
 		uint64_t mBackgroundEntity = 0;
-		eage::ecs::Entity mKillCountHudEntity = 0;
 		eage::ecs::ResourceId mExplosionEffectId = 0;
 		eage::ecs::ResourceId mEffectMaterialId = 0;
 	};

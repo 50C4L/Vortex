@@ -1,5 +1,6 @@
 #include "VortexGame.h"
 #include "EngineContext.h"
+#include "AbstractScene.h"
 
 #include <chrono>
 #include <iostream>
@@ -11,10 +12,7 @@
 #include <utility/Logger.h>
 #include <utility/Filesystem.h>
 #include <graphics/Renderer.h>
-#include <graphics/SceneRenderPass.h>
 #include <graphics/ImGuiRenderPass.h>
-#include <graphics/ImGuiHudRenderer.h>
-#include <graphics/ManagedVulkanResources.h>
 #include <events/InputController.h>
 #include <events/KeyCode.h>
 #include <audio/AudioMixer.h>
@@ -25,7 +23,6 @@
 #include <ecs/systems/PhysicsSystem.h>
 #include <ecs/systems/RenderSystem.h>
 #include <ecs/systems/SceneGraphSystem.h>
-#include <ecs/systems/HudRenderSystem.h>
 #include <profiling/PerformanceTracker.h>
 
 #include "SceneController.h"
@@ -47,6 +44,17 @@ VortexGame::OnSceneChanged( uint64_t scene_root )
 	{
 		mSceneGraphSystem->SetSceneRoot( scene_root );
 	}
+
+	BindSceneOutput( mSceneController->GetCurrentScene() );
+}
+
+void
+VortexGame::BindSceneOutput( AbstractScene* scene )
+{
+	// Scene already registered its passes in OnEnter; keep ImGui last for present/debug.
+	mRenderer->RemoveRenderPass( mImGuiPass.get() );
+	mRenderer->AddRenderPass( mImGuiPass.get() );
+	mImGuiPass->SetSceneInput( scene ? scene->GetOutput() : nullptr );
 }
 
 VortexGame::~VortexGame()
@@ -54,11 +62,22 @@ VortexGame::~VortexGame()
 	// GPU resources must be released before the renderer (which owns VMA/device).
 	// Systems like RenderSystem hold VMA-allocated buffers and images, so they
 	// must be torn down while the allocator is still alive.
-	mRenderer->WaitForIdle();
+	if( mRenderer )
+	{
+		mRenderer->WaitForIdle();
+	}
+
+	if( mRenderer && mImGuiPass )
+	{
+		BindSceneOutput( nullptr );
+	}
+
+	if( mSceneController )
+	{
+		mSceneController->FreeAllScenes();
+	}
 
 	mPerformanceTracker.reset();
-	mHudRenderSystem.reset();
-	mImGuiHudRenderer.reset();
 	mRenderSystem.reset();
 	mSceneGraphSystem.reset();
 	mPhysicsSystem.reset();
@@ -68,7 +87,6 @@ VortexGame::~VortexGame()
 	mSceneController.reset();
 
 	mImGuiPass.reset();
-	mScenePass.reset();
 	mRenderer.reset();
 	mWindow.reset();
 	SDL_Quit();
@@ -114,6 +132,7 @@ VortexGame::Run()
 		mRenderer->Render();
 	}
 	mRenderer->WaitForIdle();
+	BindSceneOutput( nullptr );
 	mSceneController->FreeAllScenes();
 }
 
@@ -151,18 +170,13 @@ VortexGame::Init()
 		return false;
 	}
 
-	// Create render passes
-	mScenePass = std::make_unique<eage::graphics::SceneRenderPass>(
-		*mRenderer,
-		static_cast<uint32_t>( config::VirtualResolution::WIDTH ),
-		static_cast<uint32_t>( config::VirtualResolution::HEIGHT ) );
+	// Shell present / debug pass (scene input bound after ChangeScene)
 	mImGuiPass = std::make_unique<eage::graphics::ImGuiRenderPass>(
 		mRenderer->GetVulkanContext(),
 		*mWindow,
 		mRenderer->GetSwapchainFormat(),
 		eage::graphics::Renderer::MAX_FRAMES_IN_FLIGHT,
-		mRenderer->GetSwapchainImageCount(),
-		mScenePass->GetColorTarget() );
+		mRenderer->GetSwapchainImageCount() );
 	float ui_scale = config::get_scale_factor( screen_res.width, static_cast<int>( config::DesignResolution::WIDTH ) );
 	mImGuiPass->LoadFont( nullptr, 13.0f * ui_scale, eage::ecs::HudFontSize::SMALL );
 	mImGuiPass->LoadFont( nullptr, 24.0f * ui_scale, eage::ecs::HudFontSize::MEDIUM );
@@ -173,7 +187,6 @@ VortexGame::Init()
 	} );
 	apply_game_style();
 
-	mRenderer->AddRenderPass( mScenePass.get() );
 	mRenderer->AddRenderPass( mImGuiPass.get() );
 
 	// Initialize AudioMixer
@@ -203,8 +216,8 @@ VortexGame::Init()
 	// Initialize SceneGraphSystem
 	mSceneGraphSystem = std::make_unique<eage::ecs::SceneGraphSystem>( *mECSRegistry );
 
-	// Initialize RenderSystem
-	mRenderSystem = std::make_unique<eage::ecs::RenderSystem>( *mRenderer, *mScenePass, *mECSRegistry );
+	// Initialize RenderSystem (scene pass retargeted on scene enter)
+	mRenderSystem = std::make_unique<eage::ecs::RenderSystem>( *mRenderer, *mECSRegistry );
 
 	// Initialize PhysicsSystem
 	mPhysicsSystem = std::make_unique<eage::ecs::PhysicsSystem>( *mECSRegistry );
@@ -215,6 +228,7 @@ VortexGame::Init()
 	mSceneController->Subscribe( this );
 	mSceneController->AddScene( static_cast<int>( config::SceneID::MAIN_SCENE ),
 		std::make_unique<MainScene>( EngineContext{
+			*mRenderer,
 			*mECSRegistry,
 			*mRenderSystem,
 			*mPhysicsSystem,
@@ -224,16 +238,12 @@ VortexGame::Init()
 			*mInputController } ) );
 	mSceneController->ChangeScene( static_cast<int>( config::SceneID::MAIN_SCENE ) );
 
-	// Initialize PerformanceTracker
+	// Initialize PerformanceTracker (shell debug overlay only)
 	mPerformanceTracker = std::make_unique<eage::profiling::PerformanceTracker>( *mRenderer );
 	mImGuiPass->AddOverlayCallback( [this]()
 	{
 		mPerformanceTracker->DrawDebugGUI();
 	} );
-
-	// Initialize HudRenderSystem (registers its own overlay callback)
-	mImGuiHudRenderer = std::make_unique<eage::graphics::ImGuiHudRenderer>( *mImGuiPass );
-	mHudRenderSystem = std::make_unique<eage::ecs::HudRenderSystem>( *mECSRegistry, *mImGuiHudRenderer, ui_scale );
 
 	return true;
 }

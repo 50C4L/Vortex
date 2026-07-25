@@ -35,9 +35,8 @@ namespace
 
 struct RenderSystem::Impl
 {
-	Impl( eage::graphics::Renderer& renderer, eage::graphics::SceneRenderPass& scene_pass, ECSRegistry& ecs_registry )
+	Impl( eage::graphics::Renderer& renderer, ECSRegistry& ecs_registry )
 		: mRenderer( renderer )
-		, mScenePass( scene_pass )
 		, mECSRegistry( ecs_registry )
 	{
 		mGlobalDescriptorSetId = CreateDynamicDescriptorSet( mRenderer.GetBuiltInDescriptorSetLayouts().global.get() );
@@ -159,8 +158,18 @@ struct RenderSystem::Impl
 		GetGlobalUniformBuffer()->Update( &scene_global_data, sizeof( SceneGlobalData ), sizeof( SceneGlobalData ) * current_frame );
 	}
 
+	void SetScenePass( eage::graphics::SceneRenderPass* scene_pass )
+	{
+		mScenePass = scene_pass;
+	}
+
 	void Update()
 	{
+		if( mScenePass == nullptr )
+		{
+			return;
+		}
+
 		auto& renderable_entities = mECSRegistry.GetComponentMap<RenderComponent>();
 		for( auto [entity, render_cmp] : renderable_entities )
 		{
@@ -222,7 +231,7 @@ struct RenderSystem::Impl
 			render_info.uv_rect = render_cmp.uv_rect;
 			render_info.texture_index = render_cmp.texture_index;
 
-			mScenePass.AddRenderInfo( std::move( render_info ) );
+			mScenePass->AddRenderInfo( std::move( render_info ) );
 		}
 	}
 
@@ -371,7 +380,7 @@ struct RenderSystem::Impl
 	// ----- Members -----
 
 	eage::graphics::Renderer& mRenderer;
-	eage::graphics::SceneRenderPass& mScenePass;
+	eage::graphics::SceneRenderPass* mScenePass = nullptr;
 	ECSRegistry& mECSRegistry;
 
 	ResourceId mGlobalDescriptorSetId;
@@ -394,8 +403,8 @@ struct RenderSystem::Impl
 // RenderSystem forwarding
 // ---------------------------------------------------------------------------
 
-RenderSystem::RenderSystem( eage::graphics::Renderer& renderer, eage::graphics::SceneRenderPass& scene_pass, ECSRegistry& ecs_registry )
-	: mImpl( std::make_unique<Impl>( renderer, scene_pass, ecs_registry ) )
+RenderSystem::RenderSystem( eage::graphics::Renderer& renderer, ECSRegistry& ecs_registry )
+	: mImpl( std::make_unique<Impl>( renderer, ecs_registry ) )
 {
 }
 
@@ -442,6 +451,14 @@ void
 RenderSystem::SetCamera( const AbstractCamera& camera, glm::vec2 virtual_resolution )
 {
 	mImpl->SetCamera( camera, virtual_resolution );
+}
+
+void
+RenderSystem::SetScenePass( eage::graphics::SceneRenderPass* scene_pass )
+{
+	// @todo: Should RenderSystem knows about SceneRenderPass? Will it be better if it just use the active
+	// `RenderPass`? But this might need a render graph which is overkill for now.
+	mImpl->SetScenePass( scene_pass );
 }
 
 void

@@ -10,9 +10,7 @@ struct SDL_Window;
 namespace eage::graphics
 {
 	class Renderer;
-	class SceneRenderPass;
 	class ImGuiRenderPass;
-	class ImGuiHudRenderer;
 }
 
 namespace events
@@ -31,7 +29,6 @@ namespace eage::ecs
 	class AudioSystem;
 	class ECSRegistry;
 	class EffectSystem;
-	class HudRenderSystem;
 	class PhysicsSystem;
 	class RenderSystem;
 	class SceneGraphSystem;
@@ -44,6 +41,8 @@ namespace eage::profiling
 
 namespace vortex
 {
+	class AbstractScene;
+
 	class VortexGame : public SceneController::Observer
 	{
 	public:
@@ -58,11 +57,11 @@ namespace vortex
 		void OnSceneChanged( uint64_t scene_root ) override;
 
 	private:
+		void BindSceneOutput( AbstractScene* scene );
+
 		std::shared_ptr<SDL_Window> mWindow;
 		std::unique_ptr<eage::graphics::Renderer> mRenderer;
-		std::unique_ptr<eage::graphics::SceneRenderPass> mScenePass;
 		std::unique_ptr<eage::graphics::ImGuiRenderPass> mImGuiPass;
-		std::unique_ptr<eage::graphics::ImGuiHudRenderer> mImGuiHudRenderer;
 		std::unique_ptr<SceneController> mSceneController;
 		std::unique_ptr<events::InputController> mInputController;
 		std::unique_ptr<eage::audio::AudioMixer> mAudioMixer;
@@ -73,7 +72,6 @@ namespace vortex
 		std::unique_ptr<eage::ecs::SceneGraphSystem> mSceneGraphSystem;
 		std::unique_ptr<eage::ecs::RenderSystem> mRenderSystem;
 		std::unique_ptr<eage::ecs::PhysicsSystem> mPhysicsSystem;
-		std::unique_ptr<eage::ecs::HudRenderSystem> mHudRenderSystem;
 		std::unique_ptr<eage::profiling::PerformanceTracker> mPerformanceTracker;
 	};
 }

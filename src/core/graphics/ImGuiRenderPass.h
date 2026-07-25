@@ -28,8 +28,7 @@ namespace eage::graphics
 			SDL_Window& window,
 			vk::Format swapchain_format,
 			uint32_t min_image_count,
-			uint32_t max_image_count,
-			ManagedImage& scene_color_target );
+			uint32_t max_image_count );
 
 		~ImGuiRenderPass() override;
 
@@ -57,11 +56,14 @@ namespace eage::graphics
 		/// 0.0 = full-scene background (game). e.g. 0.3 = scene image starts below the top 30%.
 		void SetSceneViewportTopRatio( float ratio );
 
+		/// Retarget the scene color image sampled by the present path. Pass nullptr to clear.
+		void SetSceneInput( ManagedImage* image );
+
 		void* GetSceneTextureId() const;
 
 	private:
 		std::unique_ptr<ImGUILifetime> mLifetime;
-		ManagedImage& mSceneColorTarget;
+		ManagedImage* mSceneColorTarget = nullptr;
 		RenderPassDesc mDesc;
 
 		vk::UniqueSampler mSceneSampler;

@@ -57,8 +57,12 @@ SceneController::Update( float dt )
 void
 SceneController::FreeAllScenes()
 {
+	if( mCurrentScene )
+	{
+		mCurrentScene->OnExit();
+		mCurrentScene = nullptr;
+	}
 	mScenes.clear();
-	mCurrentScene = nullptr;
 	mCurrentSceneId = -1;
 }
 
@@ -70,6 +74,12 @@ SceneController::GetCurrentSceneRoot()
 		return mCurrentScene->GetSceneRoot();
 	}
 	return 0;
+}
+
+AbstractScene*
+SceneController::GetCurrentScene() const
+{
+	return mCurrentScene;
 }
 
 void

@@ -28,7 +28,7 @@ namespace eage::ecs
 	class RenderSystem
 	{
 	public:
-		RenderSystem( eage::graphics::Renderer& renderer, eage::graphics::SceneRenderPass& scene_pass, eage::ecs::ECSRegistry& ecs_registry );
+		RenderSystem( eage::graphics::Renderer& renderer, eage::ecs::ECSRegistry& ecs_registry );
 		~RenderSystem();
 
 		RenderSystem( const RenderSystem& ) = delete;
@@ -47,6 +47,9 @@ namespace eage::ecs
 
 		// Camera
 		void SetCamera( const eage::graphics::AbstractCamera& camera, glm::vec2 virtual_resolution );
+
+		/// Retarget the scene pass that receives draw submissions. Pass nullptr to clear.
+		void SetScenePass( eage::graphics::SceneRenderPass* scene_pass );
 
 		void Update();
 

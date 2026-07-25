@@ -3,6 +3,11 @@
 
 #include <cstdint>
 
+namespace eage::graphics
+{
+	struct ManagedImage;
+}
+
 namespace vortex
 {
 	class AbstractScene
@@ -15,6 +20,9 @@ namespace vortex
 		virtual uint64_t GetSceneRoot() = 0;
 		virtual void Update( float dt ) = 0;
 		virtual void OnExit() = 0;
+
+		/// Image the shell should present. nullptr if the scene has no output.
+		virtual eage::graphics::ManagedImage* GetOutput() { return nullptr; }
 	};
 }
 

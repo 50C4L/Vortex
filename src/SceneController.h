@@ -38,6 +38,8 @@ namespace vortex
 
 		uint64_t GetCurrentSceneRoot();
 
+		AbstractScene* GetCurrentScene() const;
+
 		void Subscribe( Observer* observer );
 		void Unsubscribe( Observer* observer );
 

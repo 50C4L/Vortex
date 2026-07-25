@@ -509,8 +509,8 @@ AnimToolApp::Init()
 		*mWindow,
 		mRenderer->GetSwapchainFormat(),
 		eage::graphics::Renderer::MAX_FRAMES_IN_FLIGHT,
-		mRenderer->GetSwapchainImageCount(),
-		mScenePass->GetColorTarget() );
+		mRenderer->GetSwapchainImageCount() );
+	mImGuiPass->SetSceneInput( &mScenePass->GetColorTarget() );
 	mImGuiPass->LoadFont( nullptr, 16.0f, eage::ecs::HudFontSize::MEDIUM );
 	mImGuiPass->InitFontTexture( [this]( std::function<void( vk::CommandBuffer& )> work )
 	{
@@ -537,7 +537,8 @@ void
 AnimToolApp::InitPreviewRendering()
 {
 	mECSRegistry = std::make_unique<eage::ecs::ECSRegistry>();
-	mRenderSystem = std::make_unique<eage::ecs::RenderSystem>( *mRenderer, *mScenePass, *mECSRegistry );
+	mRenderSystem = std::make_unique<eage::ecs::RenderSystem>( *mRenderer, *mECSRegistry );
+	mRenderSystem->SetScenePass( mScenePass.get() );
 
 	mPreviewCamera = std::make_unique<eage::graphics::OrthographicCamera>(
 		-0.5f, 0.5f, -0.5f, 0.5f, 0.1f, 100.0f );

@@ -1,6 +1,11 @@
 #ifndef _VORTEX_ENGINE_CONTEXT_H_
 #define _VORTEX_ENGINE_CONTEXT_H_
 
+namespace eage::graphics
+{
+	class Renderer;
+}
+
 namespace eage::ecs
 {
 	class AnimationSystem;
@@ -20,6 +25,7 @@ namespace vortex
 {
 	struct EngineContext
 	{
+		eage::graphics::Renderer& renderer;
 		eage::ecs::ECSRegistry&   registry;
 		eage::ecs::RenderSystem&  render_system;
 		eage::ecs::PhysicsSystem& physics_system;

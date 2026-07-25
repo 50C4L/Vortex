@@ -2,9 +2,10 @@
 
 #include <utility/Logger.h>
 #include <graphics/Camera.h>
+#include <graphics/Renderer.h>
+#include <graphics/SceneRenderPass.h>
 #include <events/InputController.h>
 #include <audio/AudioMixer.h>
-#include <imgui/imgui.h>
 
 #include <ecs/systems/AnimationSystem.h>
 #include <ecs/systems/AudioSystem.h>
@@ -14,7 +15,6 @@
 #include <ecs/components/Basics.h>
 #include <ecs/components/Physics.h>
 #include <ecs/components/Render.h>
-#include <ecs/components/Hud.h>
 
 #include "GameConfig.h"
 #include "systems/AsteroidGameplaySystem.h"
@@ -30,7 +30,8 @@ using namespace vortex::config;
 using namespace utility;
 
 MainScene::MainScene( const EngineContext& ctx )
-	: mInputController( ctx.input )
+	: mRenderer( ctx.renderer )
+	, mInputController( ctx.input )
 	, mECSRegistry( ctx.registry )
 	, mAudioSystem( ctx.audio_system )
 	, mAnimationSystem( ctx.animation_system )
@@ -48,6 +49,13 @@ void
 MainScene::OnEnter()
 {
 	LOG( "MainScene::OnEnter" );
+
+	mScenePass = std::make_unique<eage::graphics::SceneRenderPass>(
+		mRenderer,
+		static_cast<uint32_t>( config::VirtualResolution::WIDTH ),
+		static_cast<uint32_t>( config::VirtualResolution::HEIGHT ) );
+	mRenderer.AddRenderPass( mScenePass.get() );
+	mRenderSystem.SetScenePass( mScenePass.get() );
 
 	mResourceLoader = std::make_unique<assets::SceneResourceLoader>(
 		mRenderSystem, mAnimationSystem, mAudioSystem );
@@ -74,8 +82,6 @@ MainScene::OnEnter()
 
 	CreateEnemyEntities();
 
-	CreateHudEntities();
-
 	float half_width = static_cast<float>( config::DesignResolution::WIDTH ) / 2.f;
 	float half_height = static_cast<float>( config::DesignResolution::HEIGHT ) / 2.f;
 	mCamera = std::make_shared<eage::graphics::OrthographicCamera>( half_width * -1.f, half_width, half_height * -1.f, half_height, 0.1f, 100.0f );
@@ -92,6 +98,24 @@ void
 MainScene::OnExit()
 {
 	LOG( "MainScene::OnExit" );
+
+	mRenderer.WaitForIdle();
+	mRenderSystem.SetScenePass( nullptr );
+	if( mScenePass )
+	{
+		mRenderer.RemoveRenderPass( mScenePass.get() );
+		mScenePass.reset();
+	}
+}
+
+eage::graphics::ManagedImage*
+MainScene::GetOutput()
+{
+	if( mScenePass )
+	{
+		return mScenePass->GetDesc().color_target;
+	}
+	return nullptr;
 }
 
 void
@@ -101,13 +125,6 @@ MainScene::Update( float dt )
 	mPlayerGameplaySystem->Update( dt );
 	mBulletSystem->Update( dt );
 	mAsteroidGameplaySystem->Update();
-
-	// Update HUD kill counter
-	if( mKillCountHudEntity != 0 )
-	{
-		auto& text_cmp = mECSRegistry.GetComponent<eage::ecs::HudTextComponent>( mKillCountHudEntity );
-		text_cmp.text = "Kills: " + std::to_string( mAsteroidGameplaySystem->GetKillCount() );
-	}
 
 	// Update camera
 	mRenderSystem.SetCamera( *mCamera, glm::vec2(
@@ -256,22 +273,4 @@ MainScene::CreateEnemyEntities()
 	mAsteroidGameplaySystem->PrepareAsteroids( mRenderSystem, *mResourceLoader, 100, mSceneRootEntity );
 	mAsteroidGameplaySystem->SetDeathEffect( mExplosionEffectId );
 	mAsteroidGameplaySystem->SpawnAsteroid( 10 );
-}
-
-void
-MainScene::CreateHudEntities()
-{
-	mKillCountHudEntity = mECSRegistry.CreateEntity();
-
-	eage::ecs::HudTransformComponent hud_tf;
-	hud_tf.position = glm::vec2( 1.0f, 0.0f );
-	hud_tf.offset_px = glm::vec2( -7.0f, 5.0f );
-	hud_tf.anchor = eage::ecs::HudAnchor::TOP_RIGHT;
-	mECSRegistry.AddComponent( mKillCountHudEntity, std::move( hud_tf ) );
-
-	eage::ecs::HudTextComponent text_cmp;
-	text_cmp.text = "Kills: 0";
-	text_cmp.font_size = eage::ecs::HudFontSize::LARGE;
-	text_cmp.color = glm::vec4( 0.0f, 0.83f, 1.0f, 1.0f );
-	mECSRegistry.AddComponent( mKillCountHudEntity, std::move( text_cmp ) );
 }

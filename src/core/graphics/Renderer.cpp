@@ -484,7 +484,9 @@ Renderer::InitBindless()
 
 	vk::DescriptorPoolSize pool_size( vk::DescriptorType::eCombinedImageSampler, MAX_BINDLESS_TEXTURES );
 	vk::DescriptorPoolCreateInfo pool_info{};
-	pool_info.flags = vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind;
+	// UniqueDescriptorSet destructor frees the set, so the pool must allow it.
+	pool_info.flags = vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind
+		| vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 	pool_info.maxSets = 1;
 	pool_info.poolSizeCount = 1;
 	pool_info.pPoolSizes = &pool_size;
