@@ -518,8 +518,6 @@ AnimToolApp::Init()
 	} );
 	apply_tool_style();
 
-	mImGuiPass->SetSceneViewportTopRatio( WORKSPACE_HEIGHT_RATIO );
-
 	mImGuiPass->AddOverlayCallback( [this]()
 	{
 		DrawToolUI();

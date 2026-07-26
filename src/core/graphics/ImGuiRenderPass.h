@@ -4,9 +4,11 @@
 #include <array>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include <vulkan/vulkan.hpp>
+#include <glm/glm.hpp>
 
 #include <graphics/AbstractRenderPass.h>
 #include <ecs/components/Hud.h>
@@ -52,12 +54,13 @@ namespace eage::graphics
 
 		void ProcessEvent( const SDL_Event& event );
 
-		/// Reserve the top portion of the work area (below the main menu bar) for tool UI.
-		/// 0.0 = full-scene background (game). e.g. 0.3 = scene image starts below the top 30%.
-		void SetSceneViewportTopRatio( float ratio );
-
-		/// Retarget the scene color image sampled by the present path. Pass nullptr to clear.
+		/// Retarget the scene color image sampled by tool UI (e.g. AnimTool preview).
+		/// Pass nullptr to clear. Not used by the game shell present path.
 		void SetSceneInput( ManagedImage* image );
+
+		/// When set, Execute clears the swapchain with this color (loadOp eClear).
+		/// When nullopt, Execute loads existing contents (loadOp eLoad) for overlay compositing.
+		void SetClearColor( std::optional<glm::vec4> color );
 
 		void* GetSceneTextureId() const;
 
@@ -72,7 +75,6 @@ namespace eage::graphics
 		std::vector<std::function<void()>> mOverlayCallbacks;
 
 		std::array<ImFont*, static_cast<size_t>( eage::ecs::HudFontSize::COUNT )> mFonts{};
-		float mSceneViewportTopRatio = 0.f;
 	};
 }
 

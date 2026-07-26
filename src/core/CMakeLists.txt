@@ -64,6 +64,8 @@ add_library(eage_core STATIC
 	./graphics/CommandBuffer.h
 	./graphics/SceneRenderPass.h
 	./graphics/SceneRenderPass.cpp
+	./graphics/PresentPass.h
+	./graphics/PresentPass.cpp
 	./graphics/ImGuiRenderPass.h
 	./graphics/ImGuiRenderPass.cpp
 	./graphics/ImGuiHudRenderer.h

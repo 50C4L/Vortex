@@ -14,7 +14,7 @@ The graphics module is the Vulkan-based rendering backend for Vortex. It abstrac
 
 ```
 Layer 5: Rendering Pipeline       Renderer (orchestrator)
-         AbstractRenderPass        SceneRenderPass, ImGuiRenderPass
+         AbstractRenderPass        SceneRenderPass, PresentPass, ImGuiRenderPass
 
 Layer 4: Material & Pipeline       Material, MaterialProperty, MaterialBuilder
          High-level abstraction    RenderPipeline, RenderInfo
@@ -37,10 +37,12 @@ Layer 1: Vulkan Metal              VulkanContext, VulkanSwapChain
 
 | Class | Responsibility |
 |---|---|
-| `Renderer` | Owns all GPU resources; orchestrates frame loop (MAX_FRAMES_IN_FLIGHT=2); owns global bindless texture array; provides `RegisterBindlessTexture()`, `ImmediateSubmit()`, `GetGPUFrameTime()` |
+| `Renderer` | Owns all GPU resources; orchestrates frame loop (MAX_FRAMES_IN_FLIGHT=2); owns global bindless texture array; tracks ManagedImage and swapchain layouts; provides `RegisterBindlessTexture()`, `ImmediateSubmit()`, `GetGPUFrameTime()` |
 | `VulkanContext` | Initialises Vulkan instance, physical/logical device, queues, surface |
-| `AbstractRenderPass` | Base for all render passes; two-phase: `Prepare()` (CPU) -> `Execute()` (GPU); declares `RenderPassDesc` |
+| `AbstractRenderPass` | Base for all render passes; two-phase: `Prepare()` (CPU) -> `Execute()` (GPU); declares `RenderPassDesc` (`PassInput` + `SwapchainAccess`) |
 | `SceneRenderPass` | Main geometry pass; accepts `RenderInfo` via `AddRenderInfo()`; owns off-screen color + depth targets; binds global bindless set at draw time |
+| `PresentPass` | Shell present pass; blits scene output to swapchain with nearest filtering (`SetSource`); clears black when unbound |
+| `ImGuiRenderPass` | ImGui overlay on the swapchain; clears by default (tools); `SetClearColor(nullopt)` for compositing on top of PresentPass |
 | `Material` | Runtime instance = shared `RenderPipeline` only (pipeline state; no texture ownership) |
 | `MaterialBuilder` | Fluent builder for `MaterialProperty` -> compiles to `Material` (shaders + blend/depth/topology; textures are separate) |
 | `StaticDescriptor` | Single descriptor set for static uniforms (still used for global/per-object sets; not for sprite textures) |

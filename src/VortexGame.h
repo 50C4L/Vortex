@@ -11,6 +11,7 @@ namespace eage::graphics
 {
 	class Renderer;
 	class ImGuiRenderPass;
+	class PresentPass;
 }
 
 namespace events
@@ -61,6 +62,7 @@ namespace vortex
 
 		std::shared_ptr<SDL_Window> mWindow;
 		std::unique_ptr<eage::graphics::Renderer> mRenderer;
+		std::unique_ptr<eage::graphics::PresentPass> mPresentPass;
 		std::unique_ptr<eage::graphics::ImGuiRenderPass> mImGuiPass;
 		std::unique_ptr<SceneController> mSceneController;
 		std::unique_ptr<events::InputController> mInputController;

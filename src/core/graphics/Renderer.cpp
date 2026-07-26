@@ -92,6 +92,8 @@ Renderer::Init()
 	InitFrameResources();
 	mImmidiateCommandContext = std::make_unique<VulkanCommandContext>( *mContext );
 
+	mSwapchainLayouts.assign( mSwapChain->GetImages().size(), vk::ImageLayout::eUndefined );
+
 	LOG( "Creating render image ..." );
 
 	mRenderImage = ManagedImage::Create(
@@ -142,6 +144,9 @@ Renderer::Render()
 	frame.command_context->Reset();
 	frame.command_context->Begin();
 
+	// Acquired swapchain images have undefined contents; PresentPass covers the full extent.
+	mSwapchainLayouts[ next_image_index ] = vk::ImageLayout::eUndefined;
+
 	// GPU timing: Record start timestamp
 	if( mTimestampQuerySupported )
 	{
@@ -155,33 +160,39 @@ Renderer::Render()
 	{
 		const auto& desc = pass->GetDesc();
 
-		// Transition input images to shader-read layout
-		for( auto* input : desc.input_images )
+		// Transition input images to the layout required by their access mode
+		for( const auto& input : desc.input_images )
 		{
-			transition_image( cmd, input->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal );
+			vk::ImageLayout layout = ( input.access == ImageAccess::TransferSrc )
+				? vk::ImageLayout::eTransferSrcOptimal
+				: vk::ImageLayout::eShaderReadOnlyOptimal;
+			TransitionImage( cmd, *input.image, layout );
 		}
 
-		// Transition color target
+		// Transition color target (off-screen) or swapchain
 		if( desc.color_target )
 		{
-			// Off-screen target
-			transition_image( cmd, desc.color_target->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal );
+			TransitionImage( cmd, *desc.color_target, vk::ImageLayout::eColorAttachmentOptimal );
 		}
-		else
+		else if( desc.swapchain_access == SwapchainAccess::ColorAttachment )
 		{
-			// Writes to swapchain
-			transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal );
+			TransitionSwapchainImage( cmd, next_image_index, vk::ImageLayout::eColorAttachmentOptimal );
+		}
+		else if( desc.swapchain_access == SwapchainAccess::TransferDst )
+		{
+			TransitionSwapchainImage( cmd, next_image_index, vk::ImageLayout::eTransferDstOptimal );
 		}
 
 		// Transition depth target
 		if( desc.depth_target )
 		{
-			transition_image( cmd, desc.depth_target->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal );
+			TransitionImage( cmd, *desc.depth_target, vk::ImageLayout::eDepthAttachmentOptimal );
 		}
 
 		CommandBuffer cmd_buffer( static_cast<void*>( cmd  ) );
 
 		FrameContext frame_ctx{};
+		frame_ctx.swapchain_image_handle = static_cast<void*>( static_cast<VkImage>( mSwapChain->GetImages()[ next_image_index ] ) );
 		frame_ctx.swapchain_image_view_handle = static_cast<void*>( static_cast<VkImageView>( *mSwapChain->GetImageViews()[ next_image_index ] ) );
 		frame_ctx.swapchain_width = mSwapChain->GetExtent().width;
 		frame_ctx.swapchain_height = mSwapChain->GetExtent().height;
@@ -190,8 +201,8 @@ Renderer::Render()
 		pass->Execute( cmd_buffer, frame_ctx );
 	}
 
-	// Transition swapchain to present
-	transition_image( cmd, mSwapChain->GetImages()[ next_image_index ], vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR );
+	// Transition swapchain to present using the tracked layout (may be TransferDst or ColorAttachment)
+	TransitionSwapchainImage( cmd, next_image_index, vk::ImageLayout::ePresentSrcKHR );
 
 	// GPU timing: Record end timestamp
 	if( mTimestampQuerySupported )
@@ -291,7 +302,8 @@ Renderer::UploadImage(
 	ImmediateSubmit(
 		[&]( vk::CommandBuffer& cmd )
 		{
-			transition_image( cmd, image->image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal );
+			transition_image( cmd, image->image, image->current_layout, vk::ImageLayout::eTransferDstOptimal );
+			image->current_layout = vk::ImageLayout::eTransferDstOptimal;
 
 			vk::BufferImageCopy copy{};
 			copy.bufferOffset = 0;
@@ -307,7 +319,8 @@ Renderer::UploadImage(
 
 			cmd.copyBufferToImage( upload_buffer->buffer, image->image, vk::ImageLayout::eTransferDstOptimal, 1, &copy );
 
-			transition_image( cmd, image->image, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal );
+			transition_image( cmd, image->image, image->current_layout, vk::ImageLayout::eShaderReadOnlyOptimal );
+			image->current_layout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		}
 	);
 
@@ -559,6 +572,22 @@ void
 Renderer::RemoveRenderPass( AbstractRenderPass* pass )
 {
 	mPasses.erase( std::remove( mPasses.begin(), mPasses.end(), pass ), mPasses.end() );
+}
+
+void
+Renderer::TransitionImage( vk::CommandBuffer& cmd, ManagedImage& image, vk::ImageLayout new_layout )
+{
+	// Always emit the barrier, even when layouts match -- transition_image is also
+	// the execution barrier between passes.
+	transition_image( cmd, image.image, image.current_layout, new_layout );
+	image.current_layout = new_layout;
+}
+
+void
+Renderer::TransitionSwapchainImage( vk::CommandBuffer& cmd, uint32_t index, vk::ImageLayout new_layout )
+{
+	transition_image( cmd, mSwapChain->GetImages()[ index ], mSwapchainLayouts[ index ], new_layout );
+	mSwapchainLayouts[ index ] = new_layout;
 }
 
 VulkanContext&

@@ -26,7 +26,7 @@ void eage::graphics::transition_image( vk::CommandBuffer& cmd_buffer, vk::Image 
 	cmd_buffer.pipelineBarrier2( dep_info );
 }
 
-void eage::graphics::copy_image_to_image( vk::CommandBuffer& cmd_buffer, vk::Image src_image, vk::Image dst_image, vk::Extent2D src_size, vk::Extent2D dst_size )
+void eage::graphics::copy_image_to_image( vk::CommandBuffer& cmd_buffer, vk::Image src_image, vk::Image dst_image, vk::Extent2D src_size, vk::Extent2D dst_size, vk::Filter filter )
 {
 	vk::ImageBlit2 blit_region{};
 
@@ -49,7 +49,7 @@ void eage::graphics::copy_image_to_image( vk::CommandBuffer& cmd_buffer, vk::Ima
 	blit_info.dstImage = dst_image;
 	blit_info.dstImageLayout = vk::ImageLayout::eTransferDstOptimal;
 	blit_info.regionCount = 1;
-	blit_info.filter = vk::Filter::eLinear;
+	blit_info.filter = filter;
 	blit_info.pRegions = &blit_region;
 
 	cmd_buffer.blitImage2( blit_info );

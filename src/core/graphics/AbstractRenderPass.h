@@ -13,13 +13,35 @@ namespace eage::graphics
 {
 	struct ManagedImage;
 
+	/// How a pass consumes an input image. Mapped to vk::ImageLayout in Renderer.
+	enum class ImageAccess
+	{
+		ShaderRead,
+		TransferSrc
+	};
+
+	/// How a pass writes the swapchain (null color_target). Mapped in Renderer.
+	enum class SwapchainAccess
+	{
+		None,
+		ColorAttachment,
+		TransferDst
+	};
+
+	struct PassInput
+	{
+		ManagedImage* image  = nullptr;
+		ImageAccess   access = ImageAccess::ShaderRead;
+	};
+
 	struct RenderPassDesc
 	{
-		ManagedImage*              color_target = nullptr;
-		ManagedImage*              depth_target = nullptr;
-		std::vector<ManagedImage*> input_images;
-		std::optional<glm::vec4>   clear_color;
-		std::optional<float>       clear_depth;
+		ManagedImage*            color_target = nullptr;
+		ManagedImage*            depth_target = nullptr;
+		std::vector<PassInput>   input_images;
+		SwapchainAccess          swapchain_access = SwapchainAccess::None;
+		std::optional<glm::vec4> clear_color;
+		std::optional<float>     clear_depth;
 	};
 
 	/// Per-frame execution context passed to AbstractRenderPass::Execute().
@@ -27,6 +49,7 @@ namespace eage::graphics
 	/// leaking Vulkan types through this interface.
 	struct FrameContext
 	{
+		void*    swapchain_image_handle;      ///< VkImage; cast in graphics internals only.
 		void*    swapchain_image_view_handle; ///< VkImageView; cast in graphics internals only.
 		uint32_t swapchain_width;
 		uint32_t swapchain_height;

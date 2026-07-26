@@ -141,6 +141,14 @@ namespace eage::graphics
 		void InitGPUTiming();
 		void UpdateGPUTiming();
 
+		/// Transition a ManagedImage using its tracked current_layout as oldLayout.
+		/// Always emits a barrier (even if layouts match) so passes stay synchronized.
+		void TransitionImage( vk::CommandBuffer& cmd, ManagedImage& image, vk::ImageLayout new_layout );
+
+		/// Transition a swapchain image using mSwapchainLayouts[index] as oldLayout.
+		/// Record-time tracking assumes single-queue in-order submission.
+		void TransitionSwapchainImage( vk::CommandBuffer& cmd, uint32_t index, vk::ImageLayout new_layout );
+
 		SDL_Window& mWindow;
 		std::unique_ptr<VulkanContext>		mContext;
 		std::unique_ptr<VulkanSwapChain>	mSwapChain;
@@ -164,6 +172,11 @@ namespace eage::graphics
 		vk::UniqueDescriptorSet mBindlessSet;
 		vk::UniqueSampler mDefaultSampler;
 		uint32_t mNextBindlessIndex = 0;
+
+		// Per-swapchain-image layouts. Sized once in Init(); recreate alongside
+		// the swapchain if resize support is added later.
+		// Record-time tracking assumes single-queue in-order submission.
+		std::vector<vk::ImageLayout> mSwapchainLayouts;
 
 		// GPU frame timing
 		vk::UniqueQueryPool mTimestampQueryPool;

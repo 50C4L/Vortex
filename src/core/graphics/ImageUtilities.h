@@ -7,7 +7,7 @@ namespace eage::graphics
 {
 	void transition_image( vk::CommandBuffer& cmd_buffer, vk::Image image, vk::ImageLayout current_layout, vk::ImageLayout new_layout );
 
-	void copy_image_to_image( vk::CommandBuffer& cmd_buffer, vk::Image src_image, vk::Image dst_image, vk::Extent2D src_size, vk::Extent2D dst_size );
+	void copy_image_to_image( vk::CommandBuffer& cmd_buffer, vk::Image src_image, vk::Image dst_image, vk::Extent2D src_size, vk::Extent2D dst_size, vk::Filter filter );
 }
 
 #endif // _IMAGE_UTILITIES_H

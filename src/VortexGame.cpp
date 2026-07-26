@@ -4,6 +4,7 @@
 
 #include <chrono>
 #include <iostream>
+#include <optional>
 
 #include <SDL2/SDL.h>
 #include <vulkan/vulkan.h>
@@ -12,6 +13,7 @@
 #include <utility/Logger.h>
 #include <utility/Filesystem.h>
 #include <graphics/Renderer.h>
+#include <graphics/PresentPass.h>
 #include <graphics/ImGuiRenderPass.h>
 #include <events/InputController.h>
 #include <events/KeyCode.h>
@@ -51,10 +53,12 @@ VortexGame::OnSceneChanged( uint64_t scene_root )
 void
 VortexGame::BindSceneOutput( AbstractScene* scene )
 {
-	// Scene already registered its passes in OnEnter; keep ImGui last for present/debug.
+	// Keep PresentPass then ImGui overlay last for compositing.
+	mRenderer->RemoveRenderPass( mPresentPass.get() );
 	mRenderer->RemoveRenderPass( mImGuiPass.get() );
+	mPresentPass->SetSource( scene ? scene->GetOutput() : nullptr );
+	mRenderer->AddRenderPass( mPresentPass.get() );
 	mRenderer->AddRenderPass( mImGuiPass.get() );
-	mImGuiPass->SetSceneInput( scene ? scene->GetOutput() : nullptr );
 }
 
 VortexGame::~VortexGame()
@@ -87,6 +91,7 @@ VortexGame::~VortexGame()
 	mSceneController.reset();
 
 	mImGuiPass.reset();
+	mPresentPass.reset();
 	mRenderer.reset();
 	mWindow.reset();
 	SDL_Quit();
@@ -170,13 +175,17 @@ VortexGame::Init()
 		return false;
 	}
 
-	// Shell present / debug pass (scene input bound after ChangeScene)
+	// Shell present pass (scene source bound after ChangeScene)
+	mPresentPass = std::make_unique<eage::graphics::PresentPass>();
+
+	// Shell debug overlay (composites on top of PresentPass; no clear)
 	mImGuiPass = std::make_unique<eage::graphics::ImGuiRenderPass>(
 		mRenderer->GetVulkanContext(),
 		*mWindow,
 		mRenderer->GetSwapchainFormat(),
 		eage::graphics::Renderer::MAX_FRAMES_IN_FLIGHT,
 		mRenderer->GetSwapchainImageCount() );
+	mImGuiPass->SetClearColor( std::nullopt );
 	float ui_scale = config::get_scale_factor( screen_res.width, static_cast<int>( config::DesignResolution::WIDTH ) );
 	mImGuiPass->LoadFont( nullptr, 13.0f * ui_scale, eage::ecs::HudFontSize::SMALL );
 	mImGuiPass->LoadFont( nullptr, 24.0f * ui_scale, eage::ecs::HudFontSize::MEDIUM );
@@ -187,6 +196,7 @@ VortexGame::Init()
 	} );
 	apply_game_style();
 
+	mRenderer->AddRenderPass( mPresentPass.get() );
 	mRenderer->AddRenderPass( mImGuiPass.get() );
 
 	// Initialize AudioMixer

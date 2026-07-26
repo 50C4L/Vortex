@@ -21,6 +21,9 @@ namespace eage::graphics
 		vk::Format format;
 		vk::Image image;
 		vk::UniqueImageView image_view;
+		// Tracked by Renderer::TransitionImage. Lives on the image so destruction
+		// of a scene pass takes layout state with it (no stale VkImage map entries).
+		vk::ImageLayout current_layout = vk::ImageLayout::eUndefined;
 	};
 
 	struct ManagedBuffer

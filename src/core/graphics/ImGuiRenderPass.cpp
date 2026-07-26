@@ -41,7 +41,7 @@ ImGuiRenderPass::ImGuiRenderPass(
 	mLifetime = std::make_unique<ImGUILifetime>( context );
 	mLifetime->Init( window, min_image_count, max_image_count, swapchain_format );
 
-	// Create a sampler for sampling the scene render image
+	// Create a sampler for sampling the scene render image (tool preview panels)
 	vk::SamplerCreateInfo sampler_info{};
 	sampler_info.magFilter = vk::Filter::eNearest;
 	sampler_info.minFilter = vk::Filter::eNearest;
@@ -49,9 +49,12 @@ ImGuiRenderPass::ImGuiRenderPass(
 	vk::Device device = *context.logical_device;
 	mSceneSampler = device.createSamplerUnique( sampler_info );
 
-	// Writes to swapchain; scene input is bound later via SetSceneInput
+	// Writes to swapchain as a color attachment; clears by default (AnimTool).
+	// Game shell calls SetClearColor( nullopt ) to composite as an overlay.
 	mDesc.color_target = nullptr;
 	mDesc.depth_target = nullptr;
+	mDesc.swapchain_access = SwapchainAccess::ColorAttachment;
+	mDesc.clear_color = glm::vec4{ 0.f, 0.f, 0.f, 1.f };
 }
 
 ImGuiRenderPass::~ImGuiRenderPass()
@@ -115,30 +118,7 @@ ImGuiRenderPass::Prepare( size_t frame_index )
 	ImGui_ImplSDL2_NewFrame();
 	ImGui::NewFrame();
 
-	if( mSceneViewportTopRatio <= 0.f && mSceneColorTarget != nullptr && mSceneDescriptorSet != VK_NULL_HANDLE )
-	{
-		// Fullscreen borderless window displaying the scene texture (game mode)
-		const ImGuiViewport* vp = ImGui::GetMainViewport();
-		ImGui::SetNextWindowPos( vp->Pos, ImGuiCond_Always );
-		ImGui::SetNextWindowSize( vp->Size, ImGuiCond_Always );
-
-		constexpr ImGuiWindowFlags flags =
-			ImGuiWindowFlags_NoDecoration          |
-			ImGuiWindowFlags_NoMove                |
-			ImGuiWindowFlags_NoBringToFrontOnFocus |
-			ImGuiWindowFlags_NoSavedSettings       |
-			ImGuiWindowFlags_NoBackground;
-
-		ImGui::PushStyleVar( ImGuiStyleVar_WindowPadding, ImVec2( 0, 0 ) );
-		if( ImGui::Begin( "GameViewport", nullptr, flags ) )
-		{
-			ImGui::Image( (ImTextureID)mSceneDescriptorSet, vp->Size );
-		}
-		ImGui::End();
-		ImGui::PopStyleVar();
-	}
-
-	// Tool UI overlays
+	// Tool / debug UI overlays
 	for( auto& fn : mOverlayCallbacks )
 	{
 		fn();
@@ -154,8 +134,13 @@ ImGuiRenderPass::Execute( CommandBuffer& buffer, const FrameContext& ctx )
 	vk::ImageView swapchain_view( static_cast<VkImageView>( ctx.swapchain_image_view_handle ) );
 	vk::Extent2D extent{ ctx.swapchain_width, ctx.swapchain_height };
 
-	vk::ClearValue clear_value;
-	clear_value.color = vk::ClearColorValue{ std::array<float,4>{ 0.f, 0.f, 0.f, 1.f } };
+	std::optional<vk::ClearValue> clear_value;
+	if( mDesc.clear_color.has_value() )
+	{
+		auto c = mDesc.clear_color.value();
+		clear_value = vk::ClearColorValue{ std::array<float, 4>{ c.r, c.g, c.b, c.a } };
+	}
+
 	vk::RenderingAttachmentInfo color_attachment_info = create_attachment_info(
 		swapchain_view, clear_value, vk::ImageLayout::eColorAttachmentOptimal );
 
@@ -177,9 +162,9 @@ ImGuiRenderPass::AddOverlayCallback( std::function<void()> callback )
 }
 
 void
-ImGuiRenderPass::SetSceneViewportTopRatio( float ratio )
+ImGuiRenderPass::SetClearColor( std::optional<glm::vec4> color )
 {
-	mSceneViewportTopRatio = ratio;
+	mDesc.clear_color = color;
 }
 
 void
@@ -200,7 +185,7 @@ ImGuiRenderPass::SetSceneInput( ManagedImage* image )
 			*mSceneSampler,
 			*mSceneColorTarget->image_view,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL );
-		mDesc.input_images.push_back( mSceneColorTarget );
+		mDesc.input_images.push_back( PassInput{ mSceneColorTarget, ImageAccess::ShaderRead } );
 	}
 }
 
