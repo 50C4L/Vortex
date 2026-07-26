@@ -1,0 +1,75 @@
+---
+description: "ImGui debug/tool UI module for Vortex. Covers engine wrappers (ImGuiRenderPass, ImGUILifetime) and vendored Dear ImGui. Auto-applied when editing src/core/imgui/."
+globs: ["src/core/imgui/**/*.cpp", "src/core/imgui/**/*.h"]
+alwaysApply: false
+---
+
+# ImGui Module
+
+## Purpose
+
+Shell and tool UI via Dear ImGui. Lives outside graphics so the render backend stays toolkit-agnostic. Game presentation uses `PresentPass`; ImGui is an optional overlay (debug) or the full UI surface (AnimTool).
+
+## Layout
+
+```
+src/core/imgui/
+  vendor/                 # Upstream Dear ImGui only -- do not mix engine code here
+    imgui.h / imgui.cpp / backends / misc/
+  ImGuiRenderPass.h/.cpp  # Swapchain overlay pass (eage::imgui)
+  ImGUILifetime.h/.cpp    # Context + SDL2/Vulkan backend init
+```
+
+## Includes
+
+| What | Include |
+|---|---|
+| Engine wrappers | `#include <imgui/ImGuiRenderPass.h>` |
+| Dear ImGui | `#include <imgui/vendor/imgui.h>` (and `imgui_impl_*`) |
+
+## Key Classes
+
+| Class | Namespace | Responsibility |
+|---|---|---|
+| `ImGUILifetime` | `eage::imgui` | Creates ImGui context; inits SDL2 + Vulkan backends; owns descriptor pool |
+| `ImGuiRenderPass` | `eage::imgui` | `AbstractRenderPass` that records ImGui draw data to the swapchain |
+
+## Dependencies
+
+```
+apps / tools / profiling
+        |
+        v
+   eage::imgui  (wrappers)
+        |
+        +---> graphics (AbstractRenderPass, ManagedImage, VulkanContext)
+        |
+        +---> imgui/vendor (Dear ImGui)
+```
+
+Graphics must never include or link this module.
+
+## Usage
+
+```cpp
+// Game shell: overlay on PresentPass (no clear)
+auto imgui = std::make_unique<eage::imgui::ImGuiRenderPass>( ... );
+imgui->SetClearColor( std::nullopt );
+imgui->AddOverlayCallback( [&]{ tracker.DrawDebugGUI(); } );
+
+// AnimTool: clears swapchain and samples scene for preview panels
+imgui->SetSceneInput( &scene_pass->GetColorTarget() );
+```
+
+## DOs
+
+- Keep vendor/ free of engine code; update Dear ImGui by replacing vendor contents only
+- Register `ImGuiRenderPass` via `Renderer::AddRenderPass` from the shell/tool -- graphics does not own it
+- Use `SetClearColor( nullopt )` when compositing on top of `PresentPass`
+
+## DON'Ts
+
+- Don't put ImGui code back under `graphics/`
+- Don't depend on `game/` from this module
+- Don't include `<imgui/imgui.h>` -- use `<imgui/vendor/imgui.h>`
+- Don't have graphics include imgui wrappers

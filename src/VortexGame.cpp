@@ -14,7 +14,7 @@
 #include <utility/Filesystem.h>
 #include <graphics/Renderer.h>
 #include <graphics/PresentPass.h>
-#include <graphics/ImGuiRenderPass.h>
+#include <imgui/ImGuiRenderPass.h>
 #include <events/InputController.h>
 #include <events/KeyCode.h>
 #include <audio/AudioMixer.h>
@@ -179,7 +179,7 @@ VortexGame::Init()
 	mPresentPass = std::make_unique<eage::graphics::PresentPass>();
 
 	// Shell debug overlay (composites on top of PresentPass; no clear)
-	mImGuiPass = std::make_unique<eage::graphics::ImGuiRenderPass>(
+	mImGuiPass = std::make_unique<eage::imgui::ImGuiRenderPass>(
 		mRenderer->GetVulkanContext(),
 		*mWindow,
 		mRenderer->GetSwapchainFormat(),

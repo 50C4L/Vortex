@@ -18,8 +18,12 @@ namespace eage::graphics
 {
 	class Renderer;
 	class SceneRenderPass;
-	class ImGuiRenderPass;
 	class OrthographicCamera;
+}
+
+namespace eage::imgui
+{
+	class ImGuiRenderPass;
 }
 
 namespace animtool
@@ -66,7 +70,7 @@ private:
 	std::unique_ptr<eage::ecs::ECSRegistry> mECSRegistry;
 	std::unique_ptr<eage::ecs::RenderSystem> mRenderSystem;
 	std::unique_ptr<eage::graphics::SceneRenderPass> mScenePass;
-	std::unique_ptr<eage::graphics::ImGuiRenderPass> mImGuiPass;
+	std::unique_ptr<eage::imgui::ImGuiRenderPass> mImGuiPass;
 	std::unique_ptr<eage::graphics::OrthographicCamera> mPreviewCamera;
 	std::unique_ptr<FrameSequence> mFrameSequence;
 	ExportDialogState mExportState;

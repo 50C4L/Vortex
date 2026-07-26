@@ -10,7 +10,7 @@
 #include <thread>
 
 #include <SDL2/SDL.h>
-#include <imgui/imgui.h>
+#include <imgui/vendor/imgui.h>
 #include <vulkan/vulkan.h>
 
 #include <glm/glm.hpp>
@@ -27,7 +27,7 @@
 #include <utility/Filesystem.h>
 #include <graphics/Renderer.h>
 #include <graphics/SceneRenderPass.h>
-#include <graphics/ImGuiRenderPass.h>
+#include <imgui/ImGuiRenderPass.h>
 
 #include "FileDialog.h"
 #include "AnimationExporter.h"
@@ -504,7 +504,7 @@ AnimToolApp::Init()
 
 	mScenePass = std::make_unique<eage::graphics::SceneRenderPass>(
 		*mRenderer, SCENE_WIDTH, SCENE_HEIGHT );
-	mImGuiPass = std::make_unique<eage::graphics::ImGuiRenderPass>(
+	mImGuiPass = std::make_unique<eage::imgui::ImGuiRenderPass>(
 		mRenderer->GetVulkanContext(),
 		*mWindow,
 		mRenderer->GetSwapchainFormat(),

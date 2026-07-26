@@ -1,14 +1,15 @@
 #include "ImGuiRenderPass.h"
 
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_vulkan.h>
-#include <imgui/imgui_impl_sdl2.h>
+#include <imgui/vendor/imgui.h>
+#include <imgui/vendor/imgui_impl_vulkan.h>
+#include <imgui/vendor/imgui_impl_sdl2.h>
 
-#include <graphics/ImGUILifetime.h>
+#include <imgui/ImGUILifetime.h>
 #include <graphics/ManagedVulkanResources.h>
 #include <graphics/VulkanContext.h>
 #include <utility/Logger.h>
 
+using namespace eage::imgui;
 using namespace eage::graphics;
 using namespace utility;
 

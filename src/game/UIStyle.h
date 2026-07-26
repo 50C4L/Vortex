@@ -1,7 +1,7 @@
 #ifndef _UI_STYLE_H
 #define _UI_STYLE_H
 
-#include <imgui/imgui.h>
+#include <imgui/vendor/imgui.h>
 
 namespace vortex
 {

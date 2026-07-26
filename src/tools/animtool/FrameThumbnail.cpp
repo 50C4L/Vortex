@@ -1,7 +1,7 @@
 #include "FrameThumbnail.h"
 
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_vulkan.h>
+#include <imgui/vendor/imgui.h>
+#include <imgui/vendor/imgui_impl_vulkan.h>
 
 using namespace animtool;
 

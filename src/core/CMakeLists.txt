@@ -10,8 +10,8 @@ set(THIRDPARTY_RELEASE_PATH ${CMAKE_CURRENT_LIST_DIR}/../../thirdparty/release)
 set(THIRDPARTY_INCLUDE_PATH ${CMAKE_CURRENT_LIST_DIR}/../../thirdparty/include)
 set(THIRDPARTY_SRC_PATH ${CMAKE_CURRENT_LIST_DIR}/../../thirdparty/src)
 
-# IMGUI static library
-set(IMGUI_PATH ${CMAKE_CURRENT_LIST_DIR}/imgui)
+# IMGUI static library (vendored Dear ImGui)
+set(IMGUI_PATH ${CMAKE_CURRENT_LIST_DIR}/imgui/vendor)
 
 add_library(imgui STATIC
 	${IMGUI_PATH}/imgui.h
@@ -66,14 +66,8 @@ add_library(eage_core STATIC
 	./graphics/SceneRenderPass.cpp
 	./graphics/PresentPass.h
 	./graphics/PresentPass.cpp
-	./graphics/ImGuiRenderPass.h
-	./graphics/ImGuiRenderPass.cpp
-	./graphics/ImGuiHudRenderer.h
-	./graphics/ImGuiHudRenderer.cpp
 	./graphics/ImageUtilities.h
 	./graphics/ImageUtilities.cpp
-	./graphics/ImGUILifetime.h
-	./graphics/ImGUILifetime.cpp
 	./graphics/Camera.h
 	./graphics/Camera.cpp
 	./graphics/ManagedVulkanResources.h
@@ -136,15 +130,17 @@ add_library(eage_core STATIC
 	./ecs/systems/AnimationSystem.cpp
 	./ecs/systems/EffectSystem.h
 	./ecs/systems/EffectSystem.cpp
-	./ecs/systems/AbstractHudRenderer.h
-	./ecs/systems/HudRenderSystem.h
-	./ecs/systems/HudRenderSystem.cpp
 	./ecs/systems/PhysicsSystem.h
 	./ecs/systems/PhysicsSystem.cpp
 	./ecs/systems/RenderSystem.h
 	./ecs/systems/RenderSystem.cpp
 	./ecs/systems/SceneGraphSystem.h
 	./ecs/systems/SceneGraphSystem.cpp
+
+	./imgui/ImGuiRenderPass.h
+	./imgui/ImGuiRenderPass.cpp
+	./imgui/ImGUILifetime.h
+	./imgui/ImGUILifetime.cpp
 
 	./physics/PhysicsEngine.h
 	./physics/PhysicsEngine.cpp

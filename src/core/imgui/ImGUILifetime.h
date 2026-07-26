@@ -8,14 +8,17 @@ struct SDL_Window;
 namespace eage::graphics
 {
 	class VulkanContext;
+}
 
+namespace eage::imgui
+{
 	class ImGUILifetime
 	{
 	public:
 		///
 		/// Constructor
 		///
-		ImGUILifetime( VulkanContext& context );
+		ImGUILifetime( eage::graphics::VulkanContext& context );
 
 		///
 		/// Destructor
@@ -31,7 +34,7 @@ namespace eage::graphics
 		bool Init( SDL_Window& window, uint32_t min_image_count, uint32_t max_image_count, vk::Format format );
 
 	private:
-		VulkanContext& mContext;
+		eage::graphics::VulkanContext& mContext;
 		vk::UniqueDescriptorPool mDescriptorPool;
 	};
 }

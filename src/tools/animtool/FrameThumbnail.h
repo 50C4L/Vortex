@@ -3,7 +3,7 @@
 
 #include <filesystem>
 
-#include <imgui/imgui.h>
+#include <imgui/vendor/imgui.h>
 #include <vulkan/vulkan.hpp>
 
 #include <assets/ImageLoader.h>

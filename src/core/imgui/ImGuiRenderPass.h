@@ -19,14 +19,18 @@ struct ImFont;
 
 namespace eage::graphics
 {
-	class ImGUILifetime;
 	class VulkanContext;
+}
 
-	class ImGuiRenderPass final : public AbstractRenderPass
+namespace eage::imgui
+{
+	class ImGUILifetime;
+
+	class ImGuiRenderPass final : public eage::graphics::AbstractRenderPass
 	{
 	public:
 		ImGuiRenderPass(
-			VulkanContext& context,
+			eage::graphics::VulkanContext& context,
 			SDL_Window& window,
 			vk::Format swapchain_format,
 			uint32_t min_image_count,
@@ -44,11 +48,11 @@ namespace eage::graphics
 		/// Retrieve a previously loaded font by HudFontSize slot.
 		ImFont* GetFont( eage::ecs::HudFontSize slot ) const;
 
-		const RenderPassDesc& GetDesc() const override;
+		const eage::graphics::RenderPassDesc& GetDesc() const override;
 
 		void Prepare( size_t frame_index ) override;
 
-		void Execute( CommandBuffer& cmd, const FrameContext& ctx ) override;
+		void Execute( eage::graphics::CommandBuffer& cmd, const eage::graphics::FrameContext& ctx ) override;
 
 		void AddOverlayCallback( std::function<void()> callback );
 
@@ -56,7 +60,7 @@ namespace eage::graphics
 
 		/// Retarget the scene color image sampled by tool UI (e.g. AnimTool preview).
 		/// Pass nullptr to clear. Not used by the game shell present path.
-		void SetSceneInput( ManagedImage* image );
+		void SetSceneInput( eage::graphics::ManagedImage* image );
 
 		/// When set, Execute clears the swapchain with this color (loadOp eClear).
 		/// When nullopt, Execute loads existing contents (loadOp eLoad) for overlay compositing.
@@ -66,8 +70,8 @@ namespace eage::graphics
 
 	private:
 		std::unique_ptr<ImGUILifetime> mLifetime;
-		ManagedImage* mSceneColorTarget = nullptr;
-		RenderPassDesc mDesc;
+		eage::graphics::ManagedImage* mSceneColorTarget = nullptr;
+		eage::graphics::RenderPassDesc mDesc;
 
 		vk::UniqueSampler mSceneSampler;
 		VkDescriptorSet mSceneDescriptorSet = VK_NULL_HANDLE;

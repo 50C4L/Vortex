@@ -43,6 +43,7 @@ The following rules are auto-applied based on file path. They contain architectu
 | Module path | Rule |
 |---|---|
 | `src/core/graphics/` | `graphics-module` |
+| `src/core/imgui/` | `imgui-module` |
 | `src/core/ecs/` | `ecs-module` |
 | `src/core/assets/` | `assets-module` |
 | `src/core/audio/` | `audio-module` |

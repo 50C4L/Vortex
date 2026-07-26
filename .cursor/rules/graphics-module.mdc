@@ -14,7 +14,7 @@ The graphics module is the Vulkan-based rendering backend for Vortex. It abstrac
 
 ```
 Layer 5: Rendering Pipeline       Renderer (orchestrator)
-         AbstractRenderPass        SceneRenderPass, PresentPass, ImGuiRenderPass
+         AbstractRenderPass        SceneRenderPass, PresentPass
 
 Layer 4: Material & Pipeline       Material, MaterialProperty, MaterialBuilder
          High-level abstraction    RenderPipeline, RenderInfo
@@ -42,7 +42,6 @@ Layer 1: Vulkan Metal              VulkanContext, VulkanSwapChain
 | `AbstractRenderPass` | Base for all render passes; two-phase: `Prepare()` (CPU) -> `Execute()` (GPU); declares `RenderPassDesc` (`PassInput` + `SwapchainAccess`) |
 | `SceneRenderPass` | Main geometry pass; accepts `RenderInfo` via `AddRenderInfo()`; owns off-screen color + depth targets; binds global bindless set at draw time |
 | `PresentPass` | Shell present pass; blits scene output to swapchain with nearest filtering (`SetSource`); clears black when unbound |
-| `ImGuiRenderPass` | ImGui overlay on the swapchain; clears by default (tools); `SetClearColor(nullopt)` for compositing on top of PresentPass |
 | `Material` | Runtime instance = shared `RenderPipeline` only (pipeline state; no texture ownership) |
 | `MaterialBuilder` | Fluent builder for `MaterialProperty` -> compiles to `Material` (shaders + blend/depth/topology; textures are separate) |
 | `StaticDescriptor` | Single descriptor set for static uniforms (still used for global/per-object sets; not for sprite textures) |

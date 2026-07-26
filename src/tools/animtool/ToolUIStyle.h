@@ -1,7 +1,7 @@
 #ifndef _ANIMTOOL_UI_STYLE_H_
 #define _ANIMTOOL_UI_STYLE_H_
 
-#include <imgui/imgui.h>
+#include <imgui/vendor/imgui.h>
 
 namespace animtool
 {

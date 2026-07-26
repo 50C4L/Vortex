@@ -1,17 +1,17 @@
 #include "ImGUILifetime.h"
 
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_vulkan.h>
-#include <imgui/imgui_impl_sdl2.h>
+#include <imgui/vendor/imgui.h>
+#include <imgui/vendor/imgui_impl_vulkan.h>
+#include <imgui/vendor/imgui_impl_sdl2.h>
 
 #include <utility/Logger.h>
 
 #include <graphics/VulkanContext.h>
 
-using namespace eage::graphics;
+using namespace eage::imgui;
 using namespace utility;
 
-ImGUILifetime::ImGUILifetime( VulkanContext& context )
+ImGUILifetime::ImGUILifetime( eage::graphics::VulkanContext& context )
 	: mContext( context )
 {
 }
