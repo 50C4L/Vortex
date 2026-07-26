@@ -4,7 +4,7 @@ globs: ["**/*.cpp", "**/*.h"]
 alwaysApply: false
 ---
 
-# C++ Coding Standard — Vortex Project
+# C++ Coding Standard - Vortex Project
 
 Always follow these rules when generating or editing C++ code in this workspace.
 
@@ -40,10 +40,14 @@ Always follow these rules when generating or editing C++ code in this workspace.
 #endif // _MY_CLASS_H
 ```
 
-## Character Encoding
+## Character Encoding (ASCII only)
 
-**All source files must use ASCII-only characters in comments, identifiers, and string literals.**
+**All `.cpp` / `.h` source must be ASCII-only.** Non-ASCII characters cause MSVC warning **C4819** on code page 936 (and similar).
 
-- Never use Unicode punctuation in comments or strings: em-dash (`--`), en-dash, curly quotes, ellipsis, etc.
-- Use plain ASCII equivalents instead: `-` or `--` for dashes, `"` and `'` for quotes, `...` for ellipsis.
-- Reason: MSVC on non-Unicode system code pages (e.g. 936) raises **C4819** for any non-ASCII character in a source file, treating it as a build warning.
+Hard bans (common offenders):
+- Em-dash `U+2014` and en-dash `U+2013` - use `-` or `--`
+- Curly quotes `U+201C` `U+201D` `U+2018` `U+2019` - use `"` or `'`
+- Ellipsis `U+2026` - use `...`
+- Non-breaking space `U+00A0` - use a normal space
+
+Do not paste Unicode punctuation into comments, strings, or identifiers. Prefer plain ASCII wording.

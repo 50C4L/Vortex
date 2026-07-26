@@ -168,8 +168,15 @@ target_include_directories(eage_core PUBLIC
 	${THIRDPARTY_SRC_PATH}/spirv-reflect/include
 )
 
+# Required when linking RmlUi as a static library (avoids dllimport on MSVC).
+target_compile_definitions(eage_core PUBLIC
+	RMLUI_STATIC_LIB
+)
+
 target_link_libraries(eage_core PUBLIC
 	imgui
 	VulkanMemoryAllocator.lib
 	box2
+	rmlui.lib
+	rmlui_debugger.lib
 )

@@ -513,7 +513,7 @@ Renderer::InitBindless()
 
 	mDefaultSampler = CreateSampler( vk::Filter::eNearest, vk::Filter::eNearest );
 
-	// Reserve index 0 for a 1x1 fallback texture (bright magenta — obvious missing/wrong texture)
+	// Reserve index 0 for a 1x1 fallback texture (bright magenta - obvious missing/wrong texture)
 	uint32_t fallback_pixels[1] = { 0xFFFF00FF };
 	auto fallback_image = UploadImage(
 		fallback_pixels,
