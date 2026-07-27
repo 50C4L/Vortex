@@ -43,6 +43,7 @@ MainScene::MainScene( const EngineContext& ctx )
 	, mEffectSystem( ctx.effect_system )
 	, mRenderSystem( ctx.render_system )
 	, mPhysicsSystem( ctx.physics_system )
+	, mResourceLoader( ctx.resource_loader )
 {
 }
 
@@ -62,6 +63,12 @@ MainScene::OnEnter()
 	mRenderer.AddRenderPass( mScenePass.get() );
 	mRenderSystem.SetScenePass( mScenePass.get() );
 
+	// Fonts (and other assets) must be loaded before RmlUi parses the document.
+	if( !mResourceLoader.LoadManifest( "./resources/scenes/main_scene.json" ) )
+	{
+		LOG_ERROR( "MainScene: failed to load resource manifest" );
+	}
+
 	mUIView = std::make_unique<eage::ui::UIView>(
 		mUISystem,
 		"main_hud",
@@ -74,13 +81,6 @@ MainScene::OnEnter()
 		LOG_ERROR( "MainScene: failed to load HUD document" );
 	}
 	mRenderer.AddRenderPass( &mUIView->GetRenderPass() );
-
-	mResourceLoader = std::make_unique<assets::SceneResourceLoader>(
-		mRenderSystem, mAnimationSystem, mAudioSystem );
-	if( !mResourceLoader->LoadManifest( "./resources/scenes/main_scene.json" ) )
-	{
-		LOG_ERROR( "MainScene: failed to load resource manifest" );
-	}
 
 	InitializeGenericSystems();
 
@@ -192,7 +192,7 @@ MainScene::CreateSceneRoot()
 void
 MainScene::CreateBackgroundEntity()
 {
-	const uint32_t background_texture = mResourceLoader->GetTexture( "./resources/textures/background/dark.png" );
+	const uint32_t background_texture = mResourceLoader.GetTexture( "./resources/textures/background/dark.png" );
 
 	auto material_property = eage::graphics::MaterialBuilder()
 		.SetShaders( "./src/shaders/compiled/colored_triangle_mesh.vert.spv",
@@ -232,7 +232,7 @@ MainScene::CreatePlayerEntity()
 {
 	mPlayerInputSystem = std::make_unique<PlayerInputSystem>( mECSRegistry, mInputController );
 	mPlayerGameplaySystem = std::make_unique<PlayerGameplaySystem>( mECSRegistry, *mBulletSystem, mAudioSystem );
-	mPlayerGameplaySystem->PreparePlayer( mRenderSystem, mSceneRootEntity, *mResourceLoader );
+	mPlayerGameplaySystem->PreparePlayer( mRenderSystem, mSceneRootEntity, mResourceLoader );
 }
 
 void 
@@ -295,9 +295,9 @@ MainScene::CreateExplosionEffect()
 	mEffectMaterialId = mRenderSystem.CreateMaterial( material_property );
 
 	eage::ecs::EffectSystem::EffectConfig config;
-	config.clip_ids = { mResourceLoader->GetClip( "./resources/textures/effects/anim_explosion1/animation.json" ) };
+	config.clip_ids = { mResourceLoader.GetClip( "./resources/textures/effects/anim_explosion1/animation.json" ) };
 	config.material_id = mEffectMaterialId;
-	config.sound_id = mResourceLoader->GetSound( "./resources/sounds/explosion1.wav" );
+	config.sound_id = mResourceLoader.GetSound( "./resources/sounds/explosion1.wav" );
 	config.pool_size = 32;
 	mExplosionEffectId = mEffectSystem.Create( mRenderSystem, config, mSceneRootEntity );
 }
@@ -305,7 +305,7 @@ MainScene::CreateExplosionEffect()
 void
 MainScene::CreateEnemyEntities()
 {
-	mAsteroidGameplaySystem->PrepareAsteroids( mRenderSystem, *mResourceLoader, 100, mSceneRootEntity );
+	mAsteroidGameplaySystem->PrepareAsteroids( mRenderSystem, mResourceLoader, 100, mSceneRootEntity );
 	mAsteroidGameplaySystem->SetDeathEffect( mExplosionEffectId );
 	mAsteroidGameplaySystem->SpawnAsteroid( 10 );
 }

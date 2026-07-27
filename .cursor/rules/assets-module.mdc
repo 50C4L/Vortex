@@ -1,5 +1,5 @@
 ---
-description: "Asset loading pipeline for Vortex. Covers ImageLoader (STB), TextureAtlas (deprecated), AnimationClip (bindless frame sequences), and SceneResourceLoader (scene manifest preload). Auto-applied when editing src/core/assets/."
+description: "Asset loading pipeline for Vortex. Covers ImageLoader (STB), AnimationClip (bindless frame sequences), and SceneResourceLoader (manifest dispatch via per-module Delegates). Auto-applied when editing src/core/assets/."
 globs: ["src/core/assets/**/*.cpp", "src/core/assets/**/*.h"]
 alwaysApply: false
 ---
@@ -8,7 +8,9 @@ alwaysApply: false
 
 ## Purpose
 
-Data-driven asset loading pipeline. `ImageLoader` reads image files from disk. `AnimationClip` loads animtool frame-sequence exports as bindless textures. `SceneResourceLoader` preloads scene file-backed assets from a JSON manifest. `TextureAtlas` is deprecated and not used by the animation pipeline.
+Data-driven asset loading pipeline. `ImageLoader` reads image files from disk. `AnimationClip` loads animtool frame-sequence exports as bindless textures. `SceneResourceLoader` parses a scene manifest and dispatches each section to a registered `Delegate`.
+
+`assets` must not depend on `ecs` or `ui`. Loading implementations live in the modules that own the target subsystems (`core/ecs/loaders/`, `core/ui/`).
 
 ## Static Sprites vs Animation
 
@@ -17,6 +19,7 @@ Data-driven asset loading pipeline. `ImageLoader` reads image files from disk. `
 | **Static sprites** (ship, asteroid, background) | Standalone PNG per sprite | Declared in scene manifest -> `SceneResourceLoader::GetTexture( path )` |
 | **Animated sprites** (bullets, FX) | animtool `animation.json` + per-frame PNGs | Declared in scene manifest -> `SceneResourceLoader::GetClip( path )` |
 | **Sounds** | WAV/MP3 | Declared in scene manifest -> `SceneResourceLoader::GetSound( path )` |
+| **Fonts** | TTF | Declared in scene manifest `fonts` section; loaded via `FontLoadDelegate` (no getter) |
 
 ## Key Classes
 
@@ -24,10 +27,10 @@ Data-driven asset loading pipeline. `ImageLoader` reads image files from disk. `
 |---|---|
 | `ImageLoader` | Wraps STB image; loads PNG/JPEG/BMP into a raw `Image` struct |
 | `ImageLoader::Image` | POD: `data` (raw bytes), `width`, `height`, `num_channels` |
-| `TextureAtlas` | **Deprecated.** Legacy JSON atlas UV lookup -- do not use for new work |
 | `AnimationClip` | Loads animtool JSON; registers frame PNGs bindless; stores ordered `Frame` array |
 | `AnimationClip::Frame` | `texture_index`, `duration_sec` |
-| `SceneResourceLoader` | Parses scene manifest; eagerly loads textures/clips/sounds; path-keyed lookup |
+| `SceneResourceLoader` | Manifest dispatcher + opaque path-to-id catalog facade |
+| `SceneResourceLoader::Delegate` | Loads one named section; lives in the owning module |
 
 ## Scene Manifest
 
@@ -43,6 +46,9 @@ Data-driven asset loading pipeline. `ImageLoader` reads image files from disk. `
   ],
   "sounds": [
     { "path": "./resources/sounds/laser.wav", "pool_size": 4, "looping": false }
+  ],
+  "fonts": [
+    "./resources/font/OpenSans-Regular.ttf"
   ]
 }
 ```
@@ -50,21 +56,25 @@ Data-driven asset loading pipeline. `ImageLoader` reads image files from disk. `
 - **Path is the ID:** lookup strings must match manifest entries exactly (including `./resources/...` prefix).
 - **Frame PNGs** for animation clips are loaded inside `AnimationClip::Load` -- do not list them in `textures`.
 - **Materials/meshes** are not in the manifest; create them in code via `RenderSystem`.
+- **Unknown sections** are logged when no delegate is registered for that key.
 
 ## API
 
 ```cpp
-// Scene enter (MainScene::OnEnter)
-auto loader = std::make_unique<assets::SceneResourceLoader>( render_system, animation_system, audio_system );
-loader->LoadManifest( "./resources/scenes/main_scene.json" );
+// Shell (VortexGame::Init) -- register delegates once
+loader.RegisterDelegate( TextureLoadDelegate::SECTION_KEY, texture_delegate );
+loader.RegisterDelegate( FontLoadDelegate::SECTION_KEY, font_delegate );
+
+// Scene enter -- LoadManifest BEFORE UIView::LoadDocument (fonts needed at parse time)
+resource_loader.LoadManifest( "./resources/scenes/main_scene.json" );
 
 // Gameplay lookup by path
-uint32_t tex = loader->GetTexture( "./resources/textures/ship/Ship.png" );
-ResourceId clip_id = loader->GetClip( "./resources/textures/bullets/anim_defaultBullet/animation.json" );
-ResourceId sound_id = loader->GetSound( "./resources/sounds/laser.wav" );
+uint32_t tex = resource_loader.GetTexture( "./resources/textures/ship/Ship.png" );
+uint32_t clip_id = resource_loader.GetClip( "./resources/textures/bullets/anim_defaultBullet/animation.json" );
+uint32_t sound_id = resource_loader.GetSound( "./resources/sounds/laser.wav" );
 ```
 
-Low-level loaders (`RenderSystem::CreateTexture`, `AnimationSystem::LoadClip`, `AudioSystem::LoadSound`) are called internally by `SceneResourceLoader`; game code should prefer manifest + lookup.
+Delegates (`TextureLoadDelegate`, `AnimationLoadDelegate`, `AudioLoadDelegate`, `FontLoadDelegate`) own the actual load calls. Game code should prefer manifest + lookup.
 
 ## JSON Format (animtool export)
 
@@ -84,6 +94,8 @@ Frame PNG paths are resolved relative to the JSON file directory.
 ## Key Patterns
 
 - **Load once, share:** manifest preload + per-system caches; many entities reference the same handles.
+- **Delegate registry:** shell owns delegates and registers them; scenes only call `LoadManifest`.
+- **Catalog facade:** getters stay on `SceneResourceLoader`; section tables are opaque `uint32_t` ids.
 - **Bindless frames:** Each frame is a separate PNG in the bindless texture array -- no atlas UV math.
 - **Default fallback:** `GetFrame()` returns a default frame if index is out of range.
 - **STB ownership:** `Image::data` is heap-allocated by STB. Lifetime matches the `Image` struct.
@@ -92,11 +104,12 @@ Frame PNG paths are resolved relative to the JSON file directory.
 
 - Declare all scene file-backed assets in the scene manifest JSON
 - Use `SceneResourceLoader::Get*` with the exact path from the manifest
-- Add new assets to the manifest before referencing them in gameplay code
+- Add new asset types by implementing `Delegate` in the owning module and registering it in the shell
+- Call `LoadManifest` before any consumer that needs those assets (especially RmlUi documents)
 
 ## DON'Ts
 
-- Don't scatter `CreateTexture` / `LoadClip` / `LoadSound` calls with hardcoded paths in gameplay systems
-- Don't use `TextureAtlas` for new sprites or animations
+- Don't make `core/assets` depend on `ecs` or `ui`
+- Don't scatter `CreateTexture` / `LoadClip` / `LoadSound` / `LoadFontFace` calls with hardcoded paths in gameplay systems
 - Don't store `Image::data` pointer beyond the `Image` struct lifetime
 - Don't list animation frame PNGs separately in the manifest `textures` array

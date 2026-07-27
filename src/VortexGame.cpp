@@ -15,10 +15,12 @@
 #include <graphics/Renderer.h>
 #include <graphics/PresentPass.h>
 #include <ui/UISystem.h>
+#include <ui/FontLoadDelegate.h>
 #include <imgui/ImGuiRenderPass.h>
 #include <events/InputController.h>
 #include <events/KeyCode.h>
 #include <audio/AudioMixer.h>
+#include <assets/SceneResourceLoader.h>
 #include <ecs/ECS.h>
 #include <ecs/systems/AnimationSystem.h>
 #include <ecs/systems/AudioSystem.h>
@@ -26,6 +28,9 @@
 #include <ecs/systems/PhysicsSystem.h>
 #include <ecs/systems/RenderSystem.h>
 #include <ecs/systems/SceneGraphSystem.h>
+#include <ecs/loaders/TextureLoadDelegate.h>
+#include <ecs/loaders/AnimationLoadDelegate.h>
+#include <ecs/loaders/AudioLoadDelegate.h>
 #include <profiling/PerformanceTracker.h>
 
 #include "SceneController.h"
@@ -178,11 +183,6 @@ VortexGame::Init()
 	}
 
 	mUISystem = std::make_unique<eage::ui::UISystem>( *mRenderer );
-	if( !mUISystem->LoadFontFace( "./resources/font/OpenSans-Regular.ttf" ) )
-	{
-		std::cerr << "Failed to load UI font" << std::endl;
-		return false;
-	}
 
 	// Shell present pass (scene source bound after ChangeScene)
 	mPresentPass = std::make_unique<eage::graphics::PresentPass>();
@@ -242,6 +242,22 @@ VortexGame::Init()
 	mPhysicsSystem = std::make_unique<eage::ecs::PhysicsSystem>( *mECSRegistry );
 	mPhysicsSystem->Initialize( { 0.f, 0.f }, 100.f ); // No gravity in space
 
+	// Scene resource loader + per-module load delegates
+	mResourceLoader = std::make_unique<assets::SceneResourceLoader>();
+	mTextureLoadDelegate = std::make_unique<eage::ecs::TextureLoadDelegate>( *mRenderSystem );
+	mAnimationLoadDelegate = std::make_unique<eage::ecs::AnimationLoadDelegate>(
+		*mAnimationSystem, *mRenderSystem );
+	mAudioLoadDelegate = std::make_unique<eage::ecs::AudioLoadDelegate>( *mAudioSystem );
+	mFontLoadDelegate = std::make_unique<eage::ui::FontLoadDelegate>( *mUISystem );
+	mResourceLoader->RegisterDelegate(
+		eage::ecs::TextureLoadDelegate::SECTION_KEY, *mTextureLoadDelegate );
+	mResourceLoader->RegisterDelegate(
+		eage::ecs::AnimationLoadDelegate::SECTION_KEY, *mAnimationLoadDelegate );
+	mResourceLoader->RegisterDelegate(
+		eage::ecs::AudioLoadDelegate::SECTION_KEY, *mAudioLoadDelegate );
+	mResourceLoader->RegisterDelegate(
+		eage::ui::FontLoadDelegate::SECTION_KEY, *mFontLoadDelegate );
+
 	// Initialize SceneController
 	mSceneController = std::make_unique<SceneController>();
 	mSceneController->Subscribe( this );
@@ -255,6 +271,7 @@ VortexGame::Init()
 			*mAudioSystem,
 			*mAnimationSystem,
 			*mEffectSystem,
+			*mResourceLoader,
 			*mInputController } ) );
 	mSceneController->ChangeScene( static_cast<int>( config::SceneID::MAIN_SCENE ) );
 

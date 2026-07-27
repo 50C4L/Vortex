@@ -75,11 +75,11 @@ namespace vortex
 		eage::ecs::EffectSystem& mEffectSystem;
 		eage::ecs::RenderSystem& mRenderSystem;
 		eage::ecs::PhysicsSystem& mPhysicsSystem;
+		assets::SceneResourceLoader& mResourceLoader;
 
 		std::unique_ptr<eage::graphics::SceneRenderPass> mScenePass;
 		std::unique_ptr<eage::ui::UIView> mUIView;
 		std::unique_ptr<StatusPanel> mStatusPanel;
-		std::unique_ptr<assets::SceneResourceLoader> mResourceLoader;
 		std::unique_ptr<PlayerInputSystem> mPlayerInputSystem;
 		std::unique_ptr<PlayerGameplaySystem> mPlayerGameplaySystem;
 		std::unique_ptr<WarpSystem> mWarpSystem;

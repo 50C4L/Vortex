@@ -100,8 +100,6 @@ add_library(eage_core STATIC
 	./assets/ImageLoader.cpp
 	./assets/ImageWriter.h
 	./assets/ImageWriter.cpp
-	./assets/TextureAtlas.h
-	./assets/TextureAtlas.cpp
 	./assets/AnimationClip.h
 	./assets/AnimationClip.cpp
 	./assets/SceneResourceLoader.h
@@ -136,6 +134,12 @@ add_library(eage_core STATIC
 	./ecs/systems/RenderSystem.cpp
 	./ecs/systems/SceneGraphSystem.h
 	./ecs/systems/SceneGraphSystem.cpp
+	./ecs/loaders/TextureLoadDelegate.h
+	./ecs/loaders/TextureLoadDelegate.cpp
+	./ecs/loaders/AnimationLoadDelegate.h
+	./ecs/loaders/AnimationLoadDelegate.cpp
+	./ecs/loaders/AudioLoadDelegate.h
+	./ecs/loaders/AudioLoadDelegate.cpp
 
 	./imgui/ImGuiRenderPass.h
 	./imgui/ImGuiRenderPass.cpp
@@ -155,6 +159,8 @@ add_library(eage_core STATIC
 	./ui/UISystem.cpp
 	./ui/UIView.h
 	./ui/UIView.cpp
+	./ui/FontLoadDelegate.h
+	./ui/FontLoadDelegate.cpp
 
 	./physics/PhysicsEngine.h
 	./physics/PhysicsEngine.cpp

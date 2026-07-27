@@ -37,11 +37,20 @@ namespace eage::ecs
 	class PhysicsSystem;
 	class RenderSystem;
 	class SceneGraphSystem;
+	class TextureLoadDelegate;
+	class AnimationLoadDelegate;
+	class AudioLoadDelegate;
 }
 
 namespace eage::ui
 {
+	class FontLoadDelegate;
 	class UISystem;
+}
+
+namespace assets
+{
+	class SceneResourceLoader;
 }
 
 namespace eage::profiling
@@ -84,6 +93,11 @@ namespace vortex
 		std::unique_ptr<eage::ecs::SceneGraphSystem> mSceneGraphSystem;
 		std::unique_ptr<eage::ecs::RenderSystem> mRenderSystem;
 		std::unique_ptr<eage::ecs::PhysicsSystem> mPhysicsSystem;
+		std::unique_ptr<assets::SceneResourceLoader> mResourceLoader;
+		std::unique_ptr<eage::ecs::TextureLoadDelegate> mTextureLoadDelegate;
+		std::unique_ptr<eage::ecs::AnimationLoadDelegate> mAnimationLoadDelegate;
+		std::unique_ptr<eage::ecs::AudioLoadDelegate> mAudioLoadDelegate;
+		std::unique_ptr<eage::ui::FontLoadDelegate> mFontLoadDelegate;
 		std::unique_ptr<eage::profiling::PerformanceTracker> mPerformanceTracker;
 	};
 }

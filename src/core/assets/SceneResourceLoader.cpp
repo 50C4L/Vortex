@@ -1,22 +1,14 @@
 #include "SceneResourceLoader.h"
 
-#include <ecs/systems/AnimationSystem.h>
-#include <ecs/systems/AudioSystem.h>
-#include <ecs/systems/RenderSystem.h>
-#include <utility/JsonParser.h>
 #include <utility/Logger.h>
 
 using namespace assets;
-using namespace eage::ecs;
 using namespace utility;
 
-SceneResourceLoader::SceneResourceLoader( RenderSystem& render_system,
-											AnimationSystem& animation_system,
-											AudioSystem& audio_system )
-	: mRenderSystem( render_system )
-	, mAnimationSystem( animation_system )
-	, mAudioSystem( audio_system )
+void
+SceneResourceLoader::RegisterDelegate( const std::string& section_key, Delegate& delegate )
 {
+	mDelegates[section_key] = &delegate;
 }
 
 bool
@@ -29,89 +21,25 @@ SceneResourceLoader::LoadManifest( const std::string& manifest_path )
 		return false;
 	}
 
-	if( document.HasMember( "textures" ) && document["textures"].IsArray() )
+	if( !document.IsObject() )
 	{
-		for( const auto& texture_val : document["textures"].GetArray() )
-		{
-			if( !texture_val.IsString() )
-			{
-				LOG_ERROR() << "SceneResourceLoader: texture entry must be a string path";
-				continue;
-			}
-
-			const std::string path = texture_val.GetString();
-			try
-			{
-				const uint32_t texture_index = mRenderSystem.CreateTexture( path );
-				mTextures[path] = texture_index;
-			}
-			catch( const std::exception& ex )
-			{
-				LOG_ERROR() << "SceneResourceLoader: failed to load texture " << path << ": " << ex.what();
-			}
-		}
+		LOG_ERROR() << "SceneResourceLoader: manifest root must be an object: " << manifest_path;
+		return false;
 	}
 
-	if( document.HasMember( "animations" ) && document["animations"].IsArray() )
+	for( auto it = document.MemberBegin(); it != document.MemberEnd(); ++it )
 	{
-		for( const auto& animation_val : document["animations"].GetArray() )
+		const std::string section_key = it->name.GetString();
+		auto delegate_it = mDelegates.find( section_key );
+		if( delegate_it == mDelegates.end() )
 		{
-			if( !animation_val.IsString() )
-			{
-				LOG_ERROR() << "SceneResourceLoader: animation entry must be a string path";
-				continue;
-			}
-
-			const std::string path = animation_val.GetString();
-			const ResourceId clip_id = mAnimationSystem.LoadClip( mRenderSystem, path );
-			if( clip_id == INVALID_ID )
-			{
-				LOG_ERROR() << "SceneResourceLoader: failed to load animation clip " << path;
-				continue;
-			}
-
-			mClips[path] = clip_id;
+			LOG_ERROR() << "SceneResourceLoader: no delegate for section " << section_key;
+			continue;
 		}
-	}
 
-	if( document.HasMember( "sounds" ) && document["sounds"].IsArray() )
-	{
-		for( const auto& sound_val : document["sounds"].GetArray() )
+		if( !delegate_it->second->Load( it->value, mTables[section_key] ) )
 		{
-			if( !sound_val.IsObject() )
-			{
-				LOG_ERROR() << "SceneResourceLoader: sound entry must be an object";
-				continue;
-			}
-
-			const std::string path = get_json_string( sound_val, "path" );
-			if( path.empty() )
-			{
-				LOG_ERROR() << "SceneResourceLoader: sound entry missing path";
-				continue;
-			}
-
-			AudioSystem::SoundConfig config;
-			config.path = path;
-			config.pool_size = get_json_int( sound_val, "pool_size" );
-			if( config.pool_size <= 0 )
-			{
-				config.pool_size = 1;
-			}
-
-			if( sound_val.HasMember( "looping" ) && sound_val["looping"].IsBool() )
-			{
-				config.looping = sound_val["looping"].GetBool();
-			}
-
-			const ResourceId sound_id = mAudioSystem.LoadSound( config );
-			if( sound_id == INVALID_ID )
-			{
-				LOG_ERROR() << "SceneResourceLoader: failed to load sound " << path;
-				continue;
-			}
-
-			mSounds[path] = sound_id;
+			LOG_ERROR() << "SceneResourceLoader: delegate failed for section " << section_key;
 		}
 	}
 
@@ -121,37 +49,36 @@ SceneResourceLoader::LoadManifest( const std::string& manifest_path )
 uint32_t
 SceneResourceLoader::GetTexture( const std::string& path ) const
 {
-	auto it = mTextures.find( path );
-	if( it == mTextures.end() )
+	return Lookup( SECTION_TEXTURES, path );
+}
+
+uint32_t
+SceneResourceLoader::GetClip( const std::string& path ) const
+{
+	return Lookup( SECTION_ANIMATIONS, path );
+}
+
+uint32_t
+SceneResourceLoader::GetSound( const std::string& path ) const
+{
+	return Lookup( SECTION_SOUNDS, path );
+}
+
+uint32_t
+SceneResourceLoader::Lookup( const std::string& section_key, const std::string& path ) const
+{
+	auto table_it = mTables.find( section_key );
+	if( table_it == mTables.end() )
 	{
-		LOG_ERROR() << "SceneResourceLoader: texture not in catalog: " << path;
+		LOG_ERROR() << "SceneResourceLoader: section not loaded: " << section_key;
 		return 0;
 	}
 
-	return it->second;
-}
-
-ResourceId
-SceneResourceLoader::GetClip( const std::string& path ) const
-{
-	auto it = mClips.find( path );
-	if( it == mClips.end() )
+	auto it = table_it->second.find( path );
+	if( it == table_it->second.end() )
 	{
-		LOG_ERROR() << "SceneResourceLoader: animation clip not in catalog: " << path;
-		return INVALID_ID;
-	}
-
-	return it->second;
-}
-
-ResourceId
-SceneResourceLoader::GetSound( const std::string& path ) const
-{
-	auto it = mSounds.find( path );
-	if( it == mSounds.end() )
-	{
-		LOG_ERROR() << "SceneResourceLoader: sound not in catalog: " << path;
-		return INVALID_ID;
+		LOG_ERROR() << "SceneResourceLoader: " << section_key << " not in catalog: " << path;
+		return 0;
 	}
 
 	return it->second;

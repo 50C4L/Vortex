@@ -18,6 +18,7 @@ src/core/ui/
   UIDataModel.h/.cpp     # Declare/Set over RmlUi data models (pimpl)
   UIView.h/.cpp          # Context + document + composite pass (pimpl)
   UISystem.h/.cpp        # Rml::Initialise/Shutdown, font loading
+  FontLoadDelegate.h/.cpp # SceneResourceLoader::Delegate for manifest "fonts"
   UIRenderPass.h/.cpp    # AbstractRenderPass writing the composite image
   UIRenderInterface.h/.cpp  # Rml::RenderInterface over Renderer (internal)
   UISystemInterface.h/.cpp  # Rml::SystemInterface (internal)
@@ -36,6 +37,7 @@ src/core/ui/
 | Class | Namespace | Responsibility |
 |---|---|---|
 | `UISystem` | `eage::ui` | App-lifetime RmlUi init, shared render/system interfaces, fonts |
+| `FontLoadDelegate` | `eage::ui` | Manifest `fonts` section loader; register on `SceneResourceLoader` in the shell |
 | `UIView` | `eage::ui` | Scene-lifetime context, document, data model, composite pass |
 | `UIDataModel` | `eage::ui` | Backend-agnostic Declare/Set for document bindings |
 
