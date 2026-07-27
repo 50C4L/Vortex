@@ -24,6 +24,10 @@
 #include "systems/PlayerGameplaySystem.h"
 #include "systems/WarpSystem.h"
 #include "components/GameGenericComponents.h"
+#include "ui/StatusPanel.h"
+
+#include <ui/UISystem.h>
+#include <ui/UIView.h>
 
 using namespace vortex;
 using namespace vortex::config;
@@ -31,6 +35,7 @@ using namespace utility;
 
 MainScene::MainScene( const EngineContext& ctx )
 	: mRenderer( ctx.renderer )
+	, mUISystem( ctx.ui_system )
 	, mInputController( ctx.input )
 	, mECSRegistry( ctx.registry )
 	, mAudioSystem( ctx.audio_system )
@@ -56,6 +61,19 @@ MainScene::OnEnter()
 		static_cast<uint32_t>( config::VirtualResolution::HEIGHT ) );
 	mRenderer.AddRenderPass( mScenePass.get() );
 	mRenderSystem.SetScenePass( mScenePass.get() );
+
+	mUIView = std::make_unique<eage::ui::UIView>(
+		mUISystem,
+		"main_hud",
+		static_cast<uint32_t>( config::VirtualResolution::WIDTH ),
+		static_cast<uint32_t>( config::VirtualResolution::HEIGHT ) );
+	mStatusPanel = std::make_unique<StatusPanel>( mECSRegistry, mUIView->GetDataModel() );
+	mUIView->BindImage( "gameplay", mScenePass->GetColorTarget() );
+	if( !mUIView->LoadDocument( "./resources/ui/hud.rml" ) )
+	{
+		LOG_ERROR( "MainScene: failed to load HUD document" );
+	}
+	mRenderer.AddRenderPass( &mUIView->GetRenderPass() );
 
 	mResourceLoader = std::make_unique<assets::SceneResourceLoader>(
 		mRenderSystem, mAnimationSystem, mAudioSystem );
@@ -100,6 +118,14 @@ MainScene::OnExit()
 	LOG( "MainScene::OnExit" );
 
 	mRenderer.WaitForIdle();
+
+	if( mUIView )
+	{
+		mRenderer.RemoveRenderPass( &mUIView->GetRenderPass() );
+	}
+	mStatusPanel.reset();
+	mUIView.reset();
+
 	mRenderSystem.SetScenePass( nullptr );
 	if( mScenePass )
 	{
@@ -111,6 +137,10 @@ MainScene::OnExit()
 eage::graphics::ManagedImage*
 MainScene::GetOutput()
 {
+	if( mUIView )
+	{
+		return mUIView->GetOutput();
+	}
 	if( mScenePass )
 	{
 		return mScenePass->GetDesc().color_target;
@@ -125,6 +155,11 @@ MainScene::Update( float dt )
 	mPlayerGameplaySystem->Update( dt );
 	mBulletSystem->Update( dt );
 	mAsteroidGameplaySystem->Update();
+
+	if( mStatusPanel )
+	{
+		mStatusPanel->Update();
+	}
 
 	// Update camera
 	mRenderSystem.SetCamera( *mCamera, glm::vec2(

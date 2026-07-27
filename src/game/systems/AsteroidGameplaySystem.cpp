@@ -236,7 +236,10 @@ AsteroidGameplaySystem::Update()
 
 		if( health.IsDead() )
 		{
-			++mKillCount;
+			for( auto [ player_entity, player ] : mECSRegistry.GetComponentMap<PlayerComponent>() )
+			{
+				++player.kill_count;
+			}
 
 			if( mDeathEffectId != eage::ecs::INVALID_ID &&
 				mECSRegistry.HasComponent<eage::ecs::TransformComponent>( entity ) )

@@ -30,6 +30,8 @@ add_executable(Vortex
 	./src/game/systems/PlayerGameplaySystem.cpp
 	./src/game/systems/WarpSystem.h
 	./src/game/systems/WarpSystem.cpp
+	./src/game/ui/StatusPanel.h
+	./src/game/ui/StatusPanel.cpp
 )
 
 target_link_libraries(Vortex PRIVATE
@@ -77,6 +79,9 @@ function( vortex_copy_runtime_assets target_name )
 		COMMAND ${CMAKE_COMMAND} -E copy_directory
 			${CMAKE_SOURCE_DIR}/src/shaders
 			$<TARGET_FILE_DIR:${target_name}>/src/shaders
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+			${CMAKE_SOURCE_DIR}/src/core/ui/shaders
+			$<TARGET_FILE_DIR:${target_name}>/src/core/ui/shaders
 	)
 endfunction()
 

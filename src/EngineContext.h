@@ -6,6 +6,11 @@ namespace eage::graphics
 	class Renderer;
 }
 
+namespace eage::ui
+{
+	class UISystem;
+}
+
 namespace eage::ecs
 {
 	class AnimationSystem;
@@ -26,6 +31,7 @@ namespace vortex
 	struct EngineContext
 	{
 		eage::graphics::Renderer& renderer;
+		eage::ui::UISystem&       ui_system;
 		eage::ecs::ECSRegistry&   registry;
 		eage::ecs::RenderSystem&  render_system;
 		eage::ecs::PhysicsSystem& physics_system;

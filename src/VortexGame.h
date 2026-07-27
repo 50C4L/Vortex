@@ -39,6 +39,11 @@ namespace eage::ecs
 	class SceneGraphSystem;
 }
 
+namespace eage::ui
+{
+	class UISystem;
+}
+
 namespace eage::profiling
 {
 	class PerformanceTracker;
@@ -66,6 +71,7 @@ namespace vortex
 
 		std::shared_ptr<SDL_Window> mWindow;
 		std::unique_ptr<eage::graphics::Renderer> mRenderer;
+		std::unique_ptr<eage::ui::UISystem> mUISystem;
 		std::unique_ptr<eage::graphics::PresentPass> mPresentPass;
 		std::unique_ptr<eage::imgui::ImGuiRenderPass> mImGuiPass;
 		std::unique_ptr<SceneController> mSceneController;

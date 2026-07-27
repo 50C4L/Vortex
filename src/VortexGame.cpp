@@ -14,6 +14,7 @@
 #include <utility/Filesystem.h>
 #include <graphics/Renderer.h>
 #include <graphics/PresentPass.h>
+#include <ui/UISystem.h>
 #include <imgui/ImGuiRenderPass.h>
 #include <events/InputController.h>
 #include <events/KeyCode.h>
@@ -92,6 +93,7 @@ VortexGame::~VortexGame()
 
 	mImGuiPass.reset();
 	mPresentPass.reset();
+	mUISystem.reset();
 	mRenderer.reset();
 	mWindow.reset();
 	SDL_Quit();
@@ -175,6 +177,13 @@ VortexGame::Init()
 		return false;
 	}
 
+	mUISystem = std::make_unique<eage::ui::UISystem>( *mRenderer );
+	if( !mUISystem->LoadFontFace( "./resources/font/OpenSans-Regular.ttf" ) )
+	{
+		std::cerr << "Failed to load UI font" << std::endl;
+		return false;
+	}
+
 	// Shell present pass (scene source bound after ChangeScene)
 	mPresentPass = std::make_unique<eage::graphics::PresentPass>();
 
@@ -239,6 +248,7 @@ VortexGame::Init()
 	mSceneController->AddScene( static_cast<int>( config::SceneID::MAIN_SCENE ),
 		std::make_unique<MainScene>( EngineContext{
 			*mRenderer,
+			*mUISystem,
 			*mECSRegistry,
 			*mRenderSystem,
 			*mPhysicsSystem,

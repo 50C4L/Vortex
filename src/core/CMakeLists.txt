@@ -142,6 +142,20 @@ add_library(eage_core STATIC
 	./imgui/ImGUILifetime.h
 	./imgui/ImGUILifetime.cpp
 
+	./ui/UIValue.h
+	./ui/UIDataModel.h
+	./ui/UIDataModel.cpp
+	./ui/UISystemInterface.h
+	./ui/UISystemInterface.cpp
+	./ui/UIRenderInterface.h
+	./ui/UIRenderInterface.cpp
+	./ui/UIRenderPass.h
+	./ui/UIRenderPass.cpp
+	./ui/UISystem.h
+	./ui/UISystem.cpp
+	./ui/UIView.h
+	./ui/UIView.cpp
+
 	./physics/PhysicsEngine.h
 	./physics/PhysicsEngine.cpp
 	./physics/PhysicsEventListener.h
@@ -179,4 +193,5 @@ target_link_libraries(eage_core PUBLIC
 	box2
 	rmlui.lib
 	rmlui_debugger.lib
+	freetype.lib
 )

@@ -15,6 +15,12 @@ namespace eage::graphics
 	class SceneRenderPass;
 }
 
+namespace eage::ui
+{
+	class UISystem;
+	class UIView;
+}
+
 namespace eage::ecs
 {
 	class AnimationSystem;
@@ -33,6 +39,7 @@ namespace vortex
 	class BulletSystem;
 	class PlayerInputSystem;
 	class PlayerGameplaySystem;
+	class StatusPanel;
 	class WarpSystem;
 
 	class MainScene : public AbstractScene
@@ -60,6 +67,7 @@ namespace vortex
 		void CreateExplosionEffect();
 
 		eage::graphics::Renderer& mRenderer;
+		eage::ui::UISystem& mUISystem;
 		events::InputController& mInputController;
 		eage::ecs::ECSRegistry& mECSRegistry;
 		eage::ecs::AudioSystem& mAudioSystem;
@@ -69,6 +77,8 @@ namespace vortex
 		eage::ecs::PhysicsSystem& mPhysicsSystem;
 
 		std::unique_ptr<eage::graphics::SceneRenderPass> mScenePass;
+		std::unique_ptr<eage::ui::UIView> mUIView;
+		std::unique_ptr<StatusPanel> mStatusPanel;
 		std::unique_ptr<assets::SceneResourceLoader> mResourceLoader;
 		std::unique_ptr<PlayerInputSystem> mPlayerInputSystem;
 		std::unique_ptr<PlayerGameplaySystem> mPlayerGameplaySystem;

@@ -1,0 +1,78 @@
+---
+description: "UI module wrapping RmlUi for scene-owned game HUD. Auto-applied when editing src/core/ui/."
+globs: ["src/core/ui/**/*.cpp", "src/core/ui/**/*.h"]
+alwaysApply: false
+---
+
+# UI Module
+
+## Purpose
+
+Game presentation UI via RmlUi. Lives outside graphics so the render backend stays toolkit-agnostic. Scenes own a `UIView`; the shell owns `UISystem` for app-lifetime initialise/shutdown.
+
+## Layout
+
+```
+src/core/ui/
+  UIValue.h              # Game-facing scalar variant
+  UIDataModel.h/.cpp     # Declare/Set over RmlUi data models (pimpl)
+  UIView.h/.cpp          # Context + document + composite pass (pimpl)
+  UISystem.h/.cpp        # Rml::Initialise/Shutdown, font loading
+  UIRenderPass.h/.cpp    # AbstractRenderPass writing the composite image
+  UIRenderInterface.h/.cpp  # Rml::RenderInterface over Renderer (internal)
+  UISystemInterface.h/.cpp  # Rml::SystemInterface (internal)
+  shaders/ui.vert/.frag
+```
+
+## Includes
+
+| What | Include |
+|---|---|
+| Game / scene API | `#include <ui/UISystem.h>`, `#include <ui/UIView.h>`, `#include <ui/UIDataModel.h>` |
+| RmlUi | Only inside `src/core/ui/*.cpp` and internal headers |
+
+## Key Classes
+
+| Class | Namespace | Responsibility |
+|---|---|---|
+| `UISystem` | `eage::ui` | App-lifetime RmlUi init, shared render/system interfaces, fonts |
+| `UIView` | `eage::ui` | Scene-lifetime context, document, data model, composite pass |
+| `UIDataModel` | `eage::ui` | Backend-agnostic Declare/Set for document bindings |
+
+## Dependencies
+
+```
+game (StatusPanel, MainScene)
+        |
+        v
+   eage::ui  (public headers are Rml-free)
+        |
+        +---> graphics (Renderer, AbstractRenderPass, ManagedImage, bindless)
+        |
+        +---> RmlUi (static lib, only in ui internals)
+```
+
+## Usage
+
+```cpp
+// Declare keys BEFORE LoadDocument
+auto view = std::make_unique<eage::ui::UIView>( ui_system, "main_hud", 640, 360 );
+model.Declare( "kill_count", 0 );
+view->BindImage( "gameplay", scene_pass->GetColorTarget() );
+view->LoadDocument( "./resources/ui/hud.rml" );
+renderer.AddRenderPass( &view->GetRenderPass() );
+```
+
+## DOs
+
+- Keep RmlUi includes out of game-facing headers
+- Register the gameplay image as a ShaderRead pass input via BindImage
+- Tear down UIView before the gameplay SceneRenderPass (composite samples it)
+- Use ASCII-only source (MSVC C4819 on code page 936)
+
+## DON'Ts
+
+- Don't include `<RmlUi/...>` from `game/` or other core modules
+- Don't call `Context::Render()` from Prepare - it needs a live command buffer in Execute
+- Don't use RCSS features that need layers/filters (box-shadow, filter, mask-image, gradients) until those RenderInterface overrides are implemented
+- Don't free BindImage textures in ReleaseTexture - they are scene-owned

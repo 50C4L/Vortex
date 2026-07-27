@@ -19,6 +19,7 @@ namespace vortex
 		glm::vec3 forward = glm::vec3(0.0f, 1.0f, 0.0f);
 		float thrust_acceleration = 500.f;
 		float rotation_speed = 3.f; // degrees per second
+		int kill_count = 0;
 
 		uint64_t thruster_fx_entity = 0; // Entity ID of the thruster effect
 		uint64_t bullet_launcher_entity = 0; // Entity ID of the bullet spawn point (ship tip)
