@@ -76,7 +76,7 @@ MainScene::OnEnter()
 		static_cast<uint32_t>( config::VirtualResolution::HEIGHT ) );
 	mStatusPanel = std::make_unique<StatusPanel>( mECSRegistry, mUIView->GetDataModel() );
 	mUIView->BindImage( "gameplay", mScenePass->GetColorTarget() );
-	if( !mUIView->LoadDocument( "./resources/ui/hud.rml" ) )
+	if( !mUIView->LoadDocument( "./src/game/ui/rml/hud.rml" ) )
 	{
 		LOG_ERROR( "MainScene: failed to load HUD document" );
 	}

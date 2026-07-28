@@ -61,7 +61,7 @@ game (StatusPanel, MainScene)
 auto view = std::make_unique<eage::ui::UIView>( ui_system, "main_hud", 640, 360 );
 model.Declare( "kill_count", 0 );
 view->BindImage( "gameplay", scene_pass->GetColorTarget() );
-view->LoadDocument( "./resources/ui/hud.rml" );
+view->LoadDocument( "./src/game/ui/rml/hud.rml" );
 renderer.AddRenderPass( &view->GetRenderPass() );
 ```
 

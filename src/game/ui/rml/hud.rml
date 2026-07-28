@@ -1,0 +1,12 @@
+<rml>
+	<head>
+		<title>HUD</title>
+		<link type="text/css" href="hud.rcss"/>
+	</head>
+	<body data-model="hud">
+		<img id="viewport" src="gameplay"/>
+		<div id="status">
+			<span>KILLS </span><span>{{ kill_count }}</span>
+		</div>
+	</body>
+</rml>
