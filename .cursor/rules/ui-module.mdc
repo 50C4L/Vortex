@@ -16,10 +16,10 @@ Game presentation UI via RmlUi. Lives outside graphics so the render backend sta
 src/core/ui/
   UIValue.h              # Game-facing scalar variant
   UIDataModel.h/.cpp     # Declare/Set over RmlUi data models (pimpl)
-  UIView.h/.cpp          # Context + document + composite pass (pimpl)
+  UIView.h/.cpp          # Context + document + UI offscreen pass (pimpl)
   UISystem.h/.cpp        # Rml::Initialise/Shutdown, font loading
   FontLoadDelegate.h/.cpp # SceneResourceLoader::Delegate for manifest "fonts"
-  UIRenderPass.h/.cpp    # AbstractRenderPass writing the composite image
+  UIRenderPass.h/.cpp    # AbstractRenderPass writing the UI image
   UIRenderInterface.h/.cpp  # Rml::RenderInterface over Renderer (internal)
   UISystemInterface.h/.cpp  # Rml::SystemInterface (internal)
   shaders/ui.vert/.frag
@@ -38,7 +38,7 @@ src/core/ui/
 |---|---|---|
 | `UISystem` | `eage::ui` | App-lifetime RmlUi init, shared render/system interfaces, fonts |
 | `FontLoadDelegate` | `eage::ui` | Manifest `fonts` section loader; register on `SceneResourceLoader` in the shell |
-| `UIView` | `eage::ui` | Scene-lifetime context, document, data model, composite pass |
+| `UIView` | `eage::ui` | Scene-lifetime context, document, data model, UI offscreen pass |
 | `UIDataModel` | `eage::ui` | Backend-agnostic Declare/Set for document bindings |
 
 ## Dependencies
@@ -60,16 +60,15 @@ game (StatusPanel, MainScene)
 // Declare keys BEFORE LoadDocument
 auto view = std::make_unique<eage::ui::UIView>( ui_system, "main_hud", 640, 360 );
 model.Declare( "kill_count", 0 );
-view->BindImage( "gameplay", scene_pass->GetColorTarget() );
 view->LoadDocument( "./src/game/ui/rml/hud.rml" );
 renderer.AddRenderPass( &view->GetRenderPass() );
+// CompositePass blends SceneRenderPass + UIView output; PresentPass samples that
 ```
 
 ## DOs
 
 - Keep RmlUi includes out of game-facing headers
-- Register the gameplay image as a ShaderRead pass input via BindImage
-- Tear down UIView before the gameplay SceneRenderPass (composite samples it)
+- Tear down CompositePass before UIView and SceneRenderPass (it samples both)
 - Use ASCII-only source (MSVC C4819 on code page 936)
 
 ## DON'Ts
@@ -78,3 +77,4 @@ renderer.AddRenderPass( &view->GetRenderPass() );
 - Don't call `Context::Render()` from Prepare - it needs a live command buffer in Execute
 - Don't use RCSS features that need layers/filters (box-shadow, filter, mask-image, gradients) until those RenderInterface overrides are implemented
 - Don't free BindImage textures in ReleaseTexture - they are scene-owned
+- Don't use BindImage for the world view - CompositePass blends arbitrary base/overlay targets (scene under UI)

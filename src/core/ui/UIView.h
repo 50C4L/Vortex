@@ -17,7 +17,7 @@ namespace eage::ui
 {
 	class UISystem;
 
-	/// Scene-lifetime RmlUi context + document + composite render pass.
+	/// Scene-lifetime RmlUi context + document + UI offscreen render pass.
 	class UIView
 	{
 	public:

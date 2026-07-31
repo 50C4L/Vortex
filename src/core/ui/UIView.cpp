@@ -86,10 +86,6 @@ void
 UIView::BindImage( const std::string& name, eage::graphics::ManagedImage& image )
 {
 	mImpl->system.mRenderInterface->BindExternalImage( name, image );
-	if( mImpl->render_pass )
-	{
-		mImpl->render_pass->SetGameplayInput( &image );
-	}
 }
 
 bool

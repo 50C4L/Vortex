@@ -83,6 +83,9 @@ function( vortex_copy_runtime_assets target_name )
 			${CMAKE_SOURCE_DIR}/src/core/ui/shaders
 			$<TARGET_FILE_DIR:${target_name}>/src/core/ui/shaders
 		COMMAND ${CMAKE_COMMAND} -E copy_directory
+			${CMAKE_SOURCE_DIR}/src/core/graphics/shaders
+			$<TARGET_FILE_DIR:${target_name}>/src/core/graphics/shaders
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
 			${CMAKE_SOURCE_DIR}/src/game/ui/rml
 			$<TARGET_FILE_DIR:${target_name}>/src/game/ui/rml
 	)

@@ -25,6 +25,26 @@ namespace vortex
 			HEIGHT = 360
 		};
 
+		// Play field is the virtual resolution minus the status panel column on the right.
+		// Camera and SceneRenderPass stay at full VirtualResolution; only warp/spawn use these.
+		namespace layout
+		{
+			constexpr float DESIGN_PER_VIRTUAL =
+				static_cast<float>( DesignResolution::WIDTH ) / static_cast<float>( VirtualResolution::WIDTH );
+
+			constexpr float STATUS_PANEL_WIDTH_VIRTUAL = 64.f;
+			constexpr float STATUS_PANEL_WIDTH = STATUS_PANEL_WIDTH_VIRTUAL * DESIGN_PER_VIRTUAL;	// 128
+
+			constexpr float PLAY_FIELD_WIDTH  = static_cast<float>( DesignResolution::WIDTH ) - STATUS_PANEL_WIDTH;	// 1152
+			constexpr float PLAY_FIELD_HEIGHT = static_cast<float>( DesignResolution::HEIGHT );						// 720
+
+			constexpr float PLAY_FIELD_LEFT   = -static_cast<float>( DesignResolution::WIDTH ) * 0.5f;	// -640
+			constexpr float PLAY_FIELD_RIGHT  = PLAY_FIELD_LEFT + PLAY_FIELD_WIDTH;						//  512
+			constexpr float PLAY_FIELD_TOP    = PLAY_FIELD_HEIGHT * 0.5f;
+			constexpr float PLAY_FIELD_BOTTOM = -PLAY_FIELD_TOP;
+			constexpr float PLAY_FIELD_CENTER_X = ( PLAY_FIELD_LEFT + PLAY_FIELD_RIGHT ) * 0.5f;		//  -64
+		}
+
 		struct ScreenResolution
 		{
 			int width = 1920;

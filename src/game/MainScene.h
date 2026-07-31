@@ -13,6 +13,7 @@ namespace eage::graphics
 	class OrthographicCamera;
 	class Renderer;
 	class SceneRenderPass;
+	class CompositePass;
 }
 
 namespace eage::ui
@@ -79,6 +80,7 @@ namespace vortex
 
 		std::unique_ptr<eage::graphics::SceneRenderPass> mScenePass;
 		std::unique_ptr<eage::ui::UIView> mUIView;
+		std::unique_ptr<eage::graphics::CompositePass> mCompositePass;
 		std::unique_ptr<StatusPanel> mStatusPanel;
 		std::unique_ptr<PlayerInputSystem> mPlayerInputSystem;
 		std::unique_ptr<PlayerGameplaySystem> mPlayerGameplaySystem;

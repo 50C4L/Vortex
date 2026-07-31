@@ -4,9 +4,9 @@
 		<link type="text/css" href="hud.rcss"/>
 	</head>
 	<body data-model="hud">
-		<img id="viewport" src="gameplay"/>
 		<div id="status">
-			<span>KILLS </span><span>{{ kill_count }}</span>
+			<div class="label">KILL COUNT: </div>
+			<div class="value">{{ kill_count }}</div>
 		</div>
 	</body>
 </rml>

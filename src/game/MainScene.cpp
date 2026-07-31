@@ -4,6 +4,7 @@
 #include <graphics/Camera.h>
 #include <graphics/Renderer.h>
 #include <graphics/SceneRenderPass.h>
+#include <graphics/CompositePass.h>
 #include <events/InputController.h>
 #include <audio/AudioMixer.h>
 
@@ -75,12 +76,18 @@ MainScene::OnEnter()
 		static_cast<uint32_t>( config::VirtualResolution::WIDTH ),
 		static_cast<uint32_t>( config::VirtualResolution::HEIGHT ) );
 	mStatusPanel = std::make_unique<StatusPanel>( mECSRegistry, mUIView->GetDataModel() );
-	mUIView->BindImage( "gameplay", mScenePass->GetColorTarget() );
 	if( !mUIView->LoadDocument( "./src/game/ui/rml/hud.rml" ) )
 	{
 		LOG_ERROR( "MainScene: failed to load HUD document" );
 	}
 	mRenderer.AddRenderPass( &mUIView->GetRenderPass() );
+
+	mCompositePass = std::make_unique<eage::graphics::CompositePass>(
+		mRenderer,
+		static_cast<uint32_t>( config::VirtualResolution::WIDTH ),
+		static_cast<uint32_t>( config::VirtualResolution::HEIGHT ) );
+	mCompositePass->SetInputs( &mScenePass->GetColorTarget(), mUIView->GetOutput() );
+	mRenderer.AddRenderPass( mCompositePass.get() );
 
 	InitializeGenericSystems();
 
@@ -119,6 +126,12 @@ MainScene::OnExit()
 
 	mRenderer.WaitForIdle();
 
+	if( mCompositePass )
+	{
+		mRenderer.RemoveRenderPass( mCompositePass.get() );
+		mCompositePass.reset();
+	}
+
 	if( mUIView )
 	{
 		mRenderer.RemoveRenderPass( &mUIView->GetRenderPass() );
@@ -137,9 +150,9 @@ MainScene::OnExit()
 eage::graphics::ManagedImage*
 MainScene::GetOutput()
 {
-	if( mUIView )
+	if( mCompositePass )
 	{
-		return mUIView->GetOutput();
+		return mCompositePass->GetColorTarget();
 	}
 	if( mScenePass )
 	{
@@ -254,10 +267,12 @@ MainScene::CreateScreenZoneEntities()
 	eage::ecs::PhysicsComponent physics;
 	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( physics ) );
 
-	// Box collider component
+	// Box collider component -- narrower than the render target so objects wrap
+	// before sliding under the status panel. Offset centres the box on the play field.
 	eage::ecs::BoxColliderComponent box_collider;
-	box_collider.width = static_cast<float>( config::DesignResolution::WIDTH );
-	box_collider.height = static_cast<float>( config::DesignResolution::HEIGHT );
+	box_collider.width = layout::PLAY_FIELD_WIDTH;
+	box_collider.height = layout::PLAY_FIELD_HEIGHT;
+	box_collider.offset = { layout::PLAY_FIELD_CENTER_X, 0.f };
 	box_collider.is_sensor = true;
 	box_collider.category_bits = PHYSX_CAT_SCREEN_ZONE;
 	box_collider.mask_bits = PHYSX_CAT_WARPABLE;
@@ -265,10 +280,10 @@ MainScene::CreateScreenZoneEntities()
 
 	// Gameplay component
 	WarpBoundaryComponent warp_boundary;
-	warp_boundary.left = -static_cast<float>( config::DesignResolution::WIDTH ) * 0.5f;
-	warp_boundary.right = static_cast<float>( config::DesignResolution::WIDTH ) * 0.5f;
-	warp_boundary.top = static_cast<float>( config::DesignResolution::HEIGHT ) * 0.5f;
-	warp_boundary.bottom = -static_cast<float>( config::DesignResolution::HEIGHT ) * 0.5f;
+	warp_boundary.left = layout::PLAY_FIELD_LEFT;
+	warp_boundary.right = layout::PLAY_FIELD_RIGHT;
+	warp_boundary.top = layout::PLAY_FIELD_TOP;
+	warp_boundary.bottom = layout::PLAY_FIELD_BOTTOM;
 	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( warp_boundary ) );
 
 	mWarpSystem->SetScreenEntity( mOnScreenZoneEntity );

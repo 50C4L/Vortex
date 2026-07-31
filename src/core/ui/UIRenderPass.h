@@ -29,8 +29,6 @@ namespace eage::ui
 			uint32_t height );
 		~UIRenderPass() override = default;
 
-		void SetGameplayInput( graphics::ManagedImage* image );
-
 		const graphics::RenderPassDesc& GetDesc() const override;
 		void Prepare( size_t frame_index ) override;
 		void Execute( graphics::CommandBuffer& cmd, const graphics::FrameContext& ctx ) override;

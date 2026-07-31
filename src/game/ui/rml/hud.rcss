@@ -9,19 +9,24 @@ body
 	color: #ffffff;
 }
 
-#viewport
-{
-	position: absolute;
-	left: 0px;
-	top: 0px;
-	width: 640px;
-	height: 360px;
-}
-
 #status
 {
 	position: absolute;
-	right: 8px;
-	top: 8px;
+	right: 0px;
+	top: 0px;
+	width: 64px;
+	height: 360px;
+	background-color: #000000ff;
+	padding: 4px;
 	z-index: 10;
+}
+
+#status .label
+{
+	margin-bottom: 2px;
+}
+
+#status .value
+{
+	font-size: 12px;
 }

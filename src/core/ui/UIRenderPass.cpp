@@ -47,20 +47,7 @@ UIRenderPass::UIRenderPass(
 		vk::ImageAspectFlagBits::eColor ) )
 {
 	mDesc.color_target = mColorTarget.get();
-	mDesc.clear_color = glm::vec4{ 0.f, 0.f, 0.f, 1.f };
-}
-
-void
-UIRenderPass::SetGameplayInput( ManagedImage* image )
-{
-	mDesc.input_images.clear();
-	if( image )
-	{
-		PassInput input;
-		input.image = image;
-		input.access = ImageAccess::ShaderRead;
-		mDesc.input_images.push_back( input );
-	}
+	mDesc.clear_color = glm::vec4{ 0.f, 0.f, 0.f, 0.f };
 }
 
 const RenderPassDesc&

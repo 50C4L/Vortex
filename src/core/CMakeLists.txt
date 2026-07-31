@@ -66,6 +66,8 @@ add_library(eage_core STATIC
 	./graphics/SceneRenderPass.cpp
 	./graphics/PresentPass.h
 	./graphics/PresentPass.cpp
+	./graphics/CompositePass.h
+	./graphics/CompositePass.cpp
 	./graphics/ImageUtilities.h
 	./graphics/ImageUtilities.cpp
 	./graphics/Camera.h
