@@ -18,7 +18,7 @@ add_executable(Vortex
 	./src/game/GameConfig.h
 	./src/game/MainScene.h
 	./src/game/MainScene.cpp
-	./src/game/components/AwardComponent.h
+	./src/game/components/RewardComponent.h
 	./src/game/components/ExperienceComponent.h
 	./src/game/components/GameGenericComponents.h
 	./src/game/components/PlayerComponents.h

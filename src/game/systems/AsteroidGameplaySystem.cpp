@@ -16,7 +16,7 @@
 #include <glm/gtx/quaternion.hpp>
 
 #include "../GameConfig.h"
-#include "../components/AwardComponent.h"
+#include "../components/RewardComponent.h"
 #include "../components/ExperienceComponent.h"
 #include "../components/GameGenericComponents.h"
 #include "../components/HealthComponent.h"
@@ -110,7 +110,7 @@ AsteroidGameplaySystem::PrepareAsteroids( eage::ecs::RenderSystem& render_system
 		// Gameplay components
 		mECSRegistry.AddComponent( asteroid, WarpComponent{} );
 		mECSRegistry.AddComponent( asteroid, HealthComponent{ 1.f, 1.f, 0.f } );
-		mECSRegistry.AddComponent( asteroid, AwardComponent{ 2 } );
+		mECSRegistry.AddComponent( asteroid, RewardComponent{ 2 } );
 
 		// Track all asteroid entities for Update()
 		mAllAsteroids.insert( asteroid );
@@ -237,17 +237,17 @@ AsteroidGameplaySystem::Update()
 
 		if( health.IsDead() )
 		{
-			const int award_xp = mECSRegistry.HasComponent<AwardComponent>( entity )
-				? mECSRegistry.GetComponent<AwardComponent>( entity ).xp
+			const int reward_xp = mECSRegistry.HasComponent<RewardComponent>( entity )
+				? mECSRegistry.GetComponent<RewardComponent>( entity ).xp
 				: 0;
 
 			for( auto [ player_entity, player ] : mECSRegistry.GetComponentMap<PlayerComponent>() )
 			{
 				++player.kill_count;
 
-				if( award_xp > 0 && mECSRegistry.HasComponent<ExperienceComponent>( player_entity ) )
+				if( reward_xp > 0 && mECSRegistry.HasComponent<ExperienceComponent>( player_entity ) )
 				{
-					mECSRegistry.GetComponent<ExperienceComponent>( player_entity ).pending_xp += award_xp;
+					mECSRegistry.GetComponent<ExperienceComponent>( player_entity ).pending_xp += reward_xp;
 				}
 			}
 
