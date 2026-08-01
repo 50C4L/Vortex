@@ -16,6 +16,8 @@
 #include <glm/gtx/quaternion.hpp>
 
 #include "../GameConfig.h"
+#include "../components/AwardComponent.h"
+#include "../components/ExperienceComponent.h"
 #include "../components/GameGenericComponents.h"
 #include "../components/HealthComponent.h"
 #include "../components/PlayerComponents.h"
@@ -108,6 +110,7 @@ AsteroidGameplaySystem::PrepareAsteroids( eage::ecs::RenderSystem& render_system
 		// Gameplay components
 		mECSRegistry.AddComponent( asteroid, WarpComponent{} );
 		mECSRegistry.AddComponent( asteroid, HealthComponent{ 1.f, 1.f, 0.f } );
+		mECSRegistry.AddComponent( asteroid, AwardComponent{ 2 } );
 
 		// Track all asteroid entities for Update()
 		mAllAsteroids.insert( asteroid );
@@ -234,9 +237,18 @@ AsteroidGameplaySystem::Update()
 
 		if( health.IsDead() )
 		{
+			const int award_xp = mECSRegistry.HasComponent<AwardComponent>( entity )
+				? mECSRegistry.GetComponent<AwardComponent>( entity ).xp
+				: 0;
+
 			for( auto [ player_entity, player ] : mECSRegistry.GetComponentMap<PlayerComponent>() )
 			{
 				++player.kill_count;
+
+				if( award_xp > 0 && mECSRegistry.HasComponent<ExperienceComponent>( player_entity ) )
+				{
+					mECSRegistry.GetComponent<ExperienceComponent>( player_entity ).pending_xp += award_xp;
+				}
 			}
 
 			if( mDeathEffectId != eage::ecs::INVALID_ID &&
