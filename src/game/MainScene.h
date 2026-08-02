@@ -38,6 +38,7 @@ namespace vortex
 {
 	class AsteroidGameplaySystem;
 	class BulletSystem;
+	class LevelingSystem;
 	class PlayerInputSystem;
 	class PlayerGameplaySystem;
 	class StatusPanel;
@@ -87,6 +88,7 @@ namespace vortex
 		std::unique_ptr<WarpSystem> mWarpSystem;
 		std::unique_ptr<AsteroidGameplaySystem> mAsteroidGameplaySystem;
 		std::unique_ptr<BulletSystem> mBulletSystem;
+		std::unique_ptr<LevelingSystem> mLevelingSystem;
 
 		std::shared_ptr<eage::graphics::OrthographicCamera> mCamera;
 

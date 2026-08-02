@@ -13,6 +13,7 @@
 
 #include "BulletSystem.h"
 #include "../GameConfig.h"
+#include "../components/ExperienceComponent.h"
 #include "../components/GameGenericComponents.h"
 #include "../components/HealthComponent.h"
 #include "../components/PlayerComponents.h"
@@ -66,6 +67,7 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 	mRegistry.AddComponent( player_entity, std::move( player ) );
 
 	mRegistry.AddComponent( player_entity, HealthComponent{} );
+	mRegistry.AddComponent( player_entity, ExperienceComponent{} );
 
 	mRegistry.AddComponent( player_entity, eage::ecs::TransformComponent{} );
 

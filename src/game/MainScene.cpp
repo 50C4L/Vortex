@@ -21,6 +21,7 @@
 #include "systems/AsteroidGameplaySystem.h"
 #include <graphics/MaterialBuilder.h>
 #include "systems/BulletSystem.h"
+#include "systems/LevelingSystem.h"
 #include "systems/PlayerInputSystem.h"
 #include "systems/PlayerGameplaySystem.h"
 #include "systems/WarpSystem.h"
@@ -168,6 +169,7 @@ MainScene::Update( float dt )
 	mPlayerGameplaySystem->Update( dt );
 	mBulletSystem->Update( dt );
 	mAsteroidGameplaySystem->Update();
+	mLevelingSystem->Update();
 
 	if( mStatusPanel )
 	{
@@ -295,6 +297,7 @@ MainScene::InitializeGenericSystems()
 	mWarpSystem = std::make_unique<WarpSystem>( mECSRegistry, mPhysicsSystem );
 	mBulletSystem = std::make_unique<BulletSystem>( mECSRegistry, mPhysicsSystem, mAnimationSystem );
 	mAsteroidGameplaySystem = std::make_unique<AsteroidGameplaySystem>( mECSRegistry, mPhysicsSystem, mEffectSystem );
+	mLevelingSystem = std::make_unique<LevelingSystem>( mECSRegistry );
 }
 
 void
