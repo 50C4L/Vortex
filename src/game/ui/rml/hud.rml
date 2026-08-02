@@ -5,8 +5,14 @@
 	</head>
 	<body data-model="hud">
 		<div id="status">
-			<div class="label">KILL COUNT: </div>
-			<div class="value">{{ kill_count }}</div>
+			<div id="status-top">
+				<div class="label">LEVEL {{ current_level }}</div>
+				<div class="value">{{ current_xp }} / {{ xp_to_lvl_up }}</div>
+			</div>
+			<div id="status-bottom">
+				<div class="label">KILL COUNT: </div>
+				<div class="value">{{ kill_count }}</div>
+			</div>
 		</div>
 	</body>
 </rml>
