@@ -16,6 +16,7 @@ body
 	top: 0px;
 	width: 64px;
 	height: 360px;
+	box-sizing: border-box;
 	background-color: #000000ff;
 	padding: 4px;
 	z-index: 10;
@@ -29,6 +30,12 @@ body
 #status .value
 {
 	font-size: 12px;
+}
+
+#status-top .label,
+#status-top .value
+{
+	display: block;
 }
 
 #status-bottom
