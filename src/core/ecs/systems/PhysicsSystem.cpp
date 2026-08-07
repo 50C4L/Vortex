@@ -44,7 +44,13 @@ PhysicsSystem::Update( float dt )
 			CreateCollisionBodyFromComponents( entity );
 		}
 
-		// Process physics events (always, even when disabled, so wake events can re-enable the body)
+		// Inactive bodies with no pending work can be skipped entirely
+		if( !physics.active && physics.pending_events.empty() )
+		{
+			continue;
+		}
+
+		// Process physics events (always when pending, so SetActive can re-enable the body)
 		if( physics.body_id != INVALID_ID )
 		{
 			auto body = mBodyManager.Get( physics.body_id );
@@ -108,18 +114,19 @@ PhysicsSystem::Update( float dt )
 							mPhysicsEngine->SetLinearVelocity( *body, physics_velocity );
 							break;
 						}
-						case PhysicsComponent::EventType::SetSleep:
+						case PhysicsComponent::EventType::SetActive:
 							if( event.scalar_data > 0.5f )
 							{
-								physics.enabled = false;
-								mPhysicsEngine->SetAwake( *body, false );
-								mPhysicsEngine->SetLinearVelocity( *body, glm::vec2( 0.0f, 0.0f ) );
-								mPhysicsEngine->SetAngularVelocity( *body, 0.0f );
+								physics.active = true;
+								mPhysicsEngine->SetBodyEnabled( *body, true );
 							}
 							else
 							{
-								physics.enabled = true;
-								mPhysicsEngine->SetAwake( *body, true );
+								// Zero velocity while still enabled (disabled bodies have no BodyState)
+								mPhysicsEngine->SetLinearVelocity( *body, glm::vec2( 0.0f, 0.0f ) );
+								mPhysicsEngine->SetAngularVelocity( *body, 0.0f );
+								physics.active = false;
+								mPhysicsEngine->SetBodyEnabled( *body, false );
 							}
 							break;
 						default:
@@ -135,9 +142,9 @@ PhysicsSystem::Update( float dt )
 			}
 		}
 
-		if( !physics.enabled )
+		if( !physics.active )
 		{
-			continue; // Body is sleeping, skip transform sync
+			continue; // Body is inactive, skip transform sync
 		}
 
 		SyncTransformFromBodies( entity );

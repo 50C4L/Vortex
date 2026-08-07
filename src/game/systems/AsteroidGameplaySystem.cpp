@@ -96,7 +96,7 @@ AsteroidGameplaySystem::PrepareAsteroids( eage::ecs::RenderSystem& render_system
 		physics_cmp.body_type = eage::ecs::PhysicsComponent::BodyType::DYNAMIC;
 		physics_cmp.sync_transform_from_body = true;
 		physics_cmp.max_linear_velocity = 150.0f;
-		physics_cmp.QueueSleep( true ); // Start asleep
+		physics_cmp.QueueSetActive( false ); // Start inactive
 		mECSRegistry.AddComponent( asteroid, std::move( physics_cmp ) );
 
 		eage::ecs::CircleColliderComponent collider;
@@ -169,8 +169,9 @@ AsteroidGameplaySystem::SpawnAsteroid( int count )
 		}
 		transform.SetPosition( glm::vec3( x_pos, y_pos, 0.0f ) );
 
-		// Physics
+		// Physics -- enable before writing velocity (disabled bodies reject velocity writes)
 		auto& physics_cmp = mECSRegistry.GetComponent<eage::ecs::PhysicsComponent>( asteroid );
+		physics_cmp.QueueSetActive( true );
 		physics_cmp.QueueSetPosition( glm::vec2( x_pos, y_pos ) );
 		// Set a constant velocity towards a random point on screen
 		glm::vec2 target_point;
@@ -182,8 +183,6 @@ AsteroidGameplaySystem::SpawnAsteroid( int count )
 		// Random angular velocity
 		float angular_speed = (rand() % 20) - 10.f; // Random angular speed between -10 and 10
 		physics_cmp.QueueSetAngularVelocity( angular_speed );
-		// Wake up physics body 
-		physics_cmp.QueueSleep( false ); // Wake up
 
 		// Reset health for reuse
 		auto& health = mECSRegistry.GetComponent<HealthComponent>( asteroid );
@@ -211,7 +210,7 @@ AsteroidGameplaySystem::DespawnAsteroid( uint64_t asteroid_entity )
 	auto& physics_cmp = mECSRegistry.GetComponent<eage::ecs::PhysicsComponent>( asteroid_entity );
 	// Stop all movement
 	physics_cmp.QueueSetPosition( mScreenBottomRight + glm::vec2( INACTIVE_OFFSET, INACTIVE_OFFSET * -1.f ) );
-	physics_cmp.QueueSleep( true );
+	physics_cmp.QueueSetActive( false );
 
 	mAvailableAsteroids.push_back( asteroid_entity );
 }

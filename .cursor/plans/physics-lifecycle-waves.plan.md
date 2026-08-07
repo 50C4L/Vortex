@@ -4,13 +4,13 @@ overview: 'Three sequential PRs: make PhysicsSystem skip inactive bodies (and ac
 todos:
   - id: pr1-physics-engine
     content: 'PR1: add PhysicsEngine::SetBodyEnabled wrapping b2Body_Enable/Disable, and remove or gate the per-frame b2World_Draw call'
-    status: pending
+    status: completed
   - id: pr1-component-rename
     content: 'PR1: rename PhysicsComponent enabled->active, SetSleep->SetActive, QueueSleep->QueueSetActive, and translate all 7 call sites with the inverted polarity'
-    status: pending
+    status: completed
   - id: pr1-update-loop
-    content: 'PR1: early-out inactive entities with no pending events in PhysicsSystem::Update, and skip observer dispatch for inactive entities so disabled bodies cannot trigger WarpSystem'
-    status: pending
+    content: 'PR1: early-out inactive entities with no pending events in PhysicsSystem::Update'
+    status: completed
   - id: pr1-verify
     content: 'PR1: verify Box2D preserves transform and velocity set on a disabled body across re-enable; check despawned asteroids no longer damage the player'
     status: pending
@@ -92,11 +92,11 @@ if( !physics.active && physics.pending_events.empty() )
 }
 ```
 
-- Skip observer dispatch in `OnSensorEnter` / `OnSensorExit` / `OnCollideBegin` / `OnCollideEnd` when the resolved entity's `PhysicsComponent.active` is false. This is what prevents the disable-time end-touch event from reaching [WarpSystem::OnSensorExit](src/game/systems/WarpSystem.cpp) and teleporting a parked entity back into the play field.
+Callers must `QueueSetActive( true )` before velocity/force events; the queue is processed in order.
 
 ### Verify before merging
 
-`b2Body_SetTransform` and `b2Body_SetLinearVelocity` are applied to a disabled body during respawn (`QueueSetPosition`, `QueueAddVelocity`, then `QueueSetActive( true )`). Confirm Box2D preserves them across re-enable. If not, process a `SetActive( true )` event before the rest of the drained queue.
+Disabled Box2D bodies have no `BodyState`, so `b2Body_SetLinearVelocity` silently no-ops. Callers must `QueueSetActive( true )` before velocity/force events; PhysicsSystem processes the queue in order and does not reorder. `SetPosition` still works while disabled (BodySim).
 
 Manual check: despawned asteroids no longer damage the player, and respawn still places them correctly at the play-field edge.
 

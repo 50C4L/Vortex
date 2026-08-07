@@ -99,6 +99,7 @@ namespace eage::physics
 		void SetRotation( PhysicsBody& body, float angle_rad );
 		glm::vec2 GetLinearVelocity( const PhysicsBody& body );
 		void SetAwake( PhysicsBody& body, bool awake );
+		void SetBodyEnabled( PhysicsBody& body, bool enabled );
 
 		///
 		/// Set the event listener for physics events
@@ -115,7 +116,6 @@ namespace eage::physics
 		void ProcessContactEvents();
 
 		b2WorldId mWorldId;
-		b2DebugDraw mDebugDraw;
 		float mAccumulator = 0.f;
 
 		PhysicsEventListener* mEventListener = nullptr;

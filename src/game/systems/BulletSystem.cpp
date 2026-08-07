@@ -99,7 +99,7 @@ BulletSystem::PreparePool( eage::ecs::RenderSystem& render_system, const BulletP
 		physics.body_type = eage::ecs::PhysicsComponent::BodyType::DYNAMIC;
 		physics.sync_transform_from_body = true;
 		physics.is_bullet = true;
-		physics.QueueSleep( true );
+		physics.QueueSetActive( false );
 		mRegistry.AddComponent( entity, std::move( physics ) );
 
 		eage::ecs::CircleColliderComponent collider;
@@ -172,10 +172,10 @@ BulletSystem::Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 directio
 	transform.SetRotation( glm::angleAxis( rotation_angle, glm::vec3( 0.f, 0.f, 1.f ) ) );
 
 	auto& physics = mRegistry.GetComponent<eage::ecs::PhysicsComponent>( entity );
+	physics.QueueSetActive( true );
 	physics.QueueSetPosition( position );
 	physics.QueueSetRotation( rotation_angle );
 	physics.QueueSetVelocity( direction * speed );
-	physics.QueueSleep( false );
 	return true;
 }
 
@@ -260,7 +260,7 @@ BulletSystem::BeginHitReaction( uint64_t entity )
 
 	auto& physics = mRegistry.GetComponent<eage::ecs::PhysicsComponent>( entity );
 	physics.QueueSetVelocity( glm::vec2( 0.f, 0.f ) );
-	physics.QueueSleep( true );
+	physics.QueueSetActive( false );
 
 	if( mAnimationSystem.HasAnimation( entity ) )
 	{
@@ -286,7 +286,7 @@ BulletSystem::DespawnBullet( uint64_t entity )
 	auto& physics = mRegistry.GetComponent<eage::ecs::PhysicsComponent>( entity );
 	glm::vec2 inactive_pos = mScreenBottomRight + glm::vec2( INACTIVE_OFFSET, -INACTIVE_OFFSET );
 	physics.QueueSetPosition( inactive_pos );
-	physics.QueueSleep( true );
+	physics.QueueSetActive( false );
 
 	if( mAnimationSystem.HasAnimation( entity ) )
 	{

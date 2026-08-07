@@ -27,8 +27,8 @@ namespace eage::ecs
 		// If true, enables continuous collision detection (CCD) to prevent tunneling at high speed.
 		bool is_bullet = false;
 
-		// Do not set this directly, use QueueSleep() instead
-		bool enabled = true;
+		// Do not set this directly, use QueueSetActive() instead
+		bool active = true;
 
 		// Physics Events
 		enum class EventType
@@ -42,7 +42,7 @@ namespace eage::ecs
 			SetPosition,
 			SetRotation,
 			AddVelocity,
-			SetSleep
+			SetActive
 		};
 
 		struct PhysicsEvent
@@ -101,9 +101,11 @@ namespace eage::ecs
 			pending_events.push_back({ EventType::AddVelocity, velocity_change, 0.0f, true });
 		}
 
-		void QueueSleep( bool is_sleep )
+		void QueueSetActive( bool active )
 		{
-			pending_events.push_back({ EventType::SetSleep, glm::vec2(0.0f), is_sleep ? 1.0f : 0.0f, false });
+			// Caller must QueueSetActive( true ) before velocity/force events; disabled
+			// Box2D bodies have no BodyState so those writes silently no-op.
+			pending_events.push_back({ EventType::SetActive, glm::vec2(0.0f), active ? 1.0f : 0.0f, false });
 		}
 
 		void ClearEvents()

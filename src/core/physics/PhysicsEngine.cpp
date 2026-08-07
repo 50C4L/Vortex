@@ -52,41 +52,6 @@ PhysicsEngine::CreateWorld( glm::vec2 gravity )
 	mWorldId = b2CreateWorld( &world_def );
 
 	LOG() << "Physics world created with gravity: (" << gravity.x << ", " << gravity.y << ")";
-
-	mDebugDraw = {};
-	mDebugDraw.drawShapes = true;
-	mDebugDraw.DrawPolygon =
-		[]( const b2Vec2* vertices, int vertexCount, b2HexColor color, void* context )
-		{
-			// LOG() << "Physic shape polygon debug info: ";
-			// for( int i = 0; i < vertexCount; ++i )
-			// {
-			// 	LOG() << "  Vertex " << i << ": (" << vertices[i].x << ", " << vertices[i].y << ")";
-			// }
-		};
-	mDebugDraw.DrawSolidPolygon =
-		[]( b2Transform transform, const b2Vec2* vertices, int vertexCount, float radius, b2HexColor color, void* context )
-		{
-			// LOG() << "Physic shape solid polygon debug info at position: (" 
-			// 	  << transform.p.x << ", " << transform.p.y << ") rotation: " 
-			// 	  << b2Rot_GetAngle(transform.q) << " rad";
-			// for( int i = 0; i < vertexCount; ++i )
-			// {
-			// 	LOG() << "  Vertex " << i << ": (" << vertices[i].x << ", " << vertices[i].y << ")";
-			// }
-		};
-	mDebugDraw.DrawCircle =
-		[]( b2Vec2 center, float radius, b2HexColor color, void* context )
-		{
-			// LOG() << "Physic shape circle debug info: Center(" << center.x << ", " << center.y << "), Radius: " << radius;
-		};
-	mDebugDraw.DrawSolidCircle =
-		[]( b2Transform transform, float radius, b2HexColor color, void* context )
-		{
-			// LOG() << "Physic shape solid circle debug info at position: (" 
-			// 	  << transform.p.x << ", " << transform.p.y << ") rotation: " 
-			// 	  << b2Rot_GetAngle(transform.q) << " rad, Radius: " << radius;
-		};
 }
 
 std::unique_ptr<PhysicsBody>
@@ -180,8 +145,6 @@ PhysicsEngine::Update( float dt )
 
 	ProcessSensorEvents();
 	ProcessContactEvents();
-
-	b2World_Draw( mWorldId, &mDebugDraw );
 }
 
 PhysicsEngine::PhysicsBodyTransform
@@ -285,6 +248,19 @@ void
 PhysicsEngine::SetAwake( PhysicsBody& body, bool awake )
 {
 	b2Body_SetAwake( body.mBodyId, awake );
+}
+
+void
+PhysicsEngine::SetBodyEnabled( PhysicsBody& body, bool enabled )
+{
+	if( enabled )
+	{
+		b2Body_Enable( body.mBodyId );
+	}
+	else
+	{
+		b2Body_Disable( body.mBodyId );
+	}
 }
 
 void
