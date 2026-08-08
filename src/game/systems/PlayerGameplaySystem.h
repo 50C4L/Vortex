@@ -15,6 +15,7 @@ namespace eage::ecs
 {
 	class AudioSystem;
 	class RenderSystem;
+	class SceneGraphSystem;
 	struct PhysicsComponent;
 	struct TransformComponent;
 }
@@ -32,7 +33,8 @@ namespace vortex
 	{
 	public:
 		PlayerGameplaySystem( eage::ecs::ECSRegistry& registry, BulletSystem& bullet_system,
-							  eage::ecs::AudioSystem& audio_system );
+							  eage::ecs::AudioSystem& audio_system,
+							  eage::ecs::SceneGraphSystem& scene_graph_system );
 		~PlayerGameplaySystem();
 
 		void PreparePlayer( eage::ecs::RenderSystem& render_system, uint64_t root_entity,
@@ -53,6 +55,7 @@ namespace vortex
 		eage::ecs::ECSRegistry& mRegistry;
 		BulletSystem& mBulletSystem;
 		eage::ecs::AudioSystem& mAudioSystem;
+		eage::ecs::SceneGraphSystem& mSceneGraphSystem;
 
 		uint32_t mPlayerMaterialId = 0;
 		uint32_t mPlayerBulletMaterialId = 0;

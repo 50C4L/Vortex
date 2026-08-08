@@ -16,6 +16,7 @@ namespace eage::ecs
 {
 	class AnimationSystem;
 	class RenderSystem;
+	class SceneGraphSystem;
 
 	///
 	/// EffectSystem: Pools fire-and-forget visual FX entities.
@@ -35,7 +36,8 @@ namespace eage::ecs
 			int pool_size = 16;
 		};
 
-		EffectSystem( ECSRegistry& registry, AnimationSystem& animation_system );
+		EffectSystem( ECSRegistry& registry, AnimationSystem& animation_system,
+					  SceneGraphSystem& scene_graph_system );
 		~EffectSystem();
 
 		/// Pre-create a pool of FX entities. Returns an effect ResourceId.
@@ -63,6 +65,7 @@ namespace eage::ecs
 
 		ECSRegistry& mRegistry;
 		AnimationSystem& mAnimationSystem;
+		SceneGraphSystem& mSceneGraphSystem;
 		std::unordered_map<ResourceId, EffectDefinition> mEffects;
 		ResourceId mNextEffectId = 1;
 	};

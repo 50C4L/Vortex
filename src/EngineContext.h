@@ -19,6 +19,7 @@ namespace eage::ecs
 	class EffectSystem;
 	class PhysicsSystem;
 	class RenderSystem;
+	class SceneGraphSystem;
 }
 
 namespace assets
@@ -43,6 +44,7 @@ namespace vortex
 		eage::ecs::AudioSystem&   audio_system;
 		eage::ecs::AnimationSystem& animation_system;
 		eage::ecs::EffectSystem&  effect_system;
+		eage::ecs::SceneGraphSystem& scene_graph_system;
 		assets::SceneResourceLoader& resource_loader;
 		events::InputController&  input;
 	};

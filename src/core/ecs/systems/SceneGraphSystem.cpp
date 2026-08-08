@@ -1,6 +1,5 @@
 #include "SceneGraphSystem.h"
 
-#include <ecs/ECS.h>
 #include <ecs/components/Basics.h>
 
 using namespace eage::ecs;
@@ -15,10 +14,75 @@ SceneGraphSystem::~SceneGraphSystem()
 }
 
 void
-SceneGraphSystem::SetSceneRoot( uint64_t entity )
+SceneGraphSystem::SetSceneRoot( Entity entity )
 {
-	// @todo SceneGraphSystem should create the root entity itself, and provide a getter
 	mSceneRootEntity = entity;
+}
+
+void
+SceneGraphSystem::AddNodeToParent( Entity entity, Entity parent )
+{
+	if( entity == 0 || parent == 0 || entity == parent )
+	{
+		return;
+	}
+
+	if( !mECSRegistry.HasComponent<SceneGraphComponent>( entity ) )
+	{
+		mECSRegistry.AddComponent( entity, SceneGraphComponent{} );
+	}
+
+	if( !mECSRegistry.HasComponent<SceneGraphComponent>( parent ) )
+	{
+		mECSRegistry.AddComponent( parent, SceneGraphComponent{} );
+	}
+
+	auto& node = mECSRegistry.GetComponent<SceneGraphComponent>( entity );
+	if( node.parent_entity == parent )
+	{
+		return;
+	}
+
+	if( node.parent_entity != 0 )
+	{
+		RemoveNodeFromParent( entity );
+	}
+
+	node.parent_entity = parent;
+	auto& parent_node = mECSRegistry.GetComponent<SceneGraphComponent>( parent );
+	parent_node.children_entities.push_back( entity );
+}
+
+void
+SceneGraphSystem::RemoveNodeFromParent( Entity entity )
+{
+	if( !mECSRegistry.HasComponent<SceneGraphComponent>( entity ) )
+	{
+		return;
+	}
+
+	auto& node = mECSRegistry.GetComponent<SceneGraphComponent>( entity );
+	if( node.parent_entity == 0 )
+	{
+		return;
+	}
+
+	const Entity parent = node.parent_entity;
+	if( mECSRegistry.HasComponent<SceneGraphComponent>( parent ) )
+	{
+		auto& children = mECSRegistry.GetComponent<SceneGraphComponent>( parent ).children_entities;
+		for( size_t i = 0; i < children.size(); ++i )
+		{
+			if( children[i] == entity )
+			{
+				children[i] = children.back();
+				children.pop_back();
+				break;
+			}
+		}
+	}
+
+	node.parent_entity = 0;
 }
 
 void
@@ -37,15 +101,15 @@ SceneGraphSystem::Update()
 }
 
 void
-SceneGraphSystem::UpdateChildrenRecursive( uint64_t entity, const glm::mat4& parent_world_matrix )
+SceneGraphSystem::UpdateChildrenRecursive( Entity entity, const glm::mat4& parent_world_matrix )
 {
-	if( !mECSRegistry.HasComponent<TransformComponent>( entity )  )
+	if( !mECSRegistry.HasComponent<TransformComponent>( entity ) )
 	{
-		return; // Entity must have both Transform and Relationship components
+		return; // Entity must have a Transform component
 	}
 
 	auto& transform = mECSRegistry.GetComponent<TransformComponent>( entity );
-	
+
 	// Update world matrix
 	glm::mat4 local_matrix = transform.GetLocalMatrix();
 	glm::mat4 world_matrix = parent_world_matrix * local_matrix;
@@ -60,7 +124,7 @@ SceneGraphSystem::UpdateChildrenRecursive( uint64_t entity, const glm::mat4& par
 	// Recursively update children
 	for( auto& child : relationship.children_entities )
 	{
-		if( mECSRegistry.HasComponent<TransformComponent>( entity ) )
+		if( mECSRegistry.HasComponent<TransformComponent>( child ) )
 		{
 			UpdateChildrenRecursive( child, world_matrix );
 		}

@@ -27,6 +27,7 @@ namespace eage::ecs
 	class AnimationSystem;
 	class AudioSystem;
 	class EffectSystem;
+	class SceneGraphSystem;
 }
 
 namespace assets
@@ -77,6 +78,7 @@ namespace vortex
 		eage::ecs::EffectSystem& mEffectSystem;
 		eage::ecs::RenderSystem& mRenderSystem;
 		eage::ecs::PhysicsSystem& mPhysicsSystem;
+		eage::ecs::SceneGraphSystem& mSceneGraphSystem;
 		assets::SceneResourceLoader& mResourceLoader;
 
 		std::unique_ptr<eage::graphics::SceneRenderPass> mScenePass;

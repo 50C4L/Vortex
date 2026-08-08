@@ -18,6 +18,7 @@ namespace eage::ecs
 	class ECSRegistry;
 	class EffectSystem;
 	class RenderSystem;
+	class SceneGraphSystem;
 }
 
 namespace vortex
@@ -27,7 +28,8 @@ namespace vortex
 	public:
 		AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry,
 								eage::ecs::PhysicsSystem& physics_system,
-								eage::ecs::EffectSystem& effect_system );
+								eage::ecs::EffectSystem& effect_system,
+								eage::ecs::SceneGraphSystem& scene_graph_system );
 		~AsteroidGameplaySystem();
 
 		///
@@ -53,6 +55,7 @@ namespace vortex
 		eage::ecs::ECSRegistry& mECSRegistry;
 		eage::ecs::PhysicsSystem& mPhysicsSystem;
 		eage::ecs::EffectSystem& mEffectSystem;
+		eage::ecs::SceneGraphSystem& mSceneGraphSystem;
 
 		eage::ecs::ResourceId mAsteroidMaterialId = 0;
 		eage::ecs::ResourceId mAsteroidMeshId = 0;

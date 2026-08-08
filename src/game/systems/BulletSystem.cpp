@@ -10,6 +10,7 @@
 #include <ecs/components/Render.h>
 #include <ecs/systems/AnimationSystem.h>
 #include <ecs/systems/RenderSystem.h>
+#include <ecs/systems/SceneGraphSystem.h>
 #include <utility/Logger.h>
 
 #include <glm/gtx/quaternion.hpp>
@@ -32,10 +33,12 @@ namespace
 }
 
 BulletSystem::BulletSystem( eage::ecs::ECSRegistry& registry, eage::ecs::PhysicsSystem& physics_system,
-							eage::ecs::AnimationSystem& animation_system )
+							eage::ecs::AnimationSystem& animation_system,
+							eage::ecs::SceneGraphSystem& scene_graph_system )
 	: mRegistry( registry )
 	, mPhysicsSystem( physics_system )
 	, mAnimationSystem( animation_system )
+	, mSceneGraphSystem( scene_graph_system )
 {
 	mPhysicsSystem.Subscribe( this );
 
@@ -85,11 +88,7 @@ BulletSystem::PreparePool( eage::ecs::RenderSystem& render_system, const BulletP
 		pool.push_back( entity );
 		mEntityToPool[entity] = pool_id;
 
-		auto& root = mRegistry.GetComponent<eage::ecs::SceneGraphComponent>( root_entity );
-		root.children_entities.push_back( entity );
-		eage::ecs::SceneGraphComponent relationship;
-		relationship.parent_entity = root_entity;
-		mRegistry.AddComponent( entity, std::move( relationship ) );
+		mSceneGraphSystem.AddNodeToParent( entity, root_entity );
 
 		eage::ecs::TransformComponent transform;
 		transform.SetPosition( glm::vec3( inactive_pos, 0.f ) );

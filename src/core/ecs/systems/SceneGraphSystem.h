@@ -4,10 +4,10 @@
 #include <cstdint>
 #include <glm/glm.hpp>
 
+#include <ecs/ECS.h>
+
 namespace eage::ecs
 {
-	class ECSRegistry;
-
 	///
 	/// SceneGraphSystem: Updates world transforms based on parent-child relationships
 	///
@@ -20,15 +20,27 @@ namespace eage::ecs
 		///
 		/// Set the root entity of the scene graph
 		///
-		void SetSceneRoot( uint64_t entity );
+		void SetSceneRoot( Entity entity );
+
+		///
+		/// Link entity under parent. Creates SceneGraphComponent on either side if missing.
+		/// Reparents if entity already has a different parent. No-op if already under parent.
+		///
+		void AddNodeToParent( Entity entity, Entity parent );
+
+		///
+		/// Unlink entity from its parent. Clears parent_entity; does not touch children.
+		/// Nodes detached from the root tree are simply skipped by Update().
+		///
+		void RemoveNodeFromParent( Entity entity );
 
 		void Update();
 
 	private:
-		void UpdateChildrenRecursive( uint64_t entity, const glm::mat4& parent_world_matrix );
+		void UpdateChildrenRecursive( Entity entity, const glm::mat4& parent_world_matrix );
 
 		ECSRegistry& mECSRegistry;
-		uint64_t mSceneRootEntity = 0;
+		Entity mSceneRootEntity = 0;
 	};
 }
 

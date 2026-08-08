@@ -46,13 +46,8 @@ VortexGame::VortexGame()
 }
 
 void
-VortexGame::OnSceneChanged( uint64_t scene_root )
+VortexGame::OnSceneChanged()
 {
-	if( mSceneGraphSystem )
-	{
-		mSceneGraphSystem->SetSceneRoot( scene_root );
-	}
-
 	BindSceneOutput( mSceneController->GetCurrentScene() );
 }
 
@@ -89,9 +84,9 @@ VortexGame::~VortexGame()
 
 	mPerformanceTracker.reset();
 	mRenderSystem.reset();
-	mSceneGraphSystem.reset();
 	mPhysicsSystem.reset();
 	mEffectSystem.reset();
+	mSceneGraphSystem.reset();
 	mAnimationSystem.reset();
 	mAudioSystem.reset();
 	mSceneController.reset();
@@ -229,11 +224,11 @@ VortexGame::Init()
 	// Initialize AnimationSystem
 	mAnimationSystem = std::make_unique<eage::ecs::AnimationSystem>( *mECSRegistry );
 
-	// Initialize EffectSystem
-	mEffectSystem = std::make_unique<eage::ecs::EffectSystem>( *mECSRegistry, *mAnimationSystem );
-
 	// Initialize SceneGraphSystem
 	mSceneGraphSystem = std::make_unique<eage::ecs::SceneGraphSystem>( *mECSRegistry );
+
+	// Initialize EffectSystem
+	mEffectSystem = std::make_unique<eage::ecs::EffectSystem>( *mECSRegistry, *mAnimationSystem, *mSceneGraphSystem );
 
 	// Initialize RenderSystem (scene pass retargeted on scene enter)
 	mRenderSystem = std::make_unique<eage::ecs::RenderSystem>( *mRenderer, *mECSRegistry );
@@ -271,6 +266,7 @@ VortexGame::Init()
 			*mAudioSystem,
 			*mAnimationSystem,
 			*mEffectSystem,
+			*mSceneGraphSystem,
 			*mResourceLoader,
 			*mInputController } ) );
 	mSceneController->ChangeScene( static_cast<int>( config::SceneID::MAIN_SCENE ) );

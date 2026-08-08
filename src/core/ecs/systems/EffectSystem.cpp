@@ -8,6 +8,7 @@
 #include <ecs/components/Render.h>
 #include <ecs/systems/AnimationSystem.h>
 #include <ecs/systems/RenderSystem.h>
+#include <ecs/systems/SceneGraphSystem.h>
 #include <utility/Logger.h>
 
 using namespace eage::ecs;
@@ -19,9 +20,11 @@ namespace
 	constexpr const char* EFFECT_SFX_SOURCE = "sfx";
 }
 
-EffectSystem::EffectSystem( ECSRegistry& registry, AnimationSystem& animation_system )
+EffectSystem::EffectSystem( ECSRegistry& registry, AnimationSystem& animation_system,
+							SceneGraphSystem& scene_graph_system )
 	: mRegistry( registry )
 	, mAnimationSystem( animation_system )
+	, mSceneGraphSystem( scene_graph_system )
 {
 }
 
@@ -82,12 +85,7 @@ EffectSystem::Create( RenderSystem& render_system, const EffectConfig& config, E
 		definition.available.push_back( entity );
 		definition.all.insert( entity );
 
-		auto& root = mRegistry.GetComponent<SceneGraphComponent>( root_entity );
-		root.children_entities.push_back( entity );
-
-		SceneGraphComponent relationship;
-		relationship.parent_entity = root_entity;
-		mRegistry.AddComponent( entity, std::move( relationship ) );
+		mSceneGraphSystem.AddNodeToParent( entity, root_entity );
 
 		TransformComponent transform;
 		transform.SetPosition( glm::vec3( inactive_pos, 0.f ) );

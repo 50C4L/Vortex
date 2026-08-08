@@ -17,6 +17,7 @@ namespace eage::ecs
 	class AnimationSystem;
 	class ECSRegistry;
 	class RenderSystem;
+	class SceneGraphSystem;
 }
 
 namespace vortex
@@ -47,7 +48,8 @@ namespace vortex
 	{
 	public:
 		BulletSystem( eage::ecs::ECSRegistry& registry, eage::ecs::PhysicsSystem& physics_system,
-					  eage::ecs::AnimationSystem& animation_system );
+					  eage::ecs::AnimationSystem& animation_system,
+					  eage::ecs::SceneGraphSystem& scene_graph_system );
 		~BulletSystem();
 
 		///
@@ -81,6 +83,7 @@ namespace vortex
 		eage::ecs::ECSRegistry& mRegistry;
 		eage::ecs::PhysicsSystem& mPhysicsSystem;
 		eage::ecs::AnimationSystem& mAnimationSystem;
+		eage::ecs::SceneGraphSystem& mSceneGraphSystem;
 
 		BulletPoolId mNextPoolId = 1;
 		std::unordered_map<BulletPoolId, std::deque<uint64_t>> mPools;

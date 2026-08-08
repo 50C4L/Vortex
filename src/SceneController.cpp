@@ -41,7 +41,7 @@ SceneController::ChangeScene( int id )
 		mCurrentSceneId = id;
 
 		mCurrentScene->OnEnter();
-		NotifyObservers( mCurrentScene->GetSceneRoot() );
+		NotifyObservers();
 	}
 }
 
@@ -97,10 +97,10 @@ SceneController::Unsubscribe( Observer* observer )
 }
 
 void
-SceneController::NotifyObservers( uint64_t scene_root )
+SceneController::NotifyObservers()
 {
 	for( auto* observer : mObservers )
 	{
-		observer->OnSceneChanged( scene_root );
+		observer->OnSceneChanged();
 	}
 }

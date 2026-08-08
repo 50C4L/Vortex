@@ -7,6 +7,7 @@
 #include <ecs/components/Render.h>
 #include <ecs/systems/EffectSystem.h>
 #include <ecs/systems/RenderSystem.h>
+#include <ecs/systems/SceneGraphSystem.h>
 #include <graphics/MaterialBuilder.h>
 #include <utility/Logger.h>
 
@@ -33,10 +34,12 @@ namespace
 
 AsteroidGameplaySystem::AsteroidGameplaySystem( eage::ecs::ECSRegistry& registry,
 												eage::ecs::PhysicsSystem& physics_system,
-												eage::ecs::EffectSystem& effect_system )
+												eage::ecs::EffectSystem& effect_system,
+												eage::ecs::SceneGraphSystem& scene_graph_system )
 	: mECSRegistry( registry )
 	, mPhysicsSystem( physics_system )
 	, mEffectSystem( effect_system )
+	, mSceneGraphSystem( scene_graph_system )
 {
 	mPhysicsSystem.Subscribe( this );
 	mScreenTopLeft = glm::vec2( config::layout::PLAY_FIELD_LEFT, config::layout::PLAY_FIELD_TOP );
@@ -79,13 +82,8 @@ AsteroidGameplaySystem::PrepareAsteroids( eage::ecs::RenderSystem& render_system
 		auto asteroid = mECSRegistry.CreateEntity();
 		mAvailableAsteroids.push_back( asteroid );
 
-		// Set parent-child relationship with scene root
-		auto& root = mECSRegistry.GetComponent<eage::ecs::SceneGraphComponent>( root_entity );
-		root.children_entities.push_back( asteroid );
-		eage::ecs::SceneGraphComponent relationship;
-		relationship.parent_entity = root_entity;
-		mECSRegistry.AddComponent( asteroid, std::move( relationship ) );
-		
+		mSceneGraphSystem.AddNodeToParent( asteroid, root_entity );
+
 		// Transform component, initial position off-screen right-bottom corner + offset
 		eage::ecs::TransformComponent transform;
 		transform.SetPosition( glm::vec3( mScreenBottomRight + glm::vec2( INACTIVE_OFFSET, INACTIVE_OFFSET * -1.f ), 0.0f ) );

@@ -12,6 +12,7 @@
 #include <ecs/systems/AudioSystem.h>
 #include <ecs/systems/EffectSystem.h>
 #include <ecs/systems/RenderSystem.h>
+#include <ecs/systems/SceneGraphSystem.h>
 #include <assets/SceneResourceLoader.h>
 #include <ecs/components/Basics.h>
 #include <ecs/components/Physics.h>
@@ -45,6 +46,7 @@ MainScene::MainScene( const EngineContext& ctx )
 	, mEffectSystem( ctx.effect_system )
 	, mRenderSystem( ctx.render_system )
 	, mPhysicsSystem( ctx.physics_system )
+	, mSceneGraphSystem( ctx.scene_graph_system )
 	, mResourceLoader( ctx.resource_loader )
 {
 }
@@ -125,6 +127,8 @@ MainScene::OnExit()
 {
 	LOG( "MainScene::OnExit" );
 
+	mSceneGraphSystem.SetSceneRoot( 0 );
+
 	mRenderer.WaitForIdle();
 
 	if( mCompositePass )
@@ -202,6 +206,8 @@ MainScene::CreateSceneRoot()
 
 	// Root relationship component
 	mECSRegistry.AddComponent( mSceneRootEntity, eage::ecs::SceneGraphComponent{} );
+
+	mSceneGraphSystem.SetSceneRoot( mSceneRootEntity );
 }
 
 void
@@ -222,13 +228,7 @@ MainScene::CreateBackgroundEntity()
 
 	// Create entity
 	mBackgroundEntity = mECSRegistry.CreateEntity();
-
-	// Parent to scene root
-	auto& root = mECSRegistry.GetComponent<eage::ecs::SceneGraphComponent>( mSceneRootEntity );
-	root.children_entities.push_back( mBackgroundEntity );
-	eage::ecs::SceneGraphComponent relationship;
-	relationship.parent_entity = mSceneRootEntity;
-	mECSRegistry.AddComponent( mBackgroundEntity, std::move( relationship ) );
+	mSceneGraphSystem.AddNodeToParent( mBackgroundEntity, mSceneRootEntity );
 
 	// Transform -- centered at origin.
 	// z=-1 places the background behind the gameplay plane (z=0). With conventional depth
@@ -246,7 +246,7 @@ void
 MainScene::CreatePlayerEntity()
 {
 	mPlayerInputSystem = std::make_unique<PlayerInputSystem>( mECSRegistry, mInputController );
-	mPlayerGameplaySystem = std::make_unique<PlayerGameplaySystem>( mECSRegistry, *mBulletSystem, mAudioSystem );
+	mPlayerGameplaySystem = std::make_unique<PlayerGameplaySystem>( mECSRegistry, *mBulletSystem, mAudioSystem, mSceneGraphSystem );
 	mPlayerGameplaySystem->PreparePlayer( mRenderSystem, mSceneRootEntity, mResourceLoader );
 }
 
@@ -254,13 +254,7 @@ void
 MainScene::CreateScreenZoneEntities()
 {
 	mOnScreenZoneEntity = mECSRegistry.CreateEntity();
-
-	// Set parent-child relationship with scene root
-	auto& root = mECSRegistry.GetComponent<eage::ecs::SceneGraphComponent>( mSceneRootEntity );
-	root.children_entities.push_back( mOnScreenZoneEntity );
-	eage::ecs::SceneGraphComponent screen_zone_relationship;
-	screen_zone_relationship.parent_entity = mSceneRootEntity;
-	mECSRegistry.AddComponent( mOnScreenZoneEntity, std::move( screen_zone_relationship ) );
+	mSceneGraphSystem.AddNodeToParent( mOnScreenZoneEntity, mSceneRootEntity );
 
 	// Add Transform component
 	mECSRegistry.AddComponent( mOnScreenZoneEntity, eage::ecs::TransformComponent{} );
@@ -295,8 +289,8 @@ void
 MainScene::InitializeGenericSystems()
 {
 	mWarpSystem = std::make_unique<WarpSystem>( mECSRegistry, mPhysicsSystem );
-	mBulletSystem = std::make_unique<BulletSystem>( mECSRegistry, mPhysicsSystem, mAnimationSystem );
-	mAsteroidGameplaySystem = std::make_unique<AsteroidGameplaySystem>( mECSRegistry, mPhysicsSystem, mEffectSystem );
+	mBulletSystem = std::make_unique<BulletSystem>( mECSRegistry, mPhysicsSystem, mAnimationSystem, mSceneGraphSystem );
+	mAsteroidGameplaySystem = std::make_unique<AsteroidGameplaySystem>( mECSRegistry, mPhysicsSystem, mEffectSystem, mSceneGraphSystem );
 	mLevelingSystem = std::make_unique<LevelingSystem>( mECSRegistry );
 }
 

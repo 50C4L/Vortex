@@ -22,7 +22,7 @@ namespace vortex
 		{
 		public:
 			virtual ~Observer() = default;
-			virtual void OnSceneChanged( uint64_t scene_root ) = 0;
+			virtual void OnSceneChanged() = 0;
 		};
 
 		SceneController();
@@ -44,7 +44,7 @@ namespace vortex
 		void Unsubscribe( Observer* observer );
 
 	private:
-		void NotifyObservers( uint64_t scene_root );
+		void NotifyObservers();
 
 		std::unordered_map<int, std::unique_ptr<AbstractScene>> mScenes;
 		AbstractScene* mCurrentScene;

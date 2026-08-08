@@ -8,6 +8,7 @@
 #include <ecs/ResourceManager.h>
 #include <ecs/systems/AudioSystem.h>
 #include <ecs/systems/RenderSystem.h>
+#include <ecs/systems/SceneGraphSystem.h>
 #include <graphics/MaterialBuilder.h>
 #include <utility/Logger.h>
 
@@ -25,10 +26,12 @@ using namespace utility;
 
 
 PlayerGameplaySystem::PlayerGameplaySystem( eage::ecs::ECSRegistry& registry, BulletSystem& bullet_system,
-											eage::ecs::AudioSystem& audio_system )
+											eage::ecs::AudioSystem& audio_system,
+											eage::ecs::SceneGraphSystem& scene_graph_system )
 	: mRegistry( registry )
 	, mBulletSystem( bullet_system )
 	, mAudioSystem( audio_system )
+	, mSceneGraphSystem( scene_graph_system )
 {
 }
 
@@ -56,12 +59,7 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 	// Player entity
 	// ------------------------------------------------------------------
 	auto player_entity = mRegistry.CreateEntity();
-
-	auto& root = mRegistry.GetComponent<eage::ecs::SceneGraphComponent>( root_entity );
-	root.children_entities.push_back( player_entity );
-	eage::ecs::SceneGraphComponent player_relationship;
-	player_relationship.parent_entity = root_entity;
-	mRegistry.AddComponent( player_entity, std::move( player_relationship ) );
+	mSceneGraphSystem.AddNodeToParent( player_entity, root_entity );
 
 	PlayerComponent player;
 	mRegistry.AddComponent( player_entity, std::move( player ) );
@@ -96,9 +94,7 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 	// Thruster child entity
 	// ------------------------------------------------------------------
 	auto thruster_entity = mRegistry.CreateEntity();
-
-	auto& player_scene = mRegistry.GetComponent<eage::ecs::SceneGraphComponent>( player_entity );
-	player_scene.children_entities.push_back( thruster_entity );
+	mSceneGraphSystem.AddNodeToParent( thruster_entity, player_entity );
 
 	auto& player_cmp = mRegistry.GetComponent<PlayerComponent>( player_entity );
 	player_cmp.thruster_fx_entity = thruster_entity;
@@ -114,12 +110,8 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 	// Bullet launcher child entity
 	// ------------------------------------------------------------------
 	auto launcher_entity = mRegistry.CreateEntity();
-	player_scene.children_entities.push_back( launcher_entity );
+	mSceneGraphSystem.AddNodeToParent( launcher_entity, player_entity );
 	player_cmp.bullet_launcher_entity = launcher_entity;
-
-	eage::ecs::SceneGraphComponent launcher_relationship;
-	launcher_relationship.parent_entity = player_entity;
-	mRegistry.AddComponent( launcher_entity, std::move( launcher_relationship ) );
 
 	eage::ecs::TransformComponent launcher_transform;
 	launcher_transform.SetPosition( glm::vec3( 0.f, 16.f, 0.f ) );

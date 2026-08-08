@@ -73,7 +73,7 @@ namespace vortex
 		void Run();
 
 		// SceneController::Observer
-		void OnSceneChanged( uint64_t scene_root ) override;
+		void OnSceneChanged() override;
 
 	private:
 		void BindSceneOutput( AbstractScene* scene );
