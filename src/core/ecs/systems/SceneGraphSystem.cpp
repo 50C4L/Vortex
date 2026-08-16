@@ -7,10 +7,12 @@ using namespace eage::ecs;
 SceneGraphSystem::SceneGraphSystem( ECSRegistry& ecs_registry )
 	: mECSRegistry( ecs_registry )
 {
+	mECSRegistry.Subscribe( this );
 }
 
 SceneGraphSystem::~SceneGraphSystem()
 {
+	mECSRegistry.Unsubscribe( this );
 }
 
 void
@@ -83,6 +85,45 @@ SceneGraphSystem::RemoveNodeFromParent( Entity entity )
 	}
 
 	node.parent_entity = 0;
+}
+
+void
+SceneGraphSystem::CollectSubtree( Entity entity, std::vector<Entity>& out ) const
+{
+	out.push_back( entity );
+
+	if( !mECSRegistry.HasComponent<SceneGraphComponent>( entity ) )
+	{
+		return;
+	}
+
+	const auto& relationship = mECSRegistry.GetComponent<SceneGraphComponent>( entity );
+	for( Entity child : relationship.children_entities )
+	{
+		CollectSubtree( child, out );
+	}
+}
+
+void
+SceneGraphSystem::QueueDestroySubtree( Entity entity )
+{
+	if( entity == 0 )
+	{
+		return;
+	}
+
+	std::vector<Entity> nodes;
+	CollectSubtree( entity, nodes );
+	for( Entity node : nodes )
+	{
+		mECSRegistry.QueueDestroyEntity( node );
+	}
+}
+
+void
+SceneGraphSystem::OnEntityDestroying( Entity entity )
+{
+	RemoveNodeFromParent( entity );
 }
 
 void

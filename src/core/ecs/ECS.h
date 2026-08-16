@@ -1,10 +1,12 @@
 #ifndef _EAGE_ECS_H_
 #define _EAGE_ECS_H_
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <typeindex>
 #include <unordered_map>
+#include <vector>
 
 #include <ecs/ComponentPool.h>
 
@@ -18,12 +20,24 @@ class AbstractComponentPool
 {
 public:
 	virtual ~AbstractComponentPool() = default;
+	virtual void Remove( Entity entity ) = 0;
+	virtual bool Has( Entity entity ) const = 0;
 };
 
 template<typename T>
 class TypedComponentPool : public AbstractComponentPool
 {
 public:
+	void Remove( Entity entity ) override
+	{
+		pool.Remove( entity );
+	}
+
+	bool Has( Entity entity ) const override
+	{
+		return pool.Has( entity );
+	}
+
 	ComponentPool<T> pool;
 };
 
@@ -33,6 +47,13 @@ public:
 class ECSRegistry
 {
 public:
+	class Observer
+	{
+	public:
+		virtual ~Observer() = default;
+		virtual void OnEntityDestroying( Entity entity ) = 0;
+	};
+
 	ECSRegistry() = default;
 
 	ECSRegistry( const ECSRegistry& ) = delete;
@@ -47,6 +68,68 @@ public:
 	Entity CreateEntity()
 	{
 		return mNextEntity++;
+	}
+
+	void Subscribe( Observer* observer )
+	{
+		if( observer == nullptr )
+		{
+			return;
+		}
+		mObservers.push_back( observer );
+	}
+
+	void Unsubscribe( Observer* observer )
+	{
+		mObservers.erase(
+			std::remove( mObservers.begin(), mObservers.end(), observer ),
+			mObservers.end() );
+	}
+
+	///
+	/// Immediately destroy an entity: notify observers, then remove all components.
+	/// No-op if the entity has no components. Observers must not call DestroyEntity
+	/// re-entrantly; use QueueDestroyEntity for additional entities.
+	///
+	void DestroyEntity( Entity entity )
+	{
+		if( entity == 0 || !HasAnyComponents( entity ) )
+		{
+			return;
+		}
+
+		for( Observer* observer : mObservers )
+		{
+			observer->OnEntityDestroying( entity );
+		}
+
+		for( auto& [type, pool] : mComponents )
+		{
+			pool->Remove( entity );
+		}
+	}
+
+	void QueueDestroyEntity( Entity entity )
+	{
+		if( entity == 0 )
+		{
+			return;
+		}
+		mDestroyQueue.push_back( entity );
+	}
+
+	///
+	/// Process all queued destructions. Drains until empty so entities queued
+	/// during destroy (e.g. subtree children) are processed in the same flush.
+	///
+	void FlushDestroyQueue()
+	{
+		while( !mDestroyQueue.empty() )
+		{
+			Entity entity = mDestroyQueue.front();
+			mDestroyQueue.erase( mDestroyQueue.begin() );
+			DestroyEntity( entity );
+		}
 	}
 
 	///
@@ -133,8 +216,22 @@ public:
 	}
 
 private:
+	bool HasAnyComponents( Entity entity ) const
+	{
+		for( const auto& [type, pool] : mComponents )
+		{
+			if( pool->Has( entity ) )
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
 	Entity mNextEntity = 1;
 	std::unordered_map<std::type_index, std::unique_ptr<AbstractComponentPool>> mComponents;
+	std::vector<Observer*> mObservers;
+	std::vector<Entity> mDestroyQueue;
 };
 
 }

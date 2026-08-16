@@ -2,6 +2,7 @@
 #define _EAGE_SYSTEMS_SCENE_GRAPH_SYSTEM_H_
 
 #include <cstdint>
+#include <vector>
 #include <glm/glm.hpp>
 
 #include <ecs/ECS.h>
@@ -11,7 +12,7 @@ namespace eage::ecs
 	///
 	/// SceneGraphSystem: Updates world transforms based on parent-child relationships
 	///
-	class SceneGraphSystem
+	class SceneGraphSystem : public ECSRegistry::Observer
 	{
 	public:
 		SceneGraphSystem( ECSRegistry& ecs_registry );
@@ -34,10 +35,19 @@ namespace eage::ecs
 		///
 		void RemoveNodeFromParent( Entity entity );
 
+		///
+		/// Queue destroy for entity and all descendants (depth-first collect, then queue).
+		///
+		void QueueDestroySubtree( Entity entity );
+
 		void Update();
+
+		// ECSRegistry::Observer
+		void OnEntityDestroying( Entity entity ) override;
 
 	private:
 		void UpdateChildrenRecursive( Entity entity, const glm::mat4& parent_world_matrix );
+		void CollectSubtree( Entity entity, std::vector<Entity>& out ) const;
 
 		ECSRegistry& mECSRegistry;
 		Entity mSceneRootEntity = 0;

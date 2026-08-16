@@ -155,7 +155,7 @@ graph TD
 - `mesh_buffer_id` and `material_id` are shared between entities (all 100 asteroids share one mesh via `AttachRenderable`), but `AttachSprite` creates a mesh per entity. Fix the refcounting properly: `AttachRenderable` calls `AddReference` on the mesh and material, teardown calls `RemoveReference`. Naive unconditional freeing would destroy a mesh still used by other pooled entities.
 
 **Scene graph pruning**
-- On destroy, remove the entity from its parent's `SceneGraphComponent::children_entities` (the parent is reachable via `parent_entity`), and destroy its own children recursively. Collect the full set first, then destroy, to avoid mutating while walking. Without this, [SceneGraphSystem::UpdateChildrenRecursive](src/core/ecs/systems/SceneGraphSystem.cpp) walks dangling ids forever.
+- Link/unlink APIs already landed: `SceneGraphSystem::AddNodeToParent` / `RemoveNodeFromParent`. On destroy, call `RemoveNodeFromParent` from a registry observer. For hierarchies (player), collect subtree then queue-destroy. Detached nodes are simply skipped by `Update` (root walk only).
 
 **Pooled systems**
 - Add an explicit `ReleaseAll()` to `BulletSystem`, `AsteroidGameplaySystem`, and `EffectSystem` that destroys pooled entities and clears `mPools` / `mEntityToPool` / `mAllAsteroids` / `available` / `all`. Do not rely on the registry observer to clean these up; the id containers are system-private.

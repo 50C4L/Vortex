@@ -127,9 +127,51 @@ MainScene::OnExit()
 {
 	LOG( "MainScene::OnExit" );
 
+	if( mBulletSystem )
+	{
+		mBulletSystem->ReleaseAll();
+	}
+	if( mAsteroidGameplaySystem )
+	{
+		mAsteroidGameplaySystem->ReleaseAll();
+	}
+	mEffectSystem.ReleaseAll();
+	if( mPlayerGameplaySystem )
+	{
+		mPlayerGameplaySystem->ReleaseAll();
+	}
+
+	if( mBackgroundEntity != 0 )
+	{
+		mECSRegistry.QueueDestroyEntity( mBackgroundEntity );
+		mBackgroundEntity = 0;
+	}
+	if( mOnScreenZoneEntity != 0 )
+	{
+		mECSRegistry.QueueDestroyEntity( mOnScreenZoneEntity );
+		mOnScreenZoneEntity = 0;
+	}
+	if( mSceneRootEntity != 0 )
+	{
+		mECSRegistry.QueueDestroyEntity( mSceneRootEntity );
+		mSceneRootEntity = 0;
+	}
+
+	mECSRegistry.FlushDestroyQueue();
 	mSceneGraphSystem.SetSceneRoot( 0 );
 
+	mEffectMaterial.Reset();
+	mExplosionEffectId = 0;
+
+	mPlayerInputSystem.reset();
+	mPlayerGameplaySystem.reset();
+	mWarpSystem.reset();
+	mAsteroidGameplaySystem.reset();
+	mBulletSystem.reset();
+	mLevelingSystem.reset();
+
 	mRenderer.WaitForIdle();
+	mRenderSystem.FlushPendingDeletes();
 
 	if( mCompositePass )
 	{
@@ -222,9 +264,8 @@ MainScene::CreateBackgroundEntity()
 		.EnableDepthTest( true )
 		.Build();
 
-	auto material_id = mRenderSystem.CreateMaterial( material_property );
-
-	auto mesh_id = mRenderSystem.CreateSpriteMesh( 1280.f, 720.f );
+	auto material = mRenderSystem.CreateMaterial( material_property );
+	auto mesh = mRenderSystem.CreateSpriteMesh( 1280.f, 720.f );
 
 	// Create entity
 	mBackgroundEntity = mECSRegistry.CreateEntity();
@@ -238,8 +279,10 @@ MainScene::CreateBackgroundEntity()
 	transform.SetPosition( glm::vec3( 0.f, 0.f, -1.f ) );
 	mECSRegistry.AddComponent( mBackgroundEntity, std::move( transform ) );
 
-	// Attach renderable
-	mRenderSystem.AttachRenderable( mBackgroundEntity, mesh_id, material_id, background_texture );
+	// Attach renderable; Reset handles so the entity is the sole owner.
+	mRenderSystem.AttachRenderable( mBackgroundEntity, mesh.Get(), material.Get(), background_texture );
+	mesh.Reset();
+	material.Reset();
 }
 
 void
@@ -304,11 +347,11 @@ MainScene::CreateExplosionEffect()
 		.EnableDepthTest( true )
 		.Build();
 
-	mEffectMaterialId = mRenderSystem.CreateMaterial( material_property );
+	mEffectMaterial = mRenderSystem.CreateMaterial( material_property );
 
 	eage::ecs::EffectSystem::EffectConfig config;
 	config.clip_ids = { mResourceLoader.GetClip( "./resources/textures/effects/anim_explosion1/animation.json" ) };
-	config.material_id = mEffectMaterialId;
+	config.material_id = mEffectMaterial.Get();
 	config.sound_id = mResourceLoader.GetSound( "./resources/sounds/explosion1.wav" );
 	config.pool_size = 32;
 	mExplosionEffectId = mEffectSystem.Create( mRenderSystem, config, mSceneRootEntity );

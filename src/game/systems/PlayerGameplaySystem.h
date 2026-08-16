@@ -2,6 +2,7 @@
 #define _VORTEX_PLAYER_GAMEPLAY_SYSTEM_H
 
 #include <ecs/ECS.h>
+#include <ecs/ResourceStore.h>
 
 #include <glm/glm.hpp>
 #include <memory>
@@ -39,7 +40,10 @@ namespace vortex
 
 		void PreparePlayer( eage::ecs::RenderSystem& render_system, uint64_t root_entity,
 							assets::SceneResourceLoader& resources );
-		
+
+		/// Queue-destroy the player hierarchy and drop material creator refs.
+		void ReleaseAll();
+
 		void Update( float delta_time );
 		
 	private:
@@ -57,8 +61,8 @@ namespace vortex
 		eage::ecs::AudioSystem& mAudioSystem;
 		eage::ecs::SceneGraphSystem& mSceneGraphSystem;
 
-		uint32_t mPlayerMaterialId = 0;
-		uint32_t mPlayerBulletMaterialId = 0;
+		eage::ecs::Entity mPlayerEntity = 0;
+		eage::ecs::ResourceHandle mPlayerMaterial;
 		uint32_t mDefaultBulletPoolId = 0;
 	};
 }

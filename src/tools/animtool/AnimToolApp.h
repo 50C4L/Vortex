@@ -6,6 +6,8 @@
 
 #include <glm/glm.hpp>
 
+#include <ecs/ResourceStore.h>
+
 struct SDL_Window;
 
 namespace eage::ecs
@@ -78,8 +80,8 @@ private:
 	bool mPlayRequested = false;
 
 	uint64_t mPreviewEntity = 0;
-	uint32_t mPreviewMaterialId = 0;
-	uint32_t mPreviewMeshId = 0;
+	eage::ecs::ResourceHandle mPreviewMaterial;
+	eage::ecs::ResourceHandle mPreviewMesh;
 	int mPreviewMeshWidth = 0;
 	int mPreviewMeshHeight = 0;
 	glm::vec2 mPreviewVirtualResolution{ 1.f, 1.f };

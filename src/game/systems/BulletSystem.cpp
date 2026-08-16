@@ -80,7 +80,8 @@ BulletSystem::PreparePool( eage::ecs::RenderSystem& render_system, const BulletP
 		}
 	}
 
-	eage::ecs::ResourceId mesh_id = render_system.CreateSpriteMesh( mesh_width, mesh_height );
+	eage::ecs::ResourceHandle mesh = render_system.CreateSpriteMesh( mesh_width, mesh_height );
+	mPoolMeshes[pool_id] = mesh;
 
 	for( int i = 0; i < count; ++i )
 	{
@@ -111,7 +112,7 @@ BulletSystem::PreparePool( eage::ecs::RenderSystem& render_system, const BulletP
 
 		mRegistry.AddComponent( entity, BulletComponent{ BulletState::Inactive, config.damage, config.lifetime_sec } );
 
-		render_system.AttachRenderable( entity, mesh_id, config.material_id, texture_index );
+		render_system.AttachRenderable( entity, mesh.Get(), config.material_id, texture_index );
 
 		if( config.clip_id != eage::ecs::INVALID_ID )
 		{
@@ -120,6 +121,22 @@ BulletSystem::PreparePool( eage::ecs::RenderSystem& render_system, const BulletP
 	}
 
 	return pool_id;
+}
+
+void
+BulletSystem::ReleaseAll()
+{
+	for( const auto& [entity, pool_id] : mEntityToPool )
+	{
+		(void)pool_id;
+		mRegistry.QueueDestroyEntity( entity );
+	}
+
+	mPools.clear();
+	mEntityToPool.clear();
+	mPoolMeshes.clear();
+	mPoolFireInterval.clear();
+	mPoolLastFireTime.clear();
 }
 
 bool

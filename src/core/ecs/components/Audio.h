@@ -1,7 +1,7 @@
 #ifndef _EAGE_COMPONENTS_AUDIO_H_
 #define _EAGE_COMPONENTS_AUDIO_H_
 
-#include <ecs/ResourceManager.h>
+#include <ecs/ResourceStore.h>
 #include <string>
 #include <unordered_map>
 #include <vector>

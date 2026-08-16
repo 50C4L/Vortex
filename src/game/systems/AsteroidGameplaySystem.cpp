@@ -70,11 +70,11 @@ AsteroidGameplaySystem::PrepareAsteroids( eage::ecs::RenderSystem& render_system
 		.EnableDepthTest( true )
 		.Build();
 
-	mAsteroidMaterialId = render_system.CreateMaterial( material_property );
+	mAsteroidMaterial = render_system.CreateMaterial( material_property );
 	mAsteroidTextureIndex = asteroid_texture;
 
 	// Create shared mesh - ALL ASTEROIDS CAN USE THIS
-	mAsteroidMeshId = render_system.CreateSpriteMesh( 32.f, 32.f );
+	mAsteroidMesh = render_system.CreateSpriteMesh( 32.f, 32.f );
 
 	// Create given number of asteroids
 	for( int i = 0; i < count; ++i )
@@ -114,8 +114,25 @@ AsteroidGameplaySystem::PrepareAsteroids( eage::ecs::RenderSystem& render_system
 		mAllAsteroids.insert( asteroid );
 
 		// Render component
-		render_system.AttachRenderable( asteroid, mAsteroidMeshId, mAsteroidMaterialId, mAsteroidTextureIndex, false );
+		render_system.AttachRenderable( asteroid, mAsteroidMesh.Get(), mAsteroidMaterial.Get(), mAsteroidTextureIndex, false );
 	}
+}
+
+void
+AsteroidGameplaySystem::ReleaseAll()
+{
+	for( uint64_t asteroid : mAllAsteroids )
+	{
+		mECSRegistry.QueueDestroyEntity( asteroid );
+	}
+
+	mAsteroidMesh.Reset();
+	mAsteroidMaterial.Reset();
+	mAsteroidTextureIndex = 0;
+	mDeathEffectId = eage::ecs::INVALID_ID;
+
+	mAvailableAsteroids.clear();
+	mAllAsteroids.clear();
 }
 
 void

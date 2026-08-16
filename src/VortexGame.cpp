@@ -130,6 +130,8 @@ VortexGame::Run()
 
 		mSceneController->Update( dt );
 
+		mECSRegistry->FlushDestroyQueue();
+
 		mPhysicsSystem->Update( dt );
 		mAnimationSystem->Update( dt );
 		mEffectSystem->Update();

@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include <glm/glm.hpp>
 
-#include <ecs/ResourceManager.h>
+#include <ecs/ResourceStore.h>
 #include <ecs/systems/PhysicsSystem.h>
 
 namespace assets
@@ -40,6 +40,9 @@ namespace vortex
 
 		void SetDeathEffect( eage::ecs::ResourceId effect_id );
 
+		/// Destroy all asteroid entities and drop shared mesh/material creator refs.
+		void ReleaseAll();
+
 		void SpawnAsteroid( int count );
 		void DespawnAsteroid( uint64_t asteroid_entity );
 
@@ -57,8 +60,8 @@ namespace vortex
 		eage::ecs::EffectSystem& mEffectSystem;
 		eage::ecs::SceneGraphSystem& mSceneGraphSystem;
 
-		eage::ecs::ResourceId mAsteroidMaterialId = 0;
-		eage::ecs::ResourceId mAsteroidMeshId = 0;
+		eage::ecs::ResourceHandle mAsteroidMesh;
+		eage::ecs::ResourceHandle mAsteroidMaterial;
 		uint32_t mAsteroidTextureIndex = 0;
 		eage::ecs::ResourceId mDeathEffectId = eage::ecs::INVALID_ID;
 

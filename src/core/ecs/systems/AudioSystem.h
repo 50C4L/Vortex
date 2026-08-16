@@ -2,7 +2,7 @@
 #define _EAGE_SYSTEMS_AUDIO_SYSTEM_H_
 
 #include <ecs/components/Audio.h>
-#include <ecs/ResourceManager.h>
+#include <ecs/ResourceStore.h>
 #include <memory>
 #include <string>
 #include <unordered_map>

@@ -3,7 +3,7 @@
 
 #include <glm/glm.hpp>
 
-#include <ecs/ResourceManager.h>
+#include <ecs/ResourceStore.h>
 
 namespace eage::ecs
 {

@@ -85,7 +85,7 @@ AnimationSystem::LoadClip( RenderSystem& render_system, const std::string& clip_
 	}
 
 	std::shared_ptr<const AnimationClip> clip = std::move( loaded_clip );
-	ResourceId clip_id = mClipManager.Store( std::move( clip ) );
+	ResourceId clip_id = mClipStore.Store( std::move( clip ) );
 	mClipPathToId[clip_json_path] = clip_id;
 	return clip_id;
 }
@@ -93,7 +93,7 @@ AnimationSystem::LoadClip( RenderSystem& render_system, const std::string& clip_
 const AnimationClip*
 AnimationSystem::GetClip( ResourceId clip_id ) const
 {
-	return mClipManager.Get( clip_id );
+	return mClipStore.Get( clip_id );
 }
 
 void

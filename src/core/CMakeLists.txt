@@ -116,7 +116,7 @@ add_library(eage_core STATIC
 
 	./ecs/ComponentPool.h
 	./ecs/ECS.h
-	./ecs/ResourceManager.h
+	./ecs/ResourceStore.h
 	./ecs/components/Audio.h
 	./ecs/components/Animation.h
 	./ecs/components/Basics.h

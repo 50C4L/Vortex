@@ -35,6 +35,19 @@ namespace
 
 struct RenderSystem::Impl
 {
+	enum class PendingKind
+	{
+		UniformBuffer,
+		DescriptorSet
+	};
+
+	struct PendingDelete
+	{
+		PendingKind kind = PendingKind::UniformBuffer;
+		ResourceId id = INVALID_ID;
+		int frames_remaining = 0;
+	};
+
 	Impl( eage::graphics::Renderer& renderer, ECSRegistry& ecs_registry )
 		: mRenderer( renderer )
 		, mECSRegistry( ecs_registry )
@@ -50,17 +63,18 @@ struct RenderSystem::Impl
 
 	// ----- Resource creation -----
 
-	ResourceId CreateMeshBuffer( const std::vector<uint32_t>& indices, const std::vector<Vertex>& vertices,
+	ResourceHandle CreateMeshBuffer( const std::vector<uint32_t>& indices, const std::vector<Vertex>& vertices,
 								 uint32_t first_index, uint32_t index_count, uint32_t vertex_offset )
 	{
 		auto mesh = mRenderer.UploadMesh( indices, vertices );
 		mesh->first_index = first_index;
 		mesh->index_count = index_count;
 		mesh->vertex_offset = vertex_offset;
-		return mMeshBuffers.Store( std::move( mesh ) );
+		ResourceId id = mMeshBuffers.Store( std::move( mesh ) );
+		return ResourceHandle::Adopt( mMeshBuffers, id );
 	}
 
-	ResourceId CreateMaterial( const MaterialProperty& material_property )
+	ResourceHandle CreateMaterial( const MaterialProperty& material_property )
 	{
 		auto vert_asset = load_shader_from_file( mRenderer.GetDevice(), material_property.vertex_shader_path );
 		auto frag_asset = load_shader_from_file( mRenderer.GetDevice(), material_property.fragment_shader_path );
@@ -68,7 +82,7 @@ struct RenderSystem::Impl
 		if( !vert_asset || !frag_asset )
 		{
 			LOG_ERROR( "Failed to load shaders for material" );
-			return INVALID_ID;
+			return ResourceHandle{};
 		}
 
 		std::vector<vk::DescriptorSetLayout> all_layouts = {
@@ -81,7 +95,8 @@ struct RenderSystem::Impl
 
 		auto material = std::make_unique<Material>();
 		material->pipeline = pipeline;
-		return mMaterials.Store( std::move( material ) );
+		ResourceId id = mMaterials.Store( std::move( material ) );
+		return ResourceHandle::Adopt( mMaterials, id );
 	}
 
 	uint32_t CreateTexture( const std::string& file_path )
@@ -113,7 +128,7 @@ struct RenderSystem::Impl
 		return bindless_index;
 	}
 
-	ResourceId CreateSpriteMesh( float width, float height )
+	ResourceHandle CreateSpriteMesh( float width, float height )
 	{
 		auto rect = made_rect_vertices( { 0, 0, 0 }, width, height );
 		rect.vertices[0].uv_x = 1.f; rect.vertices[0].uv_y = 0.f;
@@ -125,6 +140,20 @@ struct RenderSystem::Impl
 
 	void AttachRenderable( Entity entity, ResourceId mesh_id, ResourceId material_id, uint32_t texture_index, bool visible )
 	{
+		if( mECSRegistry.HasComponent<RenderComponent>( entity ) )
+		{
+			DetachRenderable( entity );
+		}
+
+		if( mesh_id != INVALID_ID )
+		{
+			mMeshBuffers.AddReference( mesh_id );
+		}
+		if( material_id != INVALID_ID )
+		{
+			mMaterials.AddReference( material_id );
+		}
+
 		auto ubo_id = CreateDynamicUniformBuffer( sizeof( MeshUniformData ) );
 		auto descriptor_id = CreateDynamicDescriptorSet( mRenderer.GetBuiltInDescriptorSetLayouts().per_object.get() );
 		GetDescriptorSet( descriptor_id )->WriteBuffer(
@@ -143,8 +172,90 @@ struct RenderSystem::Impl
 
 	void AttachSprite( Entity entity, ResourceId material_id, float width, float height, uint32_t texture_index, bool visible )
 	{
-		auto mesh_id = CreateSpriteMesh( width, height );
-		AttachRenderable( entity, mesh_id, material_id, texture_index, visible );
+		ResourceHandle mesh = CreateSpriteMesh( width, height );
+		AttachRenderable( entity, mesh.Get(), material_id, texture_index, visible );
+		// Drop creator hold so the entity is the sole mesh owner.
+		mesh.Reset();
+	}
+
+	void DetachRenderable( Entity entity )
+	{
+		if( !mECSRegistry.HasComponent<RenderComponent>( entity ) )
+		{
+			return;
+		}
+
+		auto& render = mECSRegistry.GetComponent<RenderComponent>( entity );
+
+		if( render.mesh_buffer_id != INVALID_ID )
+		{
+			mMeshBuffers.RemoveReference( render.mesh_buffer_id );
+			render.mesh_buffer_id = INVALID_ID;
+		}
+		if( render.material_id != INVALID_ID )
+		{
+			mMaterials.RemoveReference( render.material_id );
+			render.material_id = INVALID_ID;
+		}
+
+		if( render.mesh_uniform_data_dynamic_id != INVALID_ID )
+		{
+			mPendingDeletes.push_back( {
+				PendingKind::UniformBuffer,
+				render.mesh_uniform_data_dynamic_id,
+				Renderer::MAX_FRAMES_IN_FLIGHT } );
+			render.mesh_uniform_data_dynamic_id = INVALID_ID;
+		}
+		if( render.mesh_descriptor_id != INVALID_ID )
+		{
+			mPendingDeletes.push_back( {
+				PendingKind::DescriptorSet,
+				render.mesh_descriptor_id,
+				Renderer::MAX_FRAMES_IN_FLIGHT } );
+			render.mesh_descriptor_id = INVALID_ID;
+		}
+
+		mECSRegistry.RemoveComponent<RenderComponent>( entity );
+	}
+
+	void DrainPendingDeletes()
+	{
+		for( size_t i = 0; i < mPendingDeletes.size(); )
+		{
+			auto& pending = mPendingDeletes[i];
+			--pending.frames_remaining;
+			if( pending.frames_remaining > 0 )
+			{
+				++i;
+				continue;
+			}
+
+			FreePendingResource( pending );
+			mPendingDeletes[i] = mPendingDeletes.back();
+			mPendingDeletes.pop_back();
+		}
+	}
+
+	void FlushPendingDeletes()
+	{
+		for( const auto& pending : mPendingDeletes )
+		{
+			FreePendingResource( pending );
+		}
+		mPendingDeletes.clear();
+	}
+
+	void FreePendingResource( const PendingDelete& pending )
+	{
+		switch( pending.kind )
+		{
+			case PendingKind::UniformBuffer:
+				mUniformBuffers.RemoveReference( pending.id );
+				break;
+			case PendingKind::DescriptorSet:
+				mDescriptorSets.RemoveReference( pending.id );
+				break;
+		}
 	}
 
 	void SetCamera( const AbstractCamera& camera, glm::vec2 virtual_resolution )
@@ -165,6 +276,8 @@ struct RenderSystem::Impl
 
 	void Update()
 	{
+		DrainPendingDeletes();
+
 		if( mScenePass == nullptr )
 		{
 			return;
@@ -386,16 +499,17 @@ struct RenderSystem::Impl
 	ResourceId mGlobalDescriptorSetId;
 	ResourceId mGlobalUniformBufferId;
 
-	ResourceManager<std::unique_ptr<GPUMeshBuffers>> mMeshBuffers;
-	ResourceManager<std::unique_ptr<Material>> mMaterials;
-	ResourceManager<ManagedBuffer::Ptr> mUniformBuffers;
-	ResourceManager<ManagedImage::Ptr> mImages;
-	ResourceManager<std::unique_ptr<AbstractUniformDescriptor>> mDescriptorSets;
-	ResourceManager<std::unique_ptr<vk::UniqueSampler>> mSamplers;
+	ResourceStore<std::unique_ptr<GPUMeshBuffers>> mMeshBuffers;
+	ResourceStore<std::unique_ptr<Material>> mMaterials;
+	ResourceStore<ManagedBuffer::Ptr> mUniformBuffers;
+	ResourceStore<ManagedImage::Ptr> mImages;
+	ResourceStore<std::unique_ptr<AbstractUniformDescriptor>> mDescriptorSets;
+	ResourceStore<std::unique_ptr<vk::UniqueSampler>> mSamplers;
 
 	std::unordered_map<size_t, std::shared_ptr<RenderPipeline>> mPipelineCache;
 	std::unordered_map<std::string, uint32_t> mTexturePathToBindlessIndex;
 	std::unordered_map<size_t, ResourceId> mSamplerCache;
+	std::vector<PendingDelete> mPendingDeletes;
 
 };
 
@@ -406,18 +520,23 @@ struct RenderSystem::Impl
 RenderSystem::RenderSystem( eage::graphics::Renderer& renderer, ECSRegistry& ecs_registry )
 	: mImpl( std::make_unique<Impl>( renderer, ecs_registry ) )
 {
+	ecs_registry.Subscribe( this );
 }
 
-RenderSystem::~RenderSystem() = default;
+RenderSystem::~RenderSystem()
+{
+	mImpl->mECSRegistry.Unsubscribe( this );
+	mImpl->FlushPendingDeletes();
+}
 
-ResourceId
+ResourceHandle
 RenderSystem::CreateMeshBuffer( const std::vector<uint32_t>& indices, const std::vector<Vertex>& vertices,
 								uint32_t first_index, uint32_t index_count, uint32_t vertex_offset )
 {
 	return mImpl->CreateMeshBuffer( indices, vertices, first_index, index_count, vertex_offset );
 }
 
-ResourceId
+ResourceHandle
 RenderSystem::CreateMaterial( const MaterialProperty& material_property )
 {
 	return mImpl->CreateMaterial( material_property );
@@ -429,7 +548,7 @@ RenderSystem::CreateTexture( const std::string& file_path )
 	return mImpl->CreateTexture( file_path );
 }
 
-ResourceId
+ResourceHandle
 RenderSystem::CreateSpriteMesh( float width, float height )
 {
 	return mImpl->CreateSpriteMesh( width, height );
@@ -445,6 +564,24 @@ void
 RenderSystem::AttachSprite( Entity entity, ResourceId material_id, float width, float height, uint32_t texture_index, bool visible )
 {
 	mImpl->AttachSprite( entity, material_id, width, height, texture_index, visible );
+}
+
+void
+RenderSystem::DetachRenderable( Entity entity )
+{
+	mImpl->DetachRenderable( entity );
+}
+
+void
+RenderSystem::FlushPendingDeletes()
+{
+	mImpl->FlushPendingDeletes();
+}
+
+void
+RenderSystem::OnEntityDestroying( Entity entity )
+{
+	mImpl->DetachRenderable( entity );
 }
 
 void

@@ -5,7 +5,7 @@
 #include <ecs/components/Basics.h>
 #include <ecs/components/Physics.h>
 #include <ecs/components/Render.h>
-#include <ecs/ResourceManager.h>
+#include <ecs/ResourceStore.h>
 #include <ecs/systems/AudioSystem.h>
 #include <ecs/systems/RenderSystem.h>
 #include <ecs/systems/SceneGraphSystem.h>
@@ -52,13 +52,13 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 		.EnableDepthTest( true )
 		.Build();
 
-	mPlayerMaterialId = render_system.CreateMaterial( sprite_material_prop );
-	mPlayerBulletMaterialId = mPlayerMaterialId;
+	mPlayerMaterial = render_system.CreateMaterial( sprite_material_prop );
 
 	// ------------------------------------------------------------------
 	// Player entity
 	// ------------------------------------------------------------------
 	auto player_entity = mRegistry.CreateEntity();
+	mPlayerEntity = player_entity;
 	mSceneGraphSystem.AddNodeToParent( player_entity, root_entity );
 
 	PlayerComponent player;
@@ -81,7 +81,7 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 	player_collider.mask_bits = PHYSX_CAT_SCREEN_ZONE | PHYSX_CAT_ENEMY;
 	mRegistry.AddComponent( player_entity, std::move( player_collider ) );
 
-	render_system.AttachSprite( player_entity, mPlayerMaterialId, 32.f, 32.f, ship_texture );
+	render_system.AttachSprite( player_entity, mPlayerMaterial.Get(), 32.f, 32.f, ship_texture );
 
 	eage::ecs::AudioSourceComponent thrust_audio;
 	thrust_audio.sources["thruster"] = { resources.GetSound( "./resources/sounds/thruster.mp3" ) };
@@ -104,7 +104,7 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 	thruster_transform.SetScale( glm::vec3( 1 / 5.f ) );
 	mRegistry.AddComponent( thruster_entity, std::move( thruster_transform ) );
 
-	render_system.AttachSprite( thruster_entity, mPlayerMaterialId, 32.f, 32.f, thrust_texture );
+	render_system.AttachSprite( thruster_entity, mPlayerMaterial.Get(), 32.f, 32.f, thrust_texture );
 
 	// ------------------------------------------------------------------
 	// Bullet launcher child entity
@@ -130,13 +130,26 @@ PlayerGameplaySystem::PreparePlayer( eage::ecs::RenderSystem& render_system, uin
 	bullet_config.collider_radius = 4.f;
 	bullet_config.mesh_width = 8.f;
 	bullet_config.mesh_height = 8.f;
-	bullet_config.material_id = mPlayerBulletMaterialId;
+	bullet_config.material_id = mPlayerMaterial.Get();
 	bullet_config.category_bits = PHYSX_CAT_BULLET;
 	bullet_config.mask_bits = PHYSX_CAT_ENEMY;
 	bullet_config.clip_id = resources.GetClip( "./resources/textures/bullets/anim_defaultBullet/animation.json" );
 	bullet_config.fire_interval = 0.5f; // 2 bullets per second max
 	bullet_config.lifetime_sec = 2.f;
 	mDefaultBulletPoolId = mBulletSystem.PreparePool( render_system, bullet_config, 25, root_entity );
+}
+
+void
+PlayerGameplaySystem::ReleaseAll()
+{
+	if( mPlayerEntity != 0 )
+	{
+		mSceneGraphSystem.QueueDestroySubtree( mPlayerEntity );
+		mPlayerEntity = 0;
+	}
+
+	mPlayerMaterial.Reset();
+	mDefaultBulletPoolId = 0;
 }
 
 PlayerGameplaySystem::~PlayerGameplaySystem() 

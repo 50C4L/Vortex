@@ -7,7 +7,8 @@
 
 #include <glm/glm.hpp>
 
-#include <ecs/ResourceManager.h>
+#include <ecs/ECS.h>
+#include <ecs/ResourceStore.h>
 #include <physics/PhysicsEventListener.h>
 
 namespace eage::physics
@@ -18,12 +19,10 @@ namespace eage::physics
 
 namespace eage::ecs
 {
-	class ECSRegistry;
-
 	///
 	/// PhysicsSystem: Manages physics bodies and collision components
 	///
-	class PhysicsSystem final : public eage::physics::PhysicsEventListener
+	class PhysicsSystem final : public eage::physics::PhysicsEventListener, public ECSRegistry::Observer
 	{
 	public:
 		class Observer
@@ -63,6 +62,9 @@ namespace eage::ecs
 		void OnCollideBegin( physics::PhysicsBody* bodyA, physics::PhysicsBody* bodyB ) override;
 		void OnCollideEnd( physics::PhysicsBody* bodyA, physics::PhysicsBody* bodyB ) override;
 
+		// ECSRegistry::Observer
+		void OnEntityDestroying( Entity entity ) override;
+
 	private:
 		void CreateCollisionBodyFromComponents( uint64_t entity );
 		void SyncTransformFromBodies( uint64_t entity );
@@ -76,7 +78,7 @@ namespace eage::ecs
 
 		ECSRegistry& mECSRegistry;
 		std::unique_ptr<eage::physics::PhysicsEngine> mPhysicsEngine;
-		ResourceManager<std::unique_ptr<eage::physics::PhysicsBody>> mBodyManager;
+		ResourceStore<std::unique_ptr<eage::physics::PhysicsBody>> mBodyStore;
 		float mPixelsPerMeter = 1.f;
 
 		std::unordered_set<Observer*> mObservers;

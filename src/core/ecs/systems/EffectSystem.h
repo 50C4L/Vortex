@@ -10,7 +10,7 @@
 #include <glm/gtc/quaternion.hpp>
 
 #include <ecs/ECS.h>
-#include <ecs/ResourceManager.h>
+#include <ecs/ResourceStore.h>
 
 namespace eage::ecs
 {
@@ -43,6 +43,9 @@ namespace eage::ecs
 		/// Pre-create a pool of FX entities. Returns an effect ResourceId.
 		ResourceId Create( RenderSystem& render_system, const EffectConfig& config, Entity root_entity );
 
+		/// Destroy all effect entities and drop per-effect mesh creator refs.
+		void ReleaseAll();
+
 		/// Play the effect at world position (primary clip). Returns false if pool empty or invalid.
 		/// rotation defaults to identity; pass glm::angleAxis( ... ) for a custom orientation.
 		bool Apply( ResourceId effect_id, glm::vec2 pos, const glm::quat& rotation = glm::quat() );
@@ -55,7 +58,7 @@ namespace eage::ecs
 		{
 			std::vector<ResourceId> clip_ids;
 			ResourceId material_id = INVALID_ID;
-			ResourceId mesh_id = INVALID_ID;
+			ResourceHandle mesh;
 			ResourceId sound_id = INVALID_ID;
 			std::deque<Entity> available;
 			std::unordered_set<Entity> all;

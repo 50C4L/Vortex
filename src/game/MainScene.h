@@ -4,7 +4,7 @@
 #include "../AbstractScene.h"
 #include "../EngineContext.h"
 #include <ecs/ECS.h>
-#include <ecs/ResourceManager.h>
+#include <ecs/ResourceStore.h>
 
 #include <memory>
 
@@ -98,7 +98,7 @@ namespace vortex
 		uint64_t mOnScreenZoneEntity = 0;
 		uint64_t mBackgroundEntity = 0;
 		eage::ecs::ResourceId mExplosionEffectId = 0;
-		eage::ecs::ResourceId mEffectMaterialId = 0;
+		eage::ecs::ResourceHandle mEffectMaterial;
 	};
 }
 

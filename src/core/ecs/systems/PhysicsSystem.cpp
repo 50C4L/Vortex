@@ -14,10 +14,12 @@ PhysicsSystem::PhysicsSystem( ECSRegistry& ecs_registry )
 	: mECSRegistry( ecs_registry )
 	, mPhysicsEngine( std::make_unique<eage::physics::PhysicsEngine>() )
 {
+	mECSRegistry.Subscribe( this );
 }
 
 PhysicsSystem::~PhysicsSystem()
 {
+	mECSRegistry.Unsubscribe( this );
 	Shutdown();
 }
 
@@ -53,7 +55,7 @@ PhysicsSystem::Update( float dt )
 		// Process physics events (always when pending, so SetActive can re-enable the body)
 		if( physics.body_id != INVALID_ID )
 		{
-			auto body = mBodyManager.Get( physics.body_id );
+			auto body = mBodyStore.Get( physics.body_id );
 			if( body )
 			{
 				for( const auto& event : physics.pending_events )
@@ -157,7 +159,7 @@ void
 PhysicsSystem::Shutdown()
 {
 	// Cleanup logic would go here
-	mBodyManager.Clear();
+	mBodyStore.Clear();
 	mPhysicsEngine->ClearEventListener();
 }
 
@@ -171,6 +173,22 @@ void
 PhysicsSystem::Unsubscribe( Observer* observer )
 {
 	mObservers.erase( observer );
+}
+
+void
+PhysicsSystem::OnEntityDestroying( Entity entity )
+{
+	if( !mECSRegistry.HasComponent<PhysicsComponent>( entity ) )
+	{
+		return;
+	}
+
+	auto& physics = mECSRegistry.GetComponent<PhysicsComponent>( entity );
+	if( physics.body_id != INVALID_ID )
+	{
+		mBodyStore.RemoveReference( physics.body_id );
+		physics.body_id = INVALID_ID;
+	}
 }
 
 void
@@ -330,7 +348,7 @@ PhysicsSystem::CreateCollisionBodyFromComponents( uint64_t entity )
 	// @todo more collider types
 
 	// Store the body in the resource manager and save the ID in the component
-	physics.body_id = mBodyManager.Store( std::move( physics_body ) );
+	physics.body_id = mBodyStore.Store( std::move( physics_body ) );
 }
 
 void
@@ -344,7 +362,7 @@ PhysicsSystem::SyncTransformFromBodies( uint64_t entity )
 		return;
 	}
 
-	auto body = mBodyManager.Get( physics.body_id );
+	auto body = mBodyStore.Get( physics.body_id );
 	if( !body )
 	{
 		LOG_ERROR() << "Invalid body ID in PhysicsComponent for entity " << entity;

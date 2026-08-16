@@ -1,7 +1,7 @@
 #ifndef _EAGE_COMPONENTS_EFFECT_H_
 #define _EAGE_COMPONENTS_EFFECT_H_
 
-#include <ecs/ResourceManager.h>
+#include <ecs/ResourceStore.h>
 
 namespace eage::ecs
 {

@@ -1,5 +1,5 @@
 ---
-description: "ECS architecture for Vortex. Covers ECSRegistry, ResourceManager, all components (Transform, Render, Physics, Audio, HUD, SceneGraph), and all systems. Auto-applied when editing src/core/ecs/ or src/game/."
+description: "ECS architecture for Vortex. Covers ECSRegistry, ResourceStore, ResourceHandle, all components (Transform, Render, Physics, Audio, HUD, SceneGraph), and all systems. Auto-applied when editing src/core/ecs/ or src/game/."
 globs: ["src/core/ecs/**/*.cpp", "src/core/ecs/**/*.h", "src/game/**/*.cpp", "src/game/**/*.h"]
 alwaysApply: false
 ---
@@ -8,7 +8,7 @@ alwaysApply: false
 
 ## Purpose
 
-Provides the Entity-Component-System architecture for the game layer. `ECSRegistry` is the central store. Systems operate on components each frame. Resource-heavy objects (meshes, materials, physics bodies, sounds) are held in `ResourceManager` pools and referenced by opaque `ResourceId` handles.
+Provides the Entity-Component-System architecture for the game layer. `ECSRegistry` is the central store. Systems operate on components each frame. Resource-heavy objects (meshes, materials, physics bodies, sounds) are held in `ResourceStore` pools and referenced by opaque `ResourceId` values. Creator ownership for meshes/materials uses RAII `ResourceHandle`.
 
 ## Key Classes
 
@@ -16,10 +16,11 @@ Provides the Entity-Component-System architecture for the game layer. `ECSRegist
 |---|---|
 | `ComponentPool<T>` | Sparse-set dense storage per component type; cache-friendly iteration over `mDense` |
 | `ECSRegistry` | Type-erased component store; template API for compile-time safety; uses `std::type_index` -> `ComponentPool<T>` internally |
-| `ResourceManager<PtrType>` | Generic ref-counted resource pool; stores any smart-pointer type; returns opaque `ResourceId` |
+| `ResourceStore<PtrType>` | Id-keyed, ref-counted store for smart-pointer resources |
+| `ResourceHandle` | RAII owner of one store ref (`Adopt` after `Store`; copy AddReferences; destroy/Reset RemoveReferences) |
 | `TransformComponent` | Position / rotation / scale with dirty-flag caching; world matrix updated by `SceneGraphSystem` |
 | `SceneGraphComponent` | Parent entity ID + children list; drives hierarchical transform propagation |
-| `RenderComponent` | Holds `ResourceId`s for mesh, material, descriptor, uniform buffer; `texture_index` for bindless sampling; `uv_rect` for animation sub-regions; visibility flag |
+| `RenderComponent` | Holds non-owning `ResourceId`s for mesh, material, descriptor, uniform buffer; `texture_index` for bindless sampling; `uv_rect` for animation sub-regions; visibility flag |
 | `PhysicsComponent` | Holds body `ResourceId`; event queue for forces/impulses/velocity/position/rotation/sleep |
 | `BoxColliderComponent` / `CircleColliderComponent` | Collision shape + `CollisionFilter` (category/mask/group bits) |
 | `AudioSourceComponent` | Named sound source map (`string` -> `ResourceId` for `SoundPool`) |
@@ -57,36 +58,38 @@ for( auto [entity, transform] : registry.GetComponentMap<TransformComponent>() )
 registry.RemoveComponent<TransformComponent>( entity );
 ```
 
-## ResourceManager API
+## ResourceStore + ResourceHandle API
 
 ```cpp
-ResourceId id = manager.Store( std::make_unique<MyResource>( ... ) );
-MyResource* ptr = manager.Get( id );  // nullptr if invalid
-manager.AddReference( id );
-manager.RemoveReference( id );        // frees if ref count hits zero
-bool live = manager.Exists( id );
+ResourceId id = store.Store( std::make_unique<MyResource>( ... ) );
+ResourceHandle handle = ResourceHandle::Adopt( store, id ); // owns the Store's initial ref
+
+ResourceHandle copy = handle; // AddReference
+handle.Reset();               // RemoveReference
+
+MyResource* ptr = store.Get( handle.Get() ); // nullptr if invalid
+bool live = store.Exists( id );
 ```
+
+Ownership: handles (and attach/detach) own refs. `RenderComponent` stores non-owning `ResourceId`s. Physics bodies use the Store initial ref as the component-owned ref until `OnEntityDestroying`.
 
 ## RenderSystem API (sprites)
 
 ```cpp
-// Upload texture to bindless array; returns bindless index (deduplicated by path)
 uint32_t tex_index = render_system.CreateTexture( "./resources/textures/ship/Ship.png" );
 
-// Material = pipeline/state only (no texture)
-ResourceId mat_id = render_system.CreateMaterial( MaterialBuilder()
+MaterialHandle mat = render_system.CreateMaterial( MaterialBuilder()
     .SetShaders( "vert.spv", "frag.spv" )
     .SetAlphaBlending()
     .Build() );
 
-// Sprite mesh with full 0..1 UVs
-ResourceId mesh_id = render_system.CreateSpriteMesh( 32.f, 32.f );
+MeshHandle mesh = render_system.CreateSpriteMesh( 32.f, 32.f );
 
-// Attach sprite (creates mesh + renderable in one call)
-render_system.AttachSprite( entity, mat_id, 32.f, 32.f, tex_index );
+render_system.AttachRenderable( entity, mesh.Get(), mat.Get(), tex_index );
+// Keep mesh/mat handles alive while shared; Reset() when dropping creator ownership.
 
-// Attach existing mesh + material + texture index
-render_system.AttachRenderable( entity, mesh_id, mat_id, tex_index );
+// AttachSprite creates a per-entity mesh and leaves the entity as sole mesh owner
+render_system.AttachSprite( entity, mat.Get(), 32.f, 32.f, tex_index );
 ```
 
 ## Physics Event Queue Pattern
@@ -123,7 +126,8 @@ physics_system.RegisterObserver( &my_listener );
 ## Key Patterns
 
 - **Event queueing:** Components accumulate commands during logic phase; systems drain them during `Update()`. Prevents mid-frame state corruption.
-- **ResourceId indirection:** ECS never stores raw graphics/physics/audio pointers. Use `ResourceManager::Get()` to resolve, check for `nullptr`.
+- **ResourceId indirection:** ECS never stores raw graphics/physics/audio pointers. Use `ResourceStore::Get()` to resolve, check for `nullptr`.
+- **Handle ownership:** Systems hold `ResourceHandle` for shared meshes/materials; entities get refs via `AttachRenderable` / lose them via `DetachRenderable`.
 - **PIMPL in RenderSystem:** Public header has no Vulkan includes. All Vulkan types live in the `.cpp` impl struct.
 - **Dirty-flag transforms:** Only recompute local matrix when `TransformComponent` is modified. `SceneGraphSystem` propagates world matrices.
 - **Unit conversion:** `PhysicsSystem` converts pixels <-> meters internally. Game code always works in pixel units.
@@ -133,15 +137,16 @@ physics_system.RegisterObserver( &my_listener );
 
 - Queue physics commands via `PhysicsComponent::Queue*()` -- never modify Box2D bodies directly
 - Use `registry.GetComponentMap<T>()` to iterate all entities with a given component
-- Check `ResourceManager::Exists( id )` before calling `Get()` in non-critical paths
+- Check `ResourceStore::Exists( id )` before calling `Get()` in non-critical paths
 - Register `PhysicsSystem::Observer` for collision responses; don't poll physics state per frame
 - Use `RenderSystem::CreateTexture()` for static sprite textures; pass the index to `AttachSprite()` or `AttachRenderable()`
 - Use `RenderSystem::AttachSprite()` / `AttachRenderable()` helpers for common setup
+- Hold shared mesh/material creators in `ResourceHandle` members; Reset on teardown
 
 ## DON'Ts
 
 - Don't store raw pointers to components across frames -- dense pools can reallocate on `Remove`
 - Don't call `PhysicsEngine` methods directly from game code -- go through `PhysicsSystem`
 - Don't add engine-specific (graphics/audio/physics) includes to component headers -- keep them POD-friendly
-- Don't manually manage `ResourceId` ref counts unless you explicitly call `AddReference()`
+- Don't manually `AddReference`/`RemoveReference` from game code for meshes/materials -- use handles and Attach/Detach
 - Don't bind textures through `MaterialBuilder::AddTexture()` for sprites -- use `CreateTexture()` instead

@@ -81,7 +81,7 @@ waves of forty enemies is 800 permanent entities.
 ### 2. Physics bodies are permanent
 
 `PhysicsSystem::Update` creates a body when it sees `body_id == INVALID_ID` and stores it in
-`mBodyManager` with a refcount of 1. Nothing ever calls `RemoveReference` for entity bodies.
+`mBodyStore` with a refcount of 1. Nothing ever calls `RemoveReference` for entity bodies.
 `b2DestroyBody` runs only in `~PhysicsBody`, which is reached only when the whole
 `PhysicsSystem` is destroyed.
 
@@ -446,7 +446,7 @@ Covered in Hard Constraints 1 and 2. Nothing in the engine frees an entity or a 
 *Mitigation:* pool everything, size pools from `ComputePoolRequirements()` at scene enter,
 and treat "no `CreateEntity` after scene enter" as an invariant of the gameplay layer. The
 real fix - adding `ECSRegistry::DestroyEntity` plus a physics body release path - is a much
-larger change (it touches every component pool, the physics `ResourceManager`, and
+larger change (it touches every component pool, the physics `ResourceStore`, and
 `SceneGraphComponent` child-list pruning) and should be a separate effort. See Out-of-Scope.
 
 ### 2. Frame cost is driven by pool size, not live enemies (severity: medium-high)
@@ -604,7 +604,7 @@ Phases 1 and 2 are independent and can proceed in parallel.
 These are needed eventually but are not part of this system.
 
 - **`ECSRegistry::DestroyEntity` and a physics body release path.** The real fix for the
-  pooling ceiling. Touches every component pool, the physics `ResourceManager`, and
+  pooling ceiling. Touches every component pool, the physics `ResourceStore`, and
   `SceneGraphComponent` child lists. Until it exists, pool sizes are a hard cap on how large
   a wave can be.
 - **Pause / timescale in the shell loop.** Required before the shop and level-up UI can

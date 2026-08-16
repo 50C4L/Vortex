@@ -456,12 +456,25 @@ AnimToolApp::~AnimToolApp()
 		mFrameSequence->Clear();
 	}
 
+	// Drop entity + creator refs while RenderSystem / VMA are still alive.
+	if( mRenderSystem && mPreviewEntity != 0 )
+	{
+		mRenderSystem->DetachRenderable( mPreviewEntity );
+		mPreviewEntity = 0;
+	}
+	mPreviewMesh.Reset();
+	mPreviewMaterial.Reset();
+	if( mRenderSystem )
+	{
+		mRenderSystem->FlushPendingDeletes();
+	}
+
 	mImGuiPass.reset();
 	mScenePass.reset();
-	mRenderer.reset();
-	mFrameSequence.reset();
 	mRenderSystem.reset();
 	mECSRegistry.reset();
+	mRenderer.reset();
+	mFrameSequence.reset();
 	mPreviewCamera.reset();
 	mFileDialog.reset();
 	mWindow.reset();
@@ -550,12 +563,12 @@ AnimToolApp::InitPreviewRendering()
 		.EnableDepthTest( true )
 		.Build();
 
-	mPreviewMaterialId = mRenderSystem->CreateMaterial( material_property );
+	mPreviewMaterial = mRenderSystem->CreateMaterial( material_property );
 
 	mPreviewEntity = mECSRegistry->CreateEntity();
 	mECSRegistry->AddComponent( mPreviewEntity, eage::ecs::TransformComponent{} );
-	mPreviewMeshId = mRenderSystem->CreateSpriteMesh( 1.f, 1.f );
-	mRenderSystem->AttachRenderable( mPreviewEntity, mPreviewMeshId, mPreviewMaterialId, 0, false );
+	mPreviewMesh = mRenderSystem->CreateSpriteMesh( 1.f, 1.f );
+	mRenderSystem->AttachRenderable( mPreviewEntity, mPreviewMesh.Get(), mPreviewMaterial.Get(), 0, false );
 }
 
 void
@@ -616,10 +629,15 @@ AnimToolApp::UpdatePreviewSprite()
 	{
 		mPreviewMeshWidth = frame.GetWidth();
 		mPreviewMeshHeight = frame.GetHeight();
-		mPreviewMeshId = mRenderSystem->CreateSpriteMesh(
+
+		const uint32_t texture_index = render_cmp.texture_index;
+		const bool visible = render_cmp.visible;
+		mRenderSystem->DetachRenderable( mPreviewEntity );
+		mPreviewMesh = mRenderSystem->CreateSpriteMesh(
 			static_cast<float>( mPreviewMeshWidth ),
 			static_cast<float>( mPreviewMeshHeight ) );
-		render_cmp.mesh_buffer_id = mPreviewMeshId;
+		mRenderSystem->AttachRenderable(
+			mPreviewEntity, mPreviewMesh.Get(), mPreviewMaterial.Get(), texture_index, visible );
 
 		const float half_width = static_cast<float>( mPreviewMeshWidth ) * 0.5f;
 		const float half_height = static_cast<float>( mPreviewMeshHeight ) * 0.5f;

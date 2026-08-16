@@ -9,7 +9,7 @@
 
 #include <glm/glm.hpp>
 
-#include <ecs/ResourceManager.h>
+#include <ecs/ResourceStore.h>
 #include <ecs/systems/PhysicsSystem.h>
 
 namespace eage::ecs
@@ -59,6 +59,9 @@ namespace vortex
 		///
 		BulletPoolId PreparePool( eage::ecs::RenderSystem& render_system, const BulletPoolConfig& config, int count, uint64_t root_entity );
 
+		/// Destroy all pooled bullet entities and drop pool mesh creator refs.
+		void ReleaseAll();
+
 		///
 		/// Fire a bullet from the given pool at the given world position and direction.
 		/// Returns true if a bullet was spawned, false if rate-limited or pool exhausted.
@@ -88,6 +91,7 @@ namespace vortex
 		BulletPoolId mNextPoolId = 1;
 		std::unordered_map<BulletPoolId, std::deque<uint64_t>> mPools;
 		std::unordered_map<uint64_t, BulletPoolId> mEntityToPool;
+		std::unordered_map<BulletPoolId, eage::ecs::ResourceHandle> mPoolMeshes;
 		std::unordered_map<BulletPoolId, float> mPoolFireInterval;
 		std::unordered_map<BulletPoolId, std::chrono::steady_clock::time_point> mPoolLastFireTime;
 

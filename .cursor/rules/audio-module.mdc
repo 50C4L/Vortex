@@ -36,7 +36,7 @@ sfx.Restart();   // seek to 0 + Play -- used for overlapping one-shot SFX
 ## Key Patterns
 
 - **RAII:** Both `ma_engine` and `ma_sound` are held in `unique_ptr` with custom deleters that call miniaudio teardown. Never manually uninit.
-- **Move semantics:** `SoundInstance` is movable for storage in `std::vector` / `ResourceManager`. Copy is deleted.
+- **Move semantics:** `SoundInstance` is movable for storage in `std::vector` / `ResourceStore`. Copy is deleted.
 - **SoundPool (in AudioSystem):** For SFX that can overlap (e.g., bullet fire), `AudioSystem` keeps a pool of `SoundInstance` objects and round-robins `Restart()` calls instead of creating new instances each time.
 - **Async loading:** Miniaudio loads audio data on a background thread. `Play()` called immediately after `CreateSound()` may produce silence for a frame -- this is expected.
 

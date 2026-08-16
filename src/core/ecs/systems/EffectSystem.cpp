@@ -68,13 +68,13 @@ EffectSystem::Create( RenderSystem& render_system, const EffectConfig& config, E
 	}
 
 	const uint32_t texture_index = clip->GetFrameTexture( 0 );
-	const ResourceId mesh_id = render_system.CreateSpriteMesh( mesh_width, mesh_height );
+	ResourceHandle mesh = render_system.CreateSpriteMesh( mesh_width, mesh_height );
 
 	ResourceId effect_id = mNextEffectId++;
 	EffectDefinition& definition = mEffects[effect_id];
 	definition.clip_ids = config.clip_ids;
 	definition.material_id = config.material_id;
-	definition.mesh_id = mesh_id;
+	definition.mesh = std::move( mesh );
 	definition.sound_id = config.sound_id;
 
 	const glm::vec2 inactive_pos( INACTIVE_OFFSET, -INACTIVE_OFFSET );
@@ -93,7 +93,7 @@ EffectSystem::Create( RenderSystem& render_system, const EffectConfig& config, E
 
 		mRegistry.AddComponent( entity, EffectInstanceComponent{ effect_id, false } );
 
-		render_system.AttachRenderable( entity, mesh_id, config.material_id, texture_index, false );
+		render_system.AttachRenderable( entity, definition.mesh.Get(), config.material_id, texture_index, false );
 
 		mAnimationSystem.Attach( entity, config.clip_ids[0] );
 		mAnimationSystem.Pause( entity );
@@ -108,6 +108,20 @@ EffectSystem::Create( RenderSystem& render_system, const EffectConfig& config, E
 	}
 
 	return effect_id;
+}
+
+void
+EffectSystem::ReleaseAll()
+{
+	for( auto& [effect_id, definition] : mEffects )
+	{
+		(void)effect_id;
+		for( Entity entity : definition.all )
+		{
+			mRegistry.QueueDestroyEntity( entity );
+		}
+	}
+	mEffects.clear();
 }
 
 bool

@@ -2,7 +2,7 @@
 #define _EAGE_SYSTEMS_ANIMATION_SYSTEM_H_
 
 #include <ecs/ECS.h>
-#include <ecs/ResourceManager.h>
+#include <ecs/ResourceStore.h>
 #include <ecs/components/Animation.h>
 #include <memory>
 #include <string>
@@ -49,7 +49,7 @@ namespace eage::ecs
 		const AnimatedSpriteComponent* GetAnimComponent( Entity entity ) const;
 
 		ECSRegistry& mRegistry;
-		ResourceManager<std::shared_ptr<const assets::AnimationClip>> mClipManager;
+		ResourceStore<std::shared_ptr<const assets::AnimationClip>> mClipStore;
 		std::unordered_map<std::string, ResourceId> mClipPathToId;
 	};
 }
