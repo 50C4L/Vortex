@@ -4,4 +4,6 @@ thirdparty
 *.spv
 imgui.ini
 nul
-resources
+resources/*
+!resources/enemies/
+!resources/enemies/**

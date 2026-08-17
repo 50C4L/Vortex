@@ -22,8 +22,12 @@ add_executable(Vortex
 	./src/game/components/ExperienceComponent.h
 	./src/game/components/GameGenericComponents.h
 	./src/game/components/PlayerComponents.h
-	./src/game/systems/AsteroidGameplaySystem.h
-	./src/game/systems/AsteroidGameplaySystem.cpp
+	./src/game/components/EnemyComponent.h
+	./src/game/components/DriftComponent.h
+	./src/game/data/EnemyDefinition.h
+	./src/game/data/EnemyDefinition.cpp
+	./src/game/systems/EnemySystem.h
+	./src/game/systems/EnemySystem.cpp
 	./src/game/systems/BulletSystem.h
 	./src/game/systems/BulletSystem.cpp
 	./src/game/systems/LevelingSystem.h

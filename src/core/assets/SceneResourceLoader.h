@@ -46,6 +46,7 @@ namespace assets
 		/// uint32_t rather than ecs::ResourceId so assets stays free of ecs; the
 		/// two are the same type, so call sites are unaffected.
 		uint32_t GetTexture( const std::string& path ) const;
+		bool HasTexture( const std::string& path ) const;
 		uint32_t GetClip( const std::string& path ) const;
 		uint32_t GetSound( const std::string& path ) const;
 

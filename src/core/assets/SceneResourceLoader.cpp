@@ -52,6 +52,18 @@ SceneResourceLoader::GetTexture( const std::string& path ) const
 	return Lookup( SECTION_TEXTURES, path );
 }
 
+bool
+SceneResourceLoader::HasTexture( const std::string& path ) const
+{
+	auto table_it = mTables.find( SECTION_TEXTURES );
+	if( table_it == mTables.end() )
+	{
+		return false;
+	}
+
+	return table_it->second.find( path ) != table_it->second.end();
+}
+
 uint32_t
 SceneResourceLoader::GetClip( const std::string& path ) const
 {

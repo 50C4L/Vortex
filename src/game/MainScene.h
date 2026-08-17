@@ -37,7 +37,7 @@ namespace assets
 
 namespace vortex
 {
-	class AsteroidGameplaySystem;
+	class EnemySystem;
 	class BulletSystem;
 	class LevelingSystem;
 	class PlayerInputSystem;
@@ -88,7 +88,7 @@ namespace vortex
 		std::unique_ptr<PlayerInputSystem> mPlayerInputSystem;
 		std::unique_ptr<PlayerGameplaySystem> mPlayerGameplaySystem;
 		std::unique_ptr<WarpSystem> mWarpSystem;
-		std::unique_ptr<AsteroidGameplaySystem> mAsteroidGameplaySystem;
+		std::unique_ptr<EnemySystem> mEnemySystem;
 		std::unique_ptr<BulletSystem> mBulletSystem;
 		std::unique_ptr<LevelingSystem> mLevelingSystem;
 

@@ -80,6 +80,28 @@ namespace utility
 
 		return parent[key.c_str()].GetString();
 	}
+
+	inline float get_json_float( const rapidjson::Value& parent, const std::string& key )
+	{
+		if( !parent.HasMember( key.c_str() ) || !parent[key.c_str()].IsNumber() )
+		{
+			LOG_ERROR( "Expected json float." );
+			return 0.f;
+		}
+
+		return parent[key.c_str()].GetFloat();
+	}
+
+	inline bool get_json_bool( const rapidjson::Value& parent, const std::string& key )
+	{
+		if( !parent.HasMember( key.c_str() ) || !parent[key.c_str()].IsBool() )
+		{
+			LOG_ERROR( "Expected json bool." );
+			return false;
+		}
+
+		return parent[key.c_str()].GetBool();
+	}
 }
 
 #endif // _EAGE_JSON_PARSER_H_

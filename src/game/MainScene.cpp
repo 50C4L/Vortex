@@ -19,7 +19,8 @@
 #include <ecs/components/Render.h>
 
 #include "GameConfig.h"
-#include "systems/AsteroidGameplaySystem.h"
+#include "data/EnemyDefinition.h"
+#include "systems/EnemySystem.h"
 #include <graphics/MaterialBuilder.h>
 #include "systems/BulletSystem.h"
 #include "systems/LevelingSystem.h"
@@ -131,9 +132,9 @@ MainScene::OnExit()
 	{
 		mBulletSystem->ReleaseAll();
 	}
-	if( mAsteroidGameplaySystem )
+	if( mEnemySystem )
 	{
-		mAsteroidGameplaySystem->ReleaseAll();
+		mEnemySystem->ReleaseAll();
 	}
 	mEffectSystem.ReleaseAll();
 	if( mPlayerGameplaySystem )
@@ -166,7 +167,7 @@ MainScene::OnExit()
 	mPlayerInputSystem.reset();
 	mPlayerGameplaySystem.reset();
 	mWarpSystem.reset();
-	mAsteroidGameplaySystem.reset();
+	mEnemySystem.reset();
 	mBulletSystem.reset();
 	mLevelingSystem.reset();
 
@@ -214,7 +215,7 @@ MainScene::Update( float dt )
 	// System update
 	mPlayerGameplaySystem->Update( dt );
 	mBulletSystem->Update( dt );
-	mAsteroidGameplaySystem->Update();
+	mEnemySystem->Update();
 	mLevelingSystem->Update();
 
 	if( mStatusPanel )
@@ -333,7 +334,7 @@ MainScene::InitializeGenericSystems()
 {
 	mWarpSystem = std::make_unique<WarpSystem>( mECSRegistry, mPhysicsSystem );
 	mBulletSystem = std::make_unique<BulletSystem>( mECSRegistry, mPhysicsSystem, mAnimationSystem, mSceneGraphSystem );
-	mAsteroidGameplaySystem = std::make_unique<AsteroidGameplaySystem>( mECSRegistry, mPhysicsSystem, mEffectSystem, mSceneGraphSystem );
+	mEnemySystem = std::make_unique<EnemySystem>( mECSRegistry, mPhysicsSystem, mEffectSystem, mSceneGraphSystem );
 	mLevelingSystem = std::make_unique<LevelingSystem>( mECSRegistry );
 }
 
@@ -360,7 +361,14 @@ MainScene::CreateExplosionEffect()
 void
 MainScene::CreateEnemyEntities()
 {
-	mAsteroidGameplaySystem->PrepareAsteroids( mRenderSystem, mResourceLoader, 100, mSceneRootEntity );
-	mAsteroidGameplaySystem->SetDeathEffect( mExplosionEffectId );
-	mAsteroidGameplaySystem->SpawnAsteroid( 10 );
+	EnemyDefinition definition;
+	if( !load_enemy_definition( "./resources/enemies/asteroid_large.json", definition ) )
+	{
+		LOG_ERROR( "MainScene: failed to load enemy definition" );
+		return;
+	}
+
+	mEnemySystem->PreparePool( mRenderSystem, mResourceLoader, definition, 100, mSceneRootEntity );
+	mEnemySystem->SetDeathEffect( mExplosionEffectId );
+	mEnemySystem->Spawn( definition.id, 10 );
 }
