@@ -26,8 +26,13 @@ add_executable(Vortex
 	./src/game/components/DriftComponent.h
 	./src/game/data/EnemyDefinition.h
 	./src/game/data/EnemyDefinition.cpp
+	./src/game/data/WaveTypes.h
+	./src/game/data/WaveStore.h
+	./src/game/data/WaveStore.cpp
 	./src/game/systems/EnemySystem.h
 	./src/game/systems/EnemySystem.cpp
+	./src/game/systems/WaveSystem.h
+	./src/game/systems/WaveSystem.cpp
 	./src/game/systems/BulletSystem.h
 	./src/game/systems/BulletSystem.cpp
 	./src/game/systems/LevelingSystem.h

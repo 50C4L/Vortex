@@ -1,6 +1,8 @@
 #include "EnemySystem.h"
 
+#include <algorithm>
 #include <cstdlib>
+#include <vector>
 
 #include <assets/SceneResourceLoader.h>
 #include <ecs/ECS.h>
@@ -228,6 +230,40 @@ EnemySystem::Spawn( const std::string& definition_id, int count )
 	}
 
 	return spawned == count;
+}
+
+void
+EnemySystem::DespawnAll()
+{
+	std::vector<uint64_t> live_entities;
+	for( const auto& [id, pool] : mPools )
+	{
+		(void)id;
+		for( uint64_t entity : pool.all )
+		{
+			if( std::find( pool.available.begin(), pool.available.end(), entity ) == pool.available.end() )
+			{
+				live_entities.push_back( entity );
+			}
+		}
+	}
+
+	for( uint64_t entity : live_entities )
+	{
+		Despawn( entity );
+	}
+}
+
+int
+EnemySystem::GetLiveCount() const
+{
+	int live = 0;
+	for( const auto& [id, pool] : mPools )
+	{
+		(void)id;
+		live += static_cast<int>( pool.all.size() ) - static_cast<int>( pool.available.size() );
+	}
+	return live;
 }
 
 void

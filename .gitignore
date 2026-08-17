@@ -7,3 +7,5 @@ nul
 resources/*
 !resources/enemies/
 !resources/enemies/**
+!resources/waves/
+!resources/waves/**

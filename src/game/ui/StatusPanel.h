@@ -13,16 +13,19 @@ namespace eage::ui
 
 namespace vortex
 {
+	class WaveSystem;
+
 	class StatusPanel
 	{
 	public:
-		StatusPanel( eage::ecs::ECSRegistry& registry, eage::ui::UIDataModel& model );
+		StatusPanel( eage::ecs::ECSRegistry& registry, eage::ui::UIDataModel& model, WaveSystem& wave_system );
 
 		void Update();
 
 	private:
 		eage::ecs::ECSRegistry& mRegistry;
 		eage::ui::UIDataModel& mModel;
+		WaveSystem& mWaveSystem;
 	};
 }
 

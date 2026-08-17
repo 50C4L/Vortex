@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "waves": [
+    {
+      "time_sec": 30,
+      "enemies": [
+        {
+          "id": "asteroid_large",
+          "total": 5,
+          "spawn_type": "batch",
+          "batch_size": 1,
+          "spawn_interval": 1.0
+        }
+      ]
+    },
+	{
+      "time_sec": 30,
+      "enemies": [
+        {
+          "id": "asteroid_large",
+          "total": 20,
+          "spawn_type": "batch",
+          "batch_size": 5,
+          "spawn_interval": 2.0
+        }
+      ]
+    }
+  ]
+}

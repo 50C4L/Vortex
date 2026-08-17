@@ -4,10 +4,15 @@
 		<link type="text/css" href="hud.rcss"/>
 	</head>
 	<body data-model="hud">
+		<div id="wave-banner">{{ wave_banner_text }}</div>
 		<div id="status">
 			<div id="status-top">
 				<div class="label">LEVEL {{ current_level }}</div>
 				<div class="value">{{ current_xp }} / {{ xp_to_lvl_up }}</div>
+			</div>
+			<div id="status-wave">
+				<div class="label">WAVE ENDS IN</div>
+				<div class="value">{{ wave_time_remaining }}</div>
 			</div>
 			<div id="status-bottom">
 				<div class="label">KILL: {{ kill_count }}</div>

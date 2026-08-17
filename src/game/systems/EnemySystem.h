@@ -62,6 +62,11 @@ namespace vortex
 		///
 		bool Spawn( const std::string& definition_id, int count );
 
+		/// Recycle every live enemy into its pool. Does not grant XP or play death effects.
+		void DespawnAll();
+
+		int GetLiveCount() const;
+
 		void Update();
 
 		// PhysicsSystem::Observer interface

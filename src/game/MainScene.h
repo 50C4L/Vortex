@@ -44,6 +44,8 @@ namespace vortex
 	class PlayerGameplaySystem;
 	class StatusPanel;
 	class WarpSystem;
+	class WaveStore;
+	class WaveSystem;
 
 	class MainScene : public AbstractScene
 	{
@@ -89,6 +91,8 @@ namespace vortex
 		std::unique_ptr<PlayerGameplaySystem> mPlayerGameplaySystem;
 		std::unique_ptr<WarpSystem> mWarpSystem;
 		std::unique_ptr<EnemySystem> mEnemySystem;
+		std::unique_ptr<WaveStore> mWaveStore;
+		std::unique_ptr<WaveSystem> mWaveSystem;
 		std::unique_ptr<BulletSystem> mBulletSystem;
 		std::unique_ptr<LevelingSystem> mLevelingSystem;
 

@@ -1,5 +1,7 @@
 #include "MainScene.h"
 
+#include <string>
+
 #include <utility/Logger.h>
 #include <graphics/Camera.h>
 #include <graphics/Renderer.h>
@@ -20,6 +22,7 @@
 
 #include "GameConfig.h"
 #include "data/EnemyDefinition.h"
+#include "data/WaveStore.h"
 #include "systems/EnemySystem.h"
 #include <graphics/MaterialBuilder.h>
 #include "systems/BulletSystem.h"
@@ -27,6 +30,7 @@
 #include "systems/PlayerInputSystem.h"
 #include "systems/PlayerGameplaySystem.h"
 #include "systems/WarpSystem.h"
+#include "systems/WaveSystem.h"
 #include "components/GameGenericComponents.h"
 #include "ui/StatusPanel.h"
 
@@ -74,12 +78,14 @@ MainScene::OnEnter()
 		LOG_ERROR( "MainScene: failed to load resource manifest" );
 	}
 
+	InitializeGenericSystems();
+
 	mUIView = std::make_unique<eage::ui::UIView>(
 		mUISystem,
 		"main_hud",
 		static_cast<uint32_t>( config::VirtualResolution::WIDTH ),
 		static_cast<uint32_t>( config::VirtualResolution::HEIGHT ) );
-	mStatusPanel = std::make_unique<StatusPanel>( mECSRegistry, mUIView->GetDataModel() );
+	mStatusPanel = std::make_unique<StatusPanel>( mECSRegistry, mUIView->GetDataModel(), *mWaveSystem );
 	if( !mUIView->LoadDocument( "./src/game/ui/rml/hud.rml" ) )
 	{
 		LOG_ERROR( "MainScene: failed to load HUD document" );
@@ -92,8 +98,6 @@ MainScene::OnEnter()
 		static_cast<uint32_t>( config::VirtualResolution::HEIGHT ) );
 	mCompositePass->SetInputs( &mScenePass->GetColorTarget(), mUIView->GetOutput() );
 	mRenderer.AddRenderPass( mCompositePass.get() );
-
-	InitializeGenericSystems();
 
 	PrepareMeshes();
 
@@ -167,6 +171,9 @@ MainScene::OnExit()
 	mPlayerInputSystem.reset();
 	mPlayerGameplaySystem.reset();
 	mWarpSystem.reset();
+	mStatusPanel.reset();
+	mWaveSystem.reset();
+	mWaveStore.reset();
 	mEnemySystem.reset();
 	mBulletSystem.reset();
 	mLevelingSystem.reset();
@@ -184,7 +191,6 @@ MainScene::OnExit()
 	{
 		mRenderer.RemoveRenderPass( &mUIView->GetRenderPass() );
 	}
-	mStatusPanel.reset();
 	mUIView.reset();
 
 	mRenderSystem.SetScenePass( nullptr );
@@ -216,6 +222,10 @@ MainScene::Update( float dt )
 	mPlayerGameplaySystem->Update( dt );
 	mBulletSystem->Update( dt );
 	mEnemySystem->Update();
+	if( mWaveSystem )
+	{
+		mWaveSystem->Update( dt );
+	}
 	mLevelingSystem->Update();
 
 	if( mStatusPanel )
@@ -335,6 +345,8 @@ MainScene::InitializeGenericSystems()
 	mWarpSystem = std::make_unique<WarpSystem>( mECSRegistry, mPhysicsSystem );
 	mBulletSystem = std::make_unique<BulletSystem>( mECSRegistry, mPhysicsSystem, mAnimationSystem, mSceneGraphSystem );
 	mEnemySystem = std::make_unique<EnemySystem>( mECSRegistry, mPhysicsSystem, mEffectSystem, mSceneGraphSystem );
+	mWaveStore = std::make_unique<WaveStore>();
+	mWaveSystem = std::make_unique<WaveSystem>( *mEnemySystem );
 	mLevelingSystem = std::make_unique<LevelingSystem>( mECSRegistry );
 }
 
@@ -361,14 +373,28 @@ MainScene::CreateExplosionEffect()
 void
 MainScene::CreateEnemyEntities()
 {
-	EnemyDefinition definition;
-	if( !load_enemy_definition( "./resources/enemies/asteroid_large.json", definition ) )
+	if( !mWaveStore->Load( "./resources/waves/waves.json" ) )
 	{
-		LOG_ERROR( "MainScene: failed to load enemy definition" );
+		LOG_ERROR( "MainScene: failed to load wave store" );
 		return;
 	}
 
-	mEnemySystem->PreparePool( mRenderSystem, mResourceLoader, definition, 100, mSceneRootEntity );
+	mWaveSystem->SetStore( *mWaveStore );
+
+	const auto pool_requirements = mWaveStore->ComputePoolRequirements();
+	for( const auto& [id, count] : pool_requirements )
+	{
+		EnemyDefinition definition;
+		const std::string enemy_path = "./resources/enemies/" + id + ".json";
+		if( !load_enemy_definition( enemy_path, definition ) )
+		{
+			LOG_ERROR() << "MainScene: failed to load enemy definition " << enemy_path;
+			return;
+		}
+
+		mEnemySystem->PreparePool( mRenderSystem, mResourceLoader, definition, count, mSceneRootEntity );
+	}
+
 	mEnemySystem->SetDeathEffect( mExplosionEffectId );
-	mEnemySystem->Spawn( definition.id, 10 );
+	mWaveSystem->StartWave( 0 );
 }
