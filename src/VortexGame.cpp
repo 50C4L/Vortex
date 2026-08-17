@@ -2,7 +2,6 @@
 #include "EngineContext.h"
 #include "AbstractScene.h"
 
-#include <chrono>
 #include <iostream>
 #include <optional>
 
@@ -12,6 +11,7 @@
 #include <utility/Pointers.h>
 #include <utility/Logger.h>
 #include <utility/Filesystem.h>
+#include <utility/DeltaTimer.h>
 #include <graphics/Renderer.h>
 #include <graphics/PresentPass.h>
 #include <ui/UISystem.h>
@@ -102,13 +102,14 @@ VortexGame::~VortexGame()
 void
 VortexGame::Run()
 {
-	auto last_frame_time = std::chrono::steady_clock::now();
+	utility::DeltaTimer scene_timer;
+	utility::DeltaTimer physics_timer;
+	utility::DeltaTimer animation_timer;
+	utility::DeltaTimer audio_timer;
+
 	bool quit = false;
 	while( !quit )
 	{
-		auto now = std::chrono::steady_clock::now();
-		float dt = std::chrono::duration<float>( now - last_frame_time ).count();
-		last_frame_time = now;
 		SDL_Event event;
 		while( SDL_PollEvent( &event ) )
 		{
@@ -128,14 +129,14 @@ VortexGame::Run()
 		// Update performance tracker
 		mPerformanceTracker->Update();
 
-		mSceneController->Update( dt );
+		mSceneController->Update( scene_timer.Tick() );
 
 		mECSRegistry->FlushDestroyQueue();
 
-		mPhysicsSystem->Update( dt );
-		mAnimationSystem->Update( dt );
+		mPhysicsSystem->Update( physics_timer.Tick() );
+		mAnimationSystem->Update( animation_timer.Tick() );
 		mEffectSystem->Update();
-		mAudioSystem->Update( dt );
+		mAudioSystem->Update( audio_timer.Tick() );
 		mSceneGraphSystem->Update();
 		mRenderSystem->Update();
 		mRenderer->Render();

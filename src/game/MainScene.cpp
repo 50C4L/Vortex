@@ -119,6 +119,10 @@ MainScene::OnEnter()
 	float half_height = static_cast<float>( config::DesignResolution::HEIGHT ) / 2.f;
 	mCamera = std::make_shared<eage::graphics::OrthographicCamera>( half_width * -1.f, half_width, half_height * -1.f, half_height, 0.1f, 100.0f );
 	mCamera->SetPosition( { 0, 0, 2.f } );
+
+	mPlayerGameplayTimer.Reset();
+	mBulletTimer.Reset();
+	mWaveTimer.Reset();
 }
 
 uint64_t
@@ -216,15 +220,15 @@ MainScene::GetOutput()
 }
 
 void
-MainScene::Update( float dt )
+MainScene::Update( float /*dt*/ )
 {
 	// System update
-	mPlayerGameplaySystem->Update( dt );
-	mBulletSystem->Update( dt );
+	mPlayerGameplaySystem->Update( mPlayerGameplayTimer.Tick() );
+	mBulletSystem->Update( mBulletTimer.Tick() );
 	mEnemySystem->Update();
 	if( mWaveSystem )
 	{
-		mWaveSystem->Update( dt );
+		mWaveSystem->Update( mWaveTimer.Tick() );
 	}
 	mLevelingSystem->Update();
 

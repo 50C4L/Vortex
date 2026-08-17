@@ -5,6 +5,7 @@
 #include "../EngineContext.h"
 #include <ecs/ECS.h>
 #include <ecs/ResourceStore.h>
+#include <utility/DeltaTimer.h>
 
 #include <memory>
 
@@ -103,6 +104,10 @@ namespace vortex
 		uint64_t mBackgroundEntity = 0;
 		eage::ecs::ResourceId mExplosionEffectId = 0;
 		eage::ecs::ResourceHandle mEffectMaterial;
+
+		utility::DeltaTimer mPlayerGameplayTimer;
+		utility::DeltaTimer mBulletTimer;
+		utility::DeltaTimer mWaveTimer;
 	};
 }
 
