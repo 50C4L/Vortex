@@ -1,6 +1,9 @@
 #ifndef _EAGE_COMPONENTS_BASICS_H_
 #define _EAGE_COMPONENTS_BASICS_H_
 
+#include <cstdint>
+#include <vector>
+
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -68,6 +71,8 @@ namespace eage::ecs
 	{
 		uint64_t parent_entity = 0; // 0 means no parent
 		std::vector<uint64_t> children_entities;
+		bool enabled = true;       // local enabled flag
+		bool world_enabled = true; // parent world_enabled && enabled; updated by SceneGraphSystem
 	};
 }
 

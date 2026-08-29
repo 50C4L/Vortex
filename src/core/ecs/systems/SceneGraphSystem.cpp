@@ -53,6 +53,7 @@ SceneGraphSystem::AddNodeToParent( Entity entity, Entity parent )
 	node.parent_entity = parent;
 	auto& parent_node = mECSRegistry.GetComponent<SceneGraphComponent>( parent );
 	parent_node.children_entities.push_back( entity );
+	RefreshWorldEnabled( entity, parent_node.world_enabled );
 }
 
 void
@@ -85,6 +86,7 @@ SceneGraphSystem::RemoveNodeFromParent( Entity entity )
 	}
 
 	node.parent_entity = 0;
+	RefreshWorldEnabled( entity, true );
 }
 
 void
@@ -121,6 +123,42 @@ SceneGraphSystem::QueueDestroySubtree( Entity entity )
 }
 
 void
+SceneGraphSystem::SetNodeEnabled( Entity entity, bool enabled )
+{
+	if( !mECSRegistry.HasComponent<SceneGraphComponent>( entity ) )
+	{
+		return;
+	}
+
+	auto& node = mECSRegistry.GetComponent<SceneGraphComponent>( entity );
+	node.enabled = enabled;
+
+	bool parent_world_enabled = true;
+	if( node.parent_entity != 0 && mECSRegistry.HasComponent<SceneGraphComponent>( node.parent_entity ) )
+	{
+		parent_world_enabled = mECSRegistry.GetComponent<SceneGraphComponent>( node.parent_entity ).world_enabled;
+	}
+
+	RefreshWorldEnabled( entity, parent_world_enabled );
+}
+
+void
+SceneGraphSystem::RefreshWorldEnabled( Entity entity, bool parent_world_enabled )
+{
+	if( !mECSRegistry.HasComponent<SceneGraphComponent>( entity ) )
+	{
+		return;
+	}
+
+	auto& node = mECSRegistry.GetComponent<SceneGraphComponent>( entity );
+	node.world_enabled = parent_world_enabled && node.enabled;
+	for( Entity child : node.children_entities )
+	{
+		RefreshWorldEnabled( child, node.world_enabled );
+	}
+}
+
+void
 SceneGraphSystem::OnEntityDestroying( Entity entity )
 {
 	RemoveNodeFromParent( entity );
@@ -135,15 +173,37 @@ SceneGraphSystem::Update()
 	}
 
 	auto& root_relationships = mECSRegistry.GetComponent<SceneGraphComponent>( mSceneRootEntity );
+	root_relationships.world_enabled = root_relationships.enabled;
 	for( auto& child : root_relationships.children_entities )
 	{
-		UpdateChildrenRecursive( child, glm::mat4(1.0f) ); // Identity matrix as parent for root's children
+		UpdateChildrenRecursive( child, glm::mat4( 1.0f ), root_relationships.world_enabled );
 	}
 }
 
 void
-SceneGraphSystem::UpdateChildrenRecursive( Entity entity, const glm::mat4& parent_world_matrix )
+SceneGraphSystem::UpdateChildrenRecursive( Entity entity, const glm::mat4& parent_world_matrix, bool parent_world_enabled )
 {
+	bool world_enabled = parent_world_enabled;
+	if( mECSRegistry.HasComponent<SceneGraphComponent>( entity ) )
+	{
+		auto& relationship = mECSRegistry.GetComponent<SceneGraphComponent>( entity );
+		world_enabled = parent_world_enabled && relationship.enabled;
+		relationship.world_enabled = world_enabled;
+	}
+
+	if( !world_enabled )
+	{
+		if( mECSRegistry.HasComponent<SceneGraphComponent>( entity ) )
+		{
+			auto& relationship = mECSRegistry.GetComponent<SceneGraphComponent>( entity );
+			for( auto& child : relationship.children_entities )
+			{
+				UpdateChildrenRecursive( child, parent_world_matrix, false );
+			}
+		}
+		return;
+	}
+
 	if( !mECSRegistry.HasComponent<TransformComponent>( entity ) )
 	{
 		return; // Entity must have a Transform component
@@ -167,7 +227,7 @@ SceneGraphSystem::UpdateChildrenRecursive( Entity entity, const glm::mat4& paren
 	{
 		if( mECSRegistry.HasComponent<TransformComponent>( child ) )
 		{
-			UpdateChildrenRecursive( child, world_matrix );
+			UpdateChildrenRecursive( child, world_matrix, true );
 		}
 	}
 }

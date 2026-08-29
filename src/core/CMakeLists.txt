@@ -211,6 +211,7 @@ enable_testing()
 add_executable(eage_core_tests
 	./tests/TestMain.cpp
 	./tests/ECSRegistryTest.cpp
+	./tests/SceneGraphSystemTest.cpp
 )
 
 target_link_libraries(eage_core_tests PRIVATE
