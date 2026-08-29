@@ -210,7 +210,7 @@ enable_testing()
 
 add_executable(eage_core_tests
 	./tests/TestMain.cpp
-	./tests/PlaceholderTest.cpp
+	./tests/ECSRegistryTest.cpp
 )
 
 target_link_libraries(eage_core_tests PRIVATE
