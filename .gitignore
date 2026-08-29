@@ -1,6 +1,7 @@
 ﻿build
 .vscode
-thirdparty
+thirdparty/*
+!thirdparty/include/
 *.spv
 imgui.ini
 nul
