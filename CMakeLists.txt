@@ -5,6 +5,8 @@ project(Vortex)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+enable_testing()
+
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/core)
 
 add_executable(Vortex 

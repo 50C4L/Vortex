@@ -204,3 +204,17 @@ target_link_libraries(eage_core PUBLIC
 	rmlui_debugger.lib
 	freetype.lib
 )
+
+# Unit tests (doctest)
+enable_testing()
+
+add_executable(eage_core_tests
+	./tests/TestMain.cpp
+	./tests/PlaceholderTest.cpp
+)
+
+target_link_libraries(eage_core_tests PRIVATE
+	eage_core
+)
+
+add_test(NAME eage_core_tests COMMAND eage_core_tests)
