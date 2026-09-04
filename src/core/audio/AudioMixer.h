@@ -31,6 +31,7 @@ namespace eage::audio
 		void Play();
 		void Stop();
 		void Restart(); // Seek to start and play; used for one-shot round-robin
+		bool IsPlaying() const;
 
 	private:
 		ma_engine& mEngine;

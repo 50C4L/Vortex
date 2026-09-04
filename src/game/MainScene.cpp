@@ -123,6 +123,8 @@ MainScene::OnEnter()
 	mPlayerGameplayTimer.Reset();
 	mBulletTimer.Reset();
 	mWaveTimer.Reset();
+
+	mInputController.Subscribe( static_cast<uint64_t>( GameEvents::GAME_PAUSE_TOGGLE ), this );
 }
 
 uint64_t
@@ -135,6 +137,9 @@ void
 MainScene::OnExit()
 {
 	LOG( "MainScene::OnExit" );
+
+	Pause( false );
+	mInputController.Unsubscribe( static_cast<uint64_t>( GameEvents::GAME_PAUSE_TOGGLE ), this );
 
 	if( mBulletSystem )
 	{
@@ -217,6 +222,56 @@ MainScene::GetOutput()
 		return mScenePass->GetDesc().color_target;
 	}
 	return nullptr;
+}
+
+void
+MainScene::Pause( bool paused )
+{
+	if( mPaused == paused )
+	{
+		return;
+	}
+	mPaused = paused;
+
+	mPhysicsSystem.Pause( paused );
+	mAnimationSystem.Pause( paused );
+	mAudioSystem.Pause( paused );
+	mEffectSystem.Pause( paused );
+
+	if( mPlayerInputSystem )
+	{
+		mPlayerInputSystem->Pause( paused );
+	}
+	if( mPlayerGameplaySystem )
+	{
+		mPlayerGameplaySystem->Pause( paused );
+	}
+	if( mBulletSystem )
+	{
+		mBulletSystem->Pause( paused );
+	}
+	if( mEnemySystem )
+	{
+		mEnemySystem->Pause( paused );
+	}
+	if( mWaveSystem )
+	{
+		mWaveSystem->Pause( paused );
+	}
+	if( mLevelingSystem )
+	{
+		mLevelingSystem->Pause( paused );
+	}
+}
+
+void
+MainScene::OnInputEvent( uint64_t event_id, bool on )
+{
+	if( event_id != static_cast<uint64_t>( GameEvents::GAME_PAUSE_TOGGLE ) || !on )
+	{
+		return;
+	}
+	Pause( !mPaused );
 }
 
 void

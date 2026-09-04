@@ -16,6 +16,11 @@ AudioSystem::AudioSystem( eage::ecs::ECSRegistry& registry, audio::AudioMixer& a
 void
 AudioSystem::Update( float delta_time )
 {
+	if( IsPaused() )
+	{
+		return;
+	}
+
 	ProcessAudioEvents();
 }
 
@@ -78,6 +83,38 @@ AudioSystem::Stop( eage::ecs::ResourceId sound_id )
 		instance->Stop();
 	}
 	pool.is_playing = false;
+}
+
+void
+AudioSystem::OnPauseChanged( bool paused )
+{
+	if( paused )
+	{
+		for( auto& [id, pool] : mSoundPools )
+		{
+			(void)id;
+			pool.paused_indices.clear();
+			for( int i = 0; i < static_cast<int>( pool.instances.size() ); ++i )
+			{
+				if( pool.instances[i]->IsPlaying() )
+				{
+					pool.paused_indices.push_back( i );
+					pool.instances[i]->Stop();
+				}
+			}
+		}
+		return;
+	}
+
+	for( auto& [id, pool] : mSoundPools )
+	{
+		(void)id;
+		for( int index : pool.paused_indices )
+		{
+			pool.instances[index]->Play();
+		}
+		pool.paused_indices.clear();
+	}
 }
 
 void

@@ -28,6 +28,11 @@ PlayerInputSystem::~PlayerInputSystem()
 void
 PlayerInputSystem::OnInputEvent( uint64_t event_id, bool on )
 {
+	if( IsPaused() )
+	{
+		return;
+	}
+
 	auto event = static_cast<GameEvents>( event_id );
 	// Update player component based on events
 	for( auto [entity, player] : mRegistry.GetComponentMap<PlayerComponent>() )
@@ -49,5 +54,23 @@ PlayerInputSystem::OnInputEvent( uint64_t event_id, bool on )
 			default:
 				break;
 		}
+	}
+}
+
+void
+PlayerInputSystem::OnPauseChanged( bool paused )
+{
+	if( !paused )
+	{
+		return;
+	}
+
+	for( auto [entity, player] : mRegistry.GetComponentMap<PlayerComponent>() )
+	{
+		(void)entity;
+		player.turning_left = false;
+		player.turning_right = false;
+		player.thruster_on = false;
+		player.main_weapon_firing = false;
 	}
 }

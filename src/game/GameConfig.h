@@ -62,6 +62,7 @@ namespace vortex
 			PLAYER_ROTATE_RIGHT,
 			PLAYER_THRUST,
 			PLAYER_SHOOT,
+			GAME_PAUSE_TOGGLE,
 		};
 
 		enum PhysicsCategoryBits : uint16_t

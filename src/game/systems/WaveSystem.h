@@ -3,6 +3,8 @@
 
 #include <vector>
 
+#include <utility/Pausable.h>
+
 #include "../data/WaveTypes.h"
 
 namespace vortex
@@ -14,7 +16,7 @@ namespace vortex
 	/// WaveSystem: owns wave sequencing, batch spawn timers, and completion.
 	/// Next wave starts on the following frame after timeout or wipe.
 	///
-	class WaveSystem
+	class WaveSystem : public utility::Pausable
 	{
 	public:
 		explicit WaveSystem( EnemySystem& enemy_system );

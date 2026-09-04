@@ -11,6 +11,7 @@
 
 #include <ecs/ResourceStore.h>
 #include <ecs/systems/PhysicsSystem.h>
+#include <utility/Pausable.h>
 
 namespace eage::ecs
 {
@@ -44,7 +45,7 @@ namespace vortex
 	/// Callers call PreparePool() to register a bullet type and receive a BulletPoolId,
 	/// then Fire() to shoot a bullet from that pool.
 	///
-	class BulletSystem final : public eage::ecs::PhysicsSystem::Observer
+	class BulletSystem final : public eage::ecs::PhysicsSystem::Observer, public utility::Pausable
 	{
 	public:
 		BulletSystem( eage::ecs::ECSRegistry& registry, eage::ecs::PhysicsSystem& physics_system,

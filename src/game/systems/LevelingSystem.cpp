@@ -16,6 +16,11 @@ LevelingSystem::LevelingSystem( eage::ecs::ECSRegistry& registry )
 void
 LevelingSystem::Update()
 {
+	if( IsPaused() )
+	{
+		return;
+	}
+
 	for( auto [ entity, experience ] : mRegistry.GetComponentMap<ExperienceComponent>() )
 	{
 		(void)entity;

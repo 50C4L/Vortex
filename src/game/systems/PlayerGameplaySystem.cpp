@@ -159,6 +159,11 @@ PlayerGameplaySystem::~PlayerGameplaySystem()
 void
 PlayerGameplaySystem::Update( float delta_time_sec )
 {
+	if( IsPaused() )
+	{
+		return;
+	}
+
 	// Get only entities with PlayerComponent (much smaller set)
 	for( auto [entity, player] : mRegistry.GetComponentMap<PlayerComponent>() )
 	{

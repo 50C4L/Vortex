@@ -23,6 +23,11 @@ AnimationSystem::~AnimationSystem() = default;
 void
 AnimationSystem::Update( float delta_time )
 {
+	if( IsPaused() )
+	{
+		return;
+	}
+
 	for( auto [entity, anim] : mRegistry.GetComponentMap<AnimatedSpriteComponent>() )
 	{
 		if( !anim.playing || anim.clip_id == INVALID_ID )
@@ -120,7 +125,7 @@ AnimationSystem::Attach( Entity entity, ResourceId clip_id )
 	}
 
 	ShowFrame( entity, 0 );
-	Pause( entity );
+	PauseEntity( entity );
 }
 
 void
@@ -152,7 +157,7 @@ AnimationSystem::PlayOnce( Entity entity, int start_frame )
 }
 
 void
-AnimationSystem::Pause( Entity entity )
+AnimationSystem::PauseEntity( Entity entity )
 {
 	auto* anim = GetAnimComponent( entity );
 	if( anim == nullptr )

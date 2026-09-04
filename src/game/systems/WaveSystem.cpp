@@ -63,6 +63,11 @@ WaveSystem::StartWave( int wave_index )
 void
 WaveSystem::Update( float dt )
 {
+	if( IsPaused() )
+	{
+		return;
+	}
+
 	if( mState == State::PENDING_NEXT )
 	{
 		StartWave( mPendingWaveIndex );

@@ -28,7 +28,7 @@ animation_system.Attach( entity, clip_id );
 
 // Playback control
 animation_system.ShowFrame( entity, 0 );
-animation_system.Pause( entity );
+animation_system.PauseEntity( entity );
 animation_system.Play( entity, 0 );       // play from frame 0
 animation_system.PlayOnce( entity, 0 );   // one-shot from frame 0
 animation_system.SetLoop( entity, true );
@@ -59,7 +59,7 @@ animation_system.Update( delta_time_sec );
 
 - Call `AnimationSystem::Update()` every frame from the main loop -- missing frames causes visible hitches
 - Pair animated entities with `RenderSystem::AttachSprite()` / `AttachRenderable()` using frame 0's texture index and clip frame size
-- Use `ShowFrame( 0 )` + `Pause()` to display a static frame while the entity is alive (e.g. pooled bullets)
+- Use `ShowFrame( 0 )` + `PauseEntity()` to display a static frame while the entity is alive (e.g. pooled bullets)
 
 ## DON'Ts
 

@@ -215,6 +215,7 @@ VortexGame::Init()
 		{ events::KeyCode::D, static_cast<uint64_t>( GameEvents::PLAYER_ROTATE_RIGHT ) },
 		{ events::KeyCode::W, static_cast<uint64_t>( GameEvents::PLAYER_THRUST ) },
 		{ events::KeyCode::J, static_cast<uint64_t>( GameEvents::PLAYER_SHOOT ) },
+		{ events::KeyCode::Escape, static_cast<uint64_t>( GameEvents::GAME_PAUSE_TOGGLE ) },
 	};
 	mInputController = std::make_unique<events::InputController>( std::move( keycode_to_event ) );
 

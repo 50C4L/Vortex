@@ -11,6 +11,7 @@
 
 #include <ecs/ECS.h>
 #include <ecs/ResourceStore.h>
+#include <utility/Pausable.h>
 
 namespace eage::ecs
 {
@@ -25,7 +26,7 @@ namespace eage::ecs
 	/// entity pool), not an AnimationClip. Future effects may hold multiple clips;
 	/// Apply() currently plays clip_ids[0].
 	///
-	class EffectSystem
+	class EffectSystem : public utility::Pausable
 	{
 	public:
 		struct EffectConfig

@@ -10,6 +10,7 @@
 #include <ecs/ECS.h>
 #include <ecs/ResourceStore.h>
 #include <physics/PhysicsEventListener.h>
+#include <utility/Pausable.h>
 
 namespace eage::physics
 {
@@ -22,7 +23,7 @@ namespace eage::ecs
 	///
 	/// PhysicsSystem: Manages physics bodies and collision components
 	///
-	class PhysicsSystem final : public eage::physics::PhysicsEventListener, public ECSRegistry::Observer
+	class PhysicsSystem final : public eage::physics::PhysicsEventListener, public ECSRegistry::Observer, public utility::Pausable
 	{
 	public:
 		class Observer

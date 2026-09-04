@@ -96,7 +96,7 @@ EffectSystem::Create( RenderSystem& render_system, const EffectConfig& config, E
 		render_system.AttachRenderable( entity, definition.mesh.Get(), config.material_id, texture_index, false );
 
 		mAnimationSystem.Attach( entity, config.clip_ids[0] );
-		mAnimationSystem.Pause( entity );
+		mAnimationSystem.PauseEntity( entity );
 
 		if( config.sound_id != INVALID_ID )
 		{
@@ -175,6 +175,11 @@ EffectSystem::Apply( ResourceId effect_id, glm::vec2 pos, const glm::quat& rotat
 void
 EffectSystem::Update()
 {
+	if( IsPaused() )
+	{
+		return;
+	}
+
 	for( auto [entity, instance] : mRegistry.GetComponentMap<EffectInstanceComponent>() )
 	{
 		if( !instance.active )
@@ -212,7 +217,7 @@ EffectSystem::Recycle( Entity entity, EffectDefinition& definition )
 	if( mAnimationSystem.HasAnimation( entity ) )
 	{
 		mAnimationSystem.ShowFrame( entity, 0 );
-		mAnimationSystem.Pause( entity );
+		mAnimationSystem.PauseEntity( entity );
 	}
 
 	definition.available.push_back( entity );

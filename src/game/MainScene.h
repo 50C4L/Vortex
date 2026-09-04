@@ -5,6 +5,7 @@
 #include "../EngineContext.h"
 #include <ecs/ECS.h>
 #include <ecs/ResourceStore.h>
+#include <events/InputController.h>
 #include <utility/DeltaTimer.h>
 
 #include <memory>
@@ -48,7 +49,7 @@ namespace vortex
 	class WaveStore;
 	class WaveSystem;
 
-	class MainScene : public AbstractScene
+	class MainScene : public AbstractScene, public events::InputController::Observer
 	{
 	public:
 		explicit MainScene( const EngineContext& ctx );
@@ -60,6 +61,11 @@ namespace vortex
 		virtual void Update( float dt ) override;
 
 		virtual eage::graphics::ManagedImage* GetOutput() override;
+
+		void Pause( bool paused );
+
+		// events::InputController::Observer
+		void OnInputEvent( uint64_t event_id, bool on ) override;
 
 	private:
 		void InitializeGenericSystems();
@@ -108,6 +114,7 @@ namespace vortex
 		utility::DeltaTimer mPlayerGameplayTimer;
 		utility::DeltaTimer mBulletTimer;
 		utility::DeltaTimer mWaveTimer;
+		bool mPaused = false;
 	};
 }
 

@@ -375,6 +375,11 @@ EnemySystem::PickRandomEdgePosition() const
 void
 EnemySystem::Update()
 {
+	if( IsPaused() )
+	{
+		return;
+	}
+
 	for( auto [entity, enemy] : mECSRegistry.GetComponentMap<EnemyComponent>() )
 	{
 		(void)enemy;

@@ -3,6 +3,7 @@
 
 #include <ecs/ECS.h>
 #include <ecs/ResourceStore.h>
+#include <utility/Pausable.h>
 
 #include <glm/glm.hpp>
 #include <memory>
@@ -30,7 +31,7 @@ namespace vortex
 	/// PlayerGameplaySystem: Updates player movement and gameplay logic.
 	/// Call PreparePlayer() after construction to create all player entities and resources.
 	///
-	class PlayerGameplaySystem 
+	class PlayerGameplaySystem : public utility::Pausable
 	{
 	public:
 		PlayerGameplaySystem( eage::ecs::ECSRegistry& registry, BulletSystem& bullet_system,

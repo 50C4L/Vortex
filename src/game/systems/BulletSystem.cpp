@@ -178,7 +178,7 @@ BulletSystem::Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 directio
 	if( mAnimationSystem.HasAnimation( entity ) )
 	{
 		mAnimationSystem.ShowFrame( entity, 0 );
-		mAnimationSystem.Pause( entity );
+		mAnimationSystem.PauseEntity( entity );
 	}
 
 	auto& transform = mRegistry.GetComponent<eage::ecs::TransformComponent>( entity );
@@ -198,6 +198,11 @@ BulletSystem::Fire( BulletPoolId pool_id, glm::vec2 position, glm::vec2 directio
 void
 BulletSystem::Update( float dt )
 {
+	if( IsPaused() )
+	{
+		return;
+	}
+
 	std::vector<uint64_t> bullets_to_despawn;
 
 	for( auto [entity, bullet] : mRegistry.GetComponentMap<BulletComponent>() )
@@ -307,7 +312,7 @@ BulletSystem::DespawnBullet( uint64_t entity )
 	if( mAnimationSystem.HasAnimation( entity ) )
 	{
 		mAnimationSystem.ShowFrame( entity, 0 );
-		mAnimationSystem.Pause( entity );
+		mAnimationSystem.PauseEntity( entity );
 	}
 
 	auto pool_it = mEntityToPool.find( entity );

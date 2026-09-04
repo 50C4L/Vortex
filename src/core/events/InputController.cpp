@@ -82,6 +82,10 @@ InputController::Handle( SDL_Event& event )
 {
 	if( event.type == SDL_KEYDOWN || event.type == SDL_KEYUP )
 	{
+		if( event.key.repeat != 0 )
+		{
+			return;
+		}
 		bool is_down = event.type == SDL_KEYDOWN;
 		KeyCode key = sdl_keycode_to_keycode( event.key.keysym.sym );
 		auto it = mKeysToEventIds.find( key );

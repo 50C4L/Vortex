@@ -59,6 +59,12 @@ SoundInstance::Restart()
 	ma_sound_start( mSound.get() );
 }
 
+bool
+SoundInstance::IsPlaying() const
+{
+	return ma_sound_is_playing( mSound.get() ) == MA_TRUE;
+}
+
 AudioMixer::AudioMixer()
 {
 	ma_result result;

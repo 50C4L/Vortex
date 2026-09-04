@@ -10,6 +10,7 @@
 
 #include <ecs/ResourceStore.h>
 #include <ecs/systems/PhysicsSystem.h>
+#include <utility/Pausable.h>
 
 #include "../data/EnemyDefinition.h"
 
@@ -32,7 +33,7 @@ namespace vortex
 	/// EnemySystem: pooled enemies keyed by definition id.
 	/// Call PreparePool() per enemy JSON, then Spawn( id, count ).
 	///
-	class EnemySystem : public eage::ecs::PhysicsSystem::Observer
+	class EnemySystem : public eage::ecs::PhysicsSystem::Observer, public utility::Pausable
 	{
 	public:
 		EnemySystem( eage::ecs::ECSRegistry& registry,

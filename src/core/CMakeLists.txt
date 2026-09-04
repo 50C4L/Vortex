@@ -178,6 +178,7 @@ add_library(eage_core STATIC
 	./utility/Logger.h
 	./utility/JsonParser.h
 	./utility/DeltaTimer.h
+	./utility/Pausable.h
 
 	${THIRDPARTY_SRC_PATH}/spirv-reflect/spirv_reflect.h
 	${THIRDPARTY_SRC_PATH}/spirv-reflect/spirv_reflect.c

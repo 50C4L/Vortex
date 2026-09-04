@@ -3,6 +3,7 @@
 
 #include <ecs/components/Audio.h>
 #include <ecs/ResourceStore.h>
+#include <utility/Pausable.h>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -25,7 +26,7 @@ namespace eage::ecs
 	/// need to overlap (e.g. rapid-fire SFX). Use looping = true for sustained sounds
 	/// (e.g. engine hum). Play() and Stop() work for both cases.
 	///
-	class AudioSystem
+	class AudioSystem : public utility::Pausable
 	{
 	public:
 		struct SoundConfig
@@ -50,6 +51,9 @@ namespace eage::ecs
 		// Stop all instances in the pool.
 		void Stop( eage::ecs::ResourceId sound_id );
 
+	protected:
+		void OnPauseChanged( bool paused ) override;
+
 	private:
 		struct SoundPool
 		{
@@ -57,6 +61,7 @@ namespace eage::ecs
 			int next_index = 0;
 			bool looping = false;
 			bool is_playing = false;
+			std::vector<int> paused_indices;
 		};
 
 		void ProcessAudioEvents();

@@ -4,6 +4,7 @@
 #include <ecs/ECS.h>
 #include <ecs/ResourceStore.h>
 #include <ecs/components/Animation.h>
+#include <utility/Pausable.h>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -21,7 +22,7 @@ namespace eage::ecs
 	///
 	/// AnimationSystem: Loads and caches AnimationClip assets; drives AnimatedSpriteComponent playback.
 	///
-	class AnimationSystem
+	class AnimationSystem : public utility::Pausable
 	{
 	public:
 		AnimationSystem( ECSRegistry& registry );
@@ -35,7 +36,7 @@ namespace eage::ecs
 		void Attach( Entity entity, ResourceId clip_id );
 		void Play( Entity entity, int start_frame = 0 );
 		void PlayOnce( Entity entity, int start_frame = 0 );
-		void Pause( Entity entity );
+		void PauseEntity( Entity entity );
 		void ShowFrame( Entity entity, int index );
 		void SetLoop( Entity entity, bool loop );
 

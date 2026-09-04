@@ -1,6 +1,8 @@
 #ifndef VORTEX_LEVELING_SYSTEM_H
 #define VORTEX_LEVELING_SYSTEM_H
 
+#include <utility/Pausable.h>
+
 namespace eage::ecs
 {
 	class ECSRegistry;
@@ -11,7 +13,7 @@ namespace vortex
 	///
 	/// LevelingSystem: Applies pending XP and handles level-up thresholds.
 	///
-	class LevelingSystem
+	class LevelingSystem : public utility::Pausable
 	{
 	public:
 		explicit LevelingSystem( eage::ecs::ECSRegistry& registry );
